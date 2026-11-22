@@ -28,7 +28,8 @@ is strictly directional so that domain logic stays free of Android and native-en
   destinations).
 - **Testing**: JUnit4, `kotlinx-coroutines-test`, Compose UI test, Room testing, Espresso,
   AndroidJUnit4 instrumentation, Macrobenchmark/Baseline Profile.
-- **Target Platform**: Android 8.0+ (API 26+), **64-bit only** (arm64-v8a, x86_64).
+- **Target Platform**: Android 8.0+ (API 26+; provisional pending the T060 libtorrent4j
+  verification), compileSdk/targetSdk 37, **64-bit only** (arm64-v8a, x86_64).
 - **Project Type**: mobile-app, Gradle multi-module, version catalog.
 - **Performance Goals**: 60 fps UI; no main-thread I/O; throttled progress emission; bounded
   queue/event buffering; predictable native cleanup; large queues (1000+ tasks) remain

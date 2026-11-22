@@ -89,6 +89,17 @@ invariants, and the Room schema. It is a design artifact, not an implementation.
   `timeLimitSeconds?`, `perTorrentOverride`.
 - **DownloadPolicy**: `maxConcurrent`, `torrentMaxConcurrent`, `extractorMaxConcurrent`,
   `defaultLimits`, `retryPolicy`, `wifiOnly`, `meteredAllowed`, `batteryThresholdPercent?`.
+  v1 defaults: `maxConcurrent = 3`, `torrentMaxConcurrent = 2`, `extractorMaxConcurrent = 1`,
+  `maxRetries = 3`, `initialBackoff = 5s`, `maxBackoff = 15m`, `backoffMultiplier = 2.0` with
+  ±20% jitter, `wifiOnly = false`, `meteredAllowed = true`, `batteryThresholdPercent = 15`
+  (0 disables). Defaults are user-overridable and persisted.
+
+### 1.5 Identifier and playback types
+
+- **EngineTaskId**: opaque engine handle identifier (string); never parsed by domain.
+- **ExtractorTaskId**: opaque extractor task identifier (string); never parsed by domain.
+- **Track selection**: offered only when the media exposes more than one audio/subtitle track;
+  otherwise the control is hidden and the default track is used.
 
 ## 2. Download State Machine
 

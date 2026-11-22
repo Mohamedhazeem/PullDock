@@ -134,3 +134,30 @@ Resolved during `/speckit-plan`; recorded here so the plan has an audit trail.
 
 No NEEDS CLARIFICATION markers remain in the plan's Technical Context.
 
+## 8. Analyze Remediation (2026-11-22)
+
+Fixes applied after `/speckit-analyze` (read-only audit):
+
+| Finding | Fix |
+|---|---|
+| COV-01 seeding zero coverage | Added T056–T058 (policy model, controls UI, tests). |
+| COV-02 thumbnails | Added T164 (`ThumbnailLoader`). |
+| COV-03 track selection | Added T165; FR-044 and data-model §1.5 define visibility. |
+| COV-04 undo/confirm | Added T039 (`PdConfirmDialog`, safeguards). |
+| COV-05 ABI packaging | Added T019 (`abiFilters`, ABI splits). |
+| COV-06 remote-code guard | Added T140 (`NoRemoteCodeTest`). |
+| COV-07 permission audit | Added T181. |
+| COV-08 analytics/clipboard | Added T182. |
+| COV-09 no-watermark | Added T141. |
+| COV-10 access-control bypass | Extended T170 security review. |
+| UND-01 queue defaults | Concrete v1 defaults recorded in `data-model.md` §1.4. |
+| UND-02 track selection | Defined in `data-model.md` §1.5 and spec FR-044. |
+| INC-01 minSdk vs libtorrent4j | Marked API 26 provisional in `plan.md` pending T060. |
+| INC-02 compile/target SDK | Recorded compileSdk/targetSdk 37 in `plan.md`. |
+| INC-03 engine id types | Added to `data-model.md` §1.5. |
+| DUP-01/DUP-02 | Cross-reference note added to `spec.md` Clarifications. |
+| AMB-01 | Resolved by UND-01 defaults. |
+
+Task count after remediation: 159.
+
+

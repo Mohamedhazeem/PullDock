@@ -45,6 +45,11 @@ platform background restrictions).
 - Q: Should v1 include the remote signed update and provider-compatibility metadata check?
   → A: Yes, include a non-blocking signed manifest check with a pinned key and cached
   last-known-good data.
+- Q: When should audio/subtitle track selection be shown? → A: Only when the media exposes
+  more than one audio/subtitle track; otherwise hidden with the default track.
+- Note: FR-010/FR-029/FR-034 intentionally overlap on persistence and recovery; FR-029 is
+  authoritative for queue recovery. FR-053/FR-054 and FR-061/FR-062 intentionally overlap on
+  extractor runtime/health; the lifecycle section is authoritative.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -429,8 +434,9 @@ player.
 - **FR-043**: The app MUST reconcile library records with actual files rather than assuming
   every file still exists.
 - **FR-044**: The app MUST provide playback with play/pause, seek, skip, speed, volume,
-  fullscreen, orientation handling, resume position, track selection where available, and
-  error handling.
+  fullscreen, orientation handling, resume position, and error handling. Track selection
+  MUST be offered only when the media exposes more than one audio/subtitle track; otherwise
+  the control MUST be hidden and the default track used.
 - **FR-045**: If torrent streaming is provided, the app MUST bind any local bridge to
   loopback only, use an unpredictable access token, support byte-range requests, prevent
   directory traversal, and terminate the bridge when no longer needed.

@@ -49,6 +49,7 @@ skeletons, CI foundation.
 - [ ] T016 [P] Add `proguard-rules.pro` entries for Compose, Hilt, Room, and native libs in `app/proguard-rules.pro`
 - [ ] T017 Add CI jobs (build, unit test, lint, static analysis, format, dependency verification, license report, ABI packaging check, secret scan) in `.github/workflows/ci.yml`
 - [ ] T018 Verify Slice 0: `./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest` all succeed
+- [ ] T019 [P] Configure 64-bit ABI packaging (`ndk.abiFilters` arm64-v8a and x86_64, ABI splits) in `app/build.gradle.kts` and verify no 32-bit APK is produced (re-run T018 after this task)
 
 **Checkpoint**: foundation builds, Hilt graph resolves, app launches to the navigation shell.
 
@@ -89,6 +90,7 @@ exist for every later slice.
 **Purpose**: onboarding/consent, home, add-download, queue, details, settings, empty/loading/
 error states, accessibility. Serves **US1**, **US4**, **US10**.
 
+- [ ] T039 [US4] Add destructive-action safeguards (confirmation dialogs for remove/delete, undo for reversible actions) and `PdConfirmDialog` in `core/designsystem/src/main/java/com/pulldock/core/designsystem/components/PdConfirmDialog.kt`
 - [ ] T040 [P] [US1] Implement consent/onboarding screen and `OnboardingViewModel` in `feature/onboarding/src/main/java/com/pulldock/feature/onboarding/`
 - [ ] T041 [US1] Persist versioned acknowledgement in `core/datastore/src/main/java/com/pulldock/core/datastore/ConsentStore.kt` and re-prompt on version change
 - [ ] T042 [P] [US10] Add design-system components `PdButton`, `PdProgress`, `PdEmptyState`, `PdErrorState`, `PdLoadingState` in `core/designsystem/src/main/java/com/pulldock/core/designsystem/components/`
@@ -115,6 +117,9 @@ error states, accessibility. Serves **US1**, **US4**, **US10**.
 **Purpose**: verified libtorrent4j integration. Serves **US2**, **US9**. **HIGH RISK** — start
 with the feasibility PoC.
 
+- [ ] T056 Implement `SeedingPolicy` and persist it on `TorrentTaskEntity` in `domain/torrent/src/main/java/com/pulldock/domain/torrent/model/SeedingPolicy.kt` and `core/database/src/main/java/com/pulldock/core/database/entity/TorrentTaskEntity.kt`
+- [ ] T057 [US2] Implement seeding controls (seed-after-completion, max upload rate, stop ratio, time limit, per-torrent override, stop-all) in `feature/download-detail/src/main/java/com/pulldock/feature/downloaddetail/SeedingControls.kt` and apply them via `TorrentEngineImpl.setLimits`
+- [ ] T058 Add seeding unit tests (defaults, stop-ratio and time-limit transitions, no indefinite seeding) in `domain/torrent/src/test/` and `data/torrent/src/test/`
 - [ ] T060 Run the torrent dependency feasibility PoC: pin `libtorrent4j` for arm64-v8a/x86_64 with minSdk 26, verify init/close and ABI packaging; record result in `research.md` (resolves D1)
 - [ ] T061 [P] Add `TorrentEngineImpl` skeleton and session factory in `data/torrent/src/main/java/com/pulldock/data/torrent/TorrentEngineImpl.kt`
 - [ ] T062 Implement `LibtorrentSession` ownership and idempotent `close()` in `engines/torrent-libtorrent/src/main/java/com/pulldock/engines/torrent/LibtorrentSession.kt`
@@ -214,6 +219,8 @@ and degradation. Serves **US8**. Depends on Slices 4 and 5.
 - [ ] T137 Add provider regression tests (one provider failure does not break others) in `data/extractor/src/test/`
 - [ ] T138 Write update security and distribution documentation in `docs/EXTRACTOR_LIFECYCLE.md` and `docs/EXTRACTOR_UPDATE_STRATEGY.md`
 - [ ] T139 Verify the lifecycle group: run the full update/compatibility test set and record actual results
+- [ ] T140 Add a remote-code-loading guard test asserting no DCL/`DexClassLoader`/remote-module path exists in `data/extractor/src/test/java/com/pulldock/data/extractor/NoRemoteCodeTest.kt`
+- [ ] T141 Add a no-watermark restriction test asserting no watermark-removal path exists in `data/extractor/src/test/java/com/pulldock/data/extractor/NoWatermarkTest.kt`
 
 **Checkpoint**: incompatible runtimes are detected, manifests verified, providers degrade
 independently, updates never execute remote code.
@@ -239,6 +246,8 @@ Serves **US5**, **US6**, **US7**.
 - [ ] T161 Add storage tests: failed finalize never publishes incomplete output, collision strategy, traversal rejection in `core/storage/src/test/`
 - [ ] T162 Add library reconciliation and playback tests in `data/download/src/test/` and `feature/player/src/test/`
 - [ ] T163 Verify Slice 6 on device: complete a download, library entry, playback resume, torrent streaming (record actual results)
+- [ ] T164 Implement async thumbnail loading with a size cache and cancel-on-recycle in `feature/library/src/main/java/com/pulldock/feature/library/ThumbnailLoader.kt`
+- [ ] T165 Implement audio/subtitle track selection when the media exposes more than one track in `feature/player/src/main/java/com/pulldock/feature/player/TrackSelection.kt` (hide the control otherwise)
 
 **Checkpoint**: files finalize safely, library stays consistent, playback and streaming work.
 
@@ -248,7 +257,7 @@ Serves **US5**, **US6**, **US7**.
 
 **Purpose**: security, accessibility, performance, migrations, CI gates, release, licenses.
 
-- [ ] T170 [P] Run the security review: SSRF guard, filename handling, subprocess args, streaming exposure, log redaction; record in `docs/SECURITY_THREAT_MODEL.md`
+- [ ] T170 [P] Run the security review: SSRF guard, filename handling, subprocess args, streaming exposure, log redaction, and DRM/paywall/authentication bypass checkpoints; record in `docs/SECURITY_THREAT_MODEL.md`
 - [ ] T171 [P] Complete accessibility audit (TalkBack, contrast, large fonts, RTL, reduced motion) across all screens in `feature/*/src/main/`
 - [ ] T172 [P] Run performance profiling (startup, large queue, thumbnails, native cleanup) and record in `docs/PERFORMANCE.md`
 - [ ] T173 Add database migration tests for every schema version in `core/database/src/androidTest/`
@@ -259,6 +268,8 @@ Serves **US5**, **US6**, **US7**.
 - [ ] T178 Generate the third-party license report in `docs/THIRD_PARTY_LICENSES.md`
 - [ ] T179 [P] Write `docs/KNOWN_LIMITATIONS.md` (background limits, provider restrictions, 64-bit only)
 - [ ] T180 Run the full `quickstart.md` validation and record actual results
+- [ ] T181 [P] Audit every declared permission in `app/src/main/AndroidManifest.xml`, map each to a justification, and remove any unnecessary permission; record in `docs/SECURITY_THREAT_MODEL.md`
+- [ ] T182 [P] Add a privacy verification check asserting no analytics SDK, no account, no clipboard read, and no remote upload path in `app/src/main/` and `core/`
 
 **Checkpoint**: release build succeeds; all quality gates pass; documentation is current.
 
@@ -351,18 +362,19 @@ adapter code, because they can invalidate the architecture.
 | Spec area | Tasks |
 |---|---|
 | US1 Onboarding/consent | T040, T041, T049 |
-| US2 Torrent | T060–T075 |
+| US2 Torrent | T056–T058, T060–T075 |
 | US3 Media extraction | T080–T094 |
-| US4 Unified queue | T045, T050, T100–T104, T113 |
-| US5 Library/playback | T155–T158, T162 |
+| US4 Unified queue | T039, T045, T050, T100–T104, T113 |
+| US5 Library/playback | T155–T158, T162, T164, T165 |
 | US6 Streaming | T159, T160 |
 | US7 Network/battery/storage | T105, T106, T150–T154 |
-| US8 Extractor health | T091, T120–T139 |
+| US8 Extractor health | T091, T120–T141 |
 | US9 Recovery | T070, T071, T110, T130 |
 | US10 Accessibility | T042, T051, T171 |
 | Background execution | T107–T114 |
-| Extractor lifecycle/updates | T120–T139 |
-| Release/hardening | T170–T180 |
+| Extractor lifecycle/updates | T120–T141 |
+| Release/hardening | T170–T182 |
+| ABI/packaging | T019 |
 
 ## Notes
 
