@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PullDock</string>
+
+    <!-- Main navigation destinations -->
+    <string name="destination_home">Home</string>
+    <string name="destination_downloads">Downloads</string>
+    <string name="destination_library">Library</string>
+    <string name="destination_settings">Settings</string>
+
+    <!-- Slice 0 shell states; replaced by feature screens as their slices land -->
+    <string name="shell_home_title">Welcome to PullDock</string>
+    <string name="shell_home_empty">No active downloads. Torrent and media downloads you add appear here with their status and speed.</string>
+    <string name="shell_downloads_title">Downloads</string>
+    <string name="shell_downloads_empty">Your queue is empty. Add a magnet link, a .torrent file, or an authorized media URL to get started.</string>
+    <string name="shell_library_title">Library</string>
+    <string name="shell_library_empty">Completed downloads appear in your library, ready to play.</string>
+    <string name="shell_settings_title">Settings</string>
+    <string name="shell_settings_empty">Download, network, battery, storage, and privacy controls arrive with the settings slice. PullDock is local-first: nothing you download leaves this device.</string>
 </resources>
