@@ -62,25 +62,25 @@ skeletons, CI foundation.
 **Purpose**: pure domain model, state machine, repository contracts, Room schema, migrations,
 recovery model. **BLOCKING** for all user stories.
 
-- [ ] T020 [P] Define `DownloadTask`, `DownloadProgress`, `TransferLimits`, `StorageDestination`, `DownloadPolicy` in `domain/download/src/main/java/com/pulldock/domain/download/model/`
-- [ ] T021 [P] Define `DownloadState` enum and `DownloadStateMachine` with the legal transitions from `data-model.md` §2.2 in `domain/download/src/main/java/com/pulldock/domain/download/state/DownloadStateMachine.kt`
-- [ ] T022 [P] Define `TorrentTaskDetails`, `TorrentFile`, `FileSelection`, `ResumeBlob` in `domain/torrent/src/main/java/com/pulldock/domain/torrent/model/`
-- [ ] T023 [P] Define `ExtractorTaskDetails`, `MediaFormat`, `MediaDescriptor`, `MediaSource` in `domain/extractor/src/main/java/com/pulldock/domain/extractor/model/`
-- [ ] T024 [P] Define repository contracts `DownloadRepository`, `MediaLibraryRepository`, `StorageRepository`, `NetworkPolicyRepository`, `ExtractorRuntimeRepository`, `ProviderCompatibilityRepository`, `UpdateManifestRepository` in `domain/download/src/main/java/com/pulldock/domain/download/repository/`
-- [ ] T025 [P] Define `QueueCoordinator` contract and `QueueState` in `domain/download/src/main/java/com/pulldock/domain/download/queue/QueueCoordinator.kt`
-- [ ] T026 [P] Define `TorrentEngine` contract and `TorrentResult`/`TorrentEvent` in `contracts/torrent-engine.md` → `domain/torrent/src/main/java/com/pulldock/domain/torrent/TorrentEngine.kt`
-- [ ] T027 [P] Define `MediaExtractor`, `Provider`, `ExtractorResult`/`ExtractorEvent` in `domain/extractor/src/main/java/com/pulldock/domain/extractor/MediaExtractor.kt`
-- [ ] T028 [P] Define use cases `AddTorrent`, `FetchTorrentMetadata`, `SelectTorrentFiles`, `StartDownload`, `PauseDownload`, `ResumeDownload`, `CancelDownload`, `RetryDownload`, `RemoveDownload`, `ObserveDownloadQueue`, `ObserveDownloadDetails`, `ResolveMediaUrl`, `FetchAvailableFormats`, `EnqueueDownload` in `domain/download/src/main/java/com/pulldock/domain/download/usecase/`
-- [ ] T029 Add Room entities `DownloadTaskEntity`, `TorrentTaskEntity`, `ExtractorTaskEntity`, `RecoveryMarkerEntity` in `core/database/src/main/java/com/pulldock/core/database/entity/` with constraints/indexes from `data-model.md` §4.1
-- [ ] T030 Add DAOs `DownloadTaskDao`, `TorrentTaskDao`, `ExtractorTaskDao`, `RecoveryMarkerDao` in `core/database/src/main/java/com/pulldock/core/database/dao/`
-- [ ] T031 Add `PullDockDatabase` version 1 + `RoomModule` binding in `core/database/src/main/java/com/pulldock/core/database/RoomModule.kt`
-- [ ] T032 Add migration framework: `Migrations` object and a test harness that opens a v(n-1) database fixture in `core/database/src/androidTest/`
-- [ ] T033 Add `DownloadRepositoryImpl` and mappers in `data/download/src/main/java/com/pulldock/data/download/DownloadRepositoryImpl.kt`
-- [ ] T034 Add `QueueCoordinatorImpl` skeleton (state flow, no engine calls yet) in `data/download/src/main/java/com/pulldock/data/download/QueueCoordinatorImpl.kt`
-- [ ] T035 Add `DownloadStateMachineTest` covering every legal transition and rejecting illegal ones in `domain/download/src/test/java/com/pulldock/domain/download/state/DownloadStateMachineTest.kt`
-- [ ] T036 Add domain unit tests for use cases with fake repositories in `domain/download/src/test/java/com/pulldock/domain/download/usecase/`
-- [ ] T037 Add Room instrumentation tests for CRUD, indexes, and migration in `core/database/src/androidTest/java/com/pulldock/core/database/`
-- [ ] T038 Verify Slice 1: `./gradlew :domain:download:testDebugUnitTest :core:database:testDebugUnitTest` pass
+- [X] T020 [P] Define `DownloadTask`, `DownloadProgress`, `TransferLimits`, `StorageDestination`, `DownloadPolicy` in `domain/download/src/main/java/com/pulldock/domain/download/model/`
+- [X] T021 [P] Define `DownloadState` enum and `DownloadStateMachine` with the legal transitions from `data-model.md` §2.2 in `domain/download/src/main/java/com/pulldock/domain/download/state/DownloadStateMachine.kt`
+- [X] T022 [P] Define `TorrentTaskDetails`, `TorrentFile`, `FileSelection`, `ResumeBlob` in `domain/torrent/src/main/java/com/pulldock/domain/torrent/model/`
+- [X] T023 [P] Define `ExtractorTaskDetails`, `MediaFormat`, `MediaDescriptor`, `MediaSource` in `domain/extractor/src/main/java/com/pulldock/domain/extractor/model/`
+- [X] T024 [P] Define repository contracts `DownloadRepository`, `MediaLibraryRepository`, `StorageRepository`, `NetworkPolicyRepository`, `ExtractorRuntimeRepository`, `ProviderCompatibilityRepository`, `UpdateManifestRepository` in `domain/download/src/main/java/com/pulldock/domain/download/repository/`
+- [X] T025 [P] Define `QueueCoordinator` contract and `QueueState` in `domain/download/src/main/java/com/pulldock/domain/download/queue/QueueCoordinator.kt`
+- [X] T026 [P] Define `TorrentEngine` contract and `TorrentResult`/`TorrentEvent` in `contracts/torrent-engine.md` → `domain/torrent/src/main/java/com/pulldock/domain/torrent/TorrentEngine.kt`
+- [X] T027 [P] Define `MediaExtractor`, `Provider`, `ExtractorResult`/`ExtractorEvent` in `domain/extractor/src/main/java/com/pulldock/domain/extractor/MediaExtractor.kt`
+- [X] T028 [P] Define use cases `AddTorrent`, `FetchTorrentMetadata`, `SelectTorrentFiles`, `StartDownload`, `PauseDownload`, `ResumeDownload`, `CancelDownload`, `RetryDownload`, `RemoveDownload`, `ObserveDownloadQueue`, `ObserveDownloadDetails`, `ResolveMediaUrl`, `FetchAvailableFormats`, `EnqueueDownload` in `domain/download/src/main/java/com/pulldock/domain/download/usecase/`
+- [X] T029 Add Room entities `DownloadTaskEntity`, `TorrentTaskEntity`, `ExtractorTaskEntity`, `RecoveryMarkerEntity` in `core/database/src/main/java/com/pulldock/core/database/entity/` with constraints/indexes from `data-model.md` §4.1
+- [X] T030 Add DAOs `DownloadTaskDao`, `TorrentTaskDao`, `ExtractorTaskDao`, `RecoveryMarkerDao` in `core/database/src/main/java/com/pulldock/core/database/dao/`
+- [X] T031 Add `PullDockDatabase` version 1 + `RoomModule` binding in `core/database/src/main/java/com/pulldock/core/database/RoomModule.kt`
+- [X] T032 Add migration framework: `Migrations` object and a test harness that opens a v(n-1) database fixture in `core/database/src/androidTest/`
+- [X] T033 Add `DownloadRepositoryImpl` and mappers in `data/download/src/main/java/com/pulldock/data/download/DownloadRepositoryImpl.kt`
+- [X] T034 Add `QueueCoordinatorImpl` skeleton (state flow, no engine calls yet) in `data/download/src/main/java/com/pulldock/data/download/QueueCoordinatorImpl.kt`
+- [X] T035 Add `DownloadStateMachineTest` covering every legal transition and rejecting illegal ones in `domain/download/src/test/java/com/pulldock/domain/download/state/DownloadStateMachineTest.kt`
+- [X] T036 Add domain unit tests for use cases with fake repositories in `domain/download/src/test/java/com/pulldock/domain/download/usecase/`
+- [X] T037 Add Room instrumentation tests for CRUD, indexes, and migration in `core/database/src/androidTest/java/com/pulldock/core/database/`
+- [X] T038 Verify Slice 1: `./gradlew :domain:download:testDebugUnitTest :core:database:testDebugUnitTest` pass
 
 **Checkpoint**: domain and persistence compile and test independently; repository contracts
 exist for every later slice.
@@ -92,23 +92,23 @@ exist for every later slice.
 **Purpose**: onboarding/consent, home, add-download, queue, details, settings, empty/loading/
 error states, accessibility. Serves **US1**, **US4**, **US10**.
 
-- [ ] T039 [US4] Add destructive-action safeguards (confirmation dialogs for remove/delete, undo for reversible actions) and `PdConfirmDialog` in `core/designsystem/src/main/java/com/pulldock/core/designsystem/components/PdConfirmDialog.kt`
-- [ ] T040 [P] [US1] Implement consent/onboarding screen and `OnboardingViewModel` in `feature/onboarding/src/main/java/com/pulldock/feature/onboarding/`
-- [ ] T041 [US1] Persist versioned acknowledgement in `core/datastore/src/main/java/com/pulldock/core/datastore/ConsentStore.kt` and re-prompt on version change
-- [ ] T042 [P] [US10] Add design-system components `PdButton`, `PdProgress`, `PdEmptyState`, `PdErrorState`, `PdLoadingState` in `core/designsystem/src/main/java/com/pulldock/core/designsystem/components/`
-- [ ] T043 [P] Implement `HomeScreen` + `HomeViewModel` (quick add, active summary, recent) in `feature/home/src/main/java/com/pulldock/feature/home/`
-- [ ] T044 [P] Implement `AddDownloadScreen` + `AddDownloadViewModel` (URL/magnet/torrent entry, validation) in `feature/add/src/main/java/com/pulldock/feature/add/`
-- [ ] T045 [P] [US4] Implement `QueueScreen` + `QueueViewModel` (list, filters, item controls) in `feature/queue/src/main/java/com/pulldock/feature/queue/`
-- [ ] T046 [P] Implement `DownloadDetailScreen` + `DownloadDetailViewModel` in `feature/download-detail/src/main/java/com/pulldock/feature/downloaddetail/`
-- [ ] T047 [P] Implement `SettingsScreen` + `SettingsViewModel` (groups: downloads, network, battery, torrent, storage, notifications, playback, appearance, privacy, legal, about) in `feature/settings/src/main/java/com/pulldock/feature/settings/`
-- [ ] T048 [P] Implement `LegalScreen` and third-party license list in `feature/legal/src/main/java/com/pulldock/feature/legal/`
-- [ ] T049 [US1] Wire consent gate into navigation in `app/src/main/java/com/pulldock/navigation/RootNavHost.kt` (download actions blocked until acknowledged)
-- [ ] T050 [US4] Add queue filter state and per-task action intents in `feature/queue/src/main/java/com/pulldock/feature/queue/QueueUiState.kt`
-- [ ] T051 [US10] Add accessibility semantics and 48dp targets across all Slice 2 screens in `feature/*/src/main/`
-- [ ] T052 Add adaptive navigation (bottom bar / rail / list-detail) using WindowSizeClass in `app/src/main/java/com/pulldock/navigation/MainScaffold.kt`
-- [ ] T053 Add Compose UI tests for loading/empty/error/offline states per screen in `feature/*/src/androidTest/`
-- [ ] T054 Add ViewModel unit tests for each Slice 2 feature in `feature/*/src/test/`
-- [ ] T055 Verify Slice 2: `./gradlew :app:connectedDebugAndroidTest` for the new screens
+- [X] T039 [US4] Add destructive-action safeguards (confirmation dialogs for remove/delete, undo for reversible actions) and `PdConfirmDialog` in `core/designsystem/src/main/java/com/pulldock/core/designsystem/components/PdConfirmDialog.kt`
+- [X] T040 [P] [US1] Implement consent/onboarding screen and `OnboardingViewModel` in `feature/onboarding/src/main/java/com/pulldock/feature/onboarding/`
+- [X] T041 [US1] Persist versioned acknowledgement in `core/datastore/src/main/java/com/pulldock/core/datastore/ConsentStore.kt` and re-prompt on version change
+- [X] T042 [P] [US10] Add design-system components `PdButton`, `PdProgress`, `PdEmptyState`, `PdErrorState`, `PdLoadingState` in `core/designsystem/src/main/java/com/pulldock/core/designsystem/components/`
+- [X] T043 [P] Implement `HomeScreen` + `HomeViewModel` (quick add, active summary, recent) in `feature/home/src/main/java/com/pulldock/feature/home/`
+- [X] T044 [P] Implement `AddDownloadScreen` + `AddDownloadViewModel` (URL/magnet/torrent entry, validation) in `feature/add/src/main/java/com/pulldock/feature/add/`
+- [X] T045 [P] [US4] Implement `QueueScreen` + `QueueViewModel` (list, filters, item controls) in `feature/queue/src/main/java/com/pulldock/feature/queue/`
+- [X] T046 [P] Implement `DownloadDetailScreen` + `DownloadDetailViewModel` in `feature/download-detail/src/main/java/com/pulldock/feature/downloaddetail/`
+- [X] T047 [P] Implement `SettingsScreen` + `SettingsViewModel` (groups: downloads, network, battery, torrent, storage, notifications, playback, appearance, privacy, legal, about) in `feature/settings/src/main/java/com/pulldock/feature/settings/`
+- [X] T048 [P] Implement `LegalScreen` and third-party license list in `feature/legal/src/main/java/com/pulldock/feature/legal/`
+- [X] T049 [US1] Wire consent gate into navigation in `app/src/main/java/com/pulldock/navigation/RootNavHost.kt` (download actions blocked until acknowledged)
+- [X] T050 [US4] Add queue filter state and per-task action intents in `feature/queue/src/main/java/com/pulldock/feature/queue/QueueUiState.kt`
+- [X] T051 [US10] Add accessibility semantics and 48dp targets across all Slice 2 screens in `feature/*/src/main/`
+- [X] T052 Add adaptive navigation (bottom bar / rail / list-detail) using WindowSizeClass in `app/src/main/java/com/pulldock/navigation/MainScaffold.kt`
+- [X] T053 Add Compose UI tests for loading/empty/error/offline states per screen in `feature/*/src/androidTest/`
+- [X] T054 Add ViewModel unit tests for each Slice 2 feature in `feature/*/src/test/`
+- [X] T055 Verify Slice 2: `./gradlew :app:connectedDebugAndroidTest` for the new screens
 
 **Checkpoint**: all core screens render states and are navigable with consent enforced.
 

@@ -1,6 +1,7 @@
 package com.pulldock.data.download
 
 import com.pulldock.domain.download.queue.QueueCoordinator
+import com.pulldock.domain.download.repository.AppearanceRepository
 import com.pulldock.domain.download.repository.ConsentRepository
 import com.pulldock.domain.download.repository.DownloadRepository
 import com.pulldock.domain.download.repository.NetworkPolicyRepository
@@ -30,4 +31,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindConsentRepository(impl: ConsentRepositoryImpl): ConsentRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAppearanceRepository(impl: AppearanceRepositoryImpl): AppearanceRepository
 }

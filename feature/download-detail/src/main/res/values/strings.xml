@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_loading">Loading download…</string>
+    <string name="detail_missing_title">Download not found</string>
+    <string name="detail_missing_body">This task was removed or never existed.</string>
+    <string name="detail_action_failed_title">Action unavailable</string>
+    <string name="detail_action_failed_body">That action is not available in the current state.</string>
+    <string name="detail_torrent_section">Torrent</string>
+    <string name="detail_torrent_files">%1$d files, %2$d selected. Full file selection arrives with the torrent transfer slice.</string>
+    <string name="detail_torrent_seeding">Seeding stops at ratio %1$.1f or the configured time limit — PullDock never seeds indefinitely.</string>
+    <string name="detail_remove_title">Remove this download?</string>
+    <string name="detail_remove_message">The task is removed from the queue. The downloaded file (if any) is kept — file deletion is a separate, confirmed action.</string>
+    <string name="detail_remove_confirm">Remove</string>
+    <string name="detail_remove_dismiss">Keep</string>
+    <string name="detail_action_pause">Pause</string>
+    <string name="detail_action_resume">Resume</string>
+    <string name="detail_action_retry">Retry</string>
+    <string name="detail_action_cancel">Cancel</string>
+    <string name="detail_action_remove">Remove</string>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_loading_title">Loading settings</string>
+    <string name="settings_loading_body">Reading your saved preferences.</string>
+
+    <string name="settings_section_network">Network</string>
+    <string name="settings_wifi_only">Wi-Fi only downloads</string>
+    <string name="settings_wifi_only_desc">New downloads wait until a non-metered network is available.</string>
+    <string name="settings_metered">Allow metered networks</string>
+    <string name="settings_metered_desc">Permit transfers on cellular or other cost-sensitive networks when Wi-Fi-only is off.</string>
+
+    <string name="settings_section_battery">Battery</string>
+    <string name="settings_battery_disabled">Battery threshold: disabled</string>
+    <string name="settings_battery_value">Pause active downloads below %1$d%% battery</string>
+
+    <string name="settings_section_downloads">Downloads</string>
+    <string name="settings_concurrency_value">Up to %1$d simultaneous downloads (torrents %2$d, media %3$d)</string>
+    <string name="settings_concurrency_default">Restore default limits</string>
+
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+
+    <string name="settings_section_privacy">Privacy</string>
+    <string name="settings_privacy_body">PullDock has no accounts, no analytics, and no upload path. Downloads stay on this device. Torrent transfers expose your IP address to peers — explained before first use.</string>
+
+    <string name="settings_section_legal">Legal</string>
+    <string name="settings_open_legal">Open legal &amp; licenses</string>
+</resources>

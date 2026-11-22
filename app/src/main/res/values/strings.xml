@@ -2,6 +2,8 @@
 <resources>
     <string name="app_name">PullDock</string>
 
+    <string name="root_loading">Loading PullDock…</string>
+
     <!-- Main navigation destinations -->
     <string name="destination_home">Home</string>
     <string name="destination_downloads">Downloads</string>

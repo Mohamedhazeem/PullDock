@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="add_title">Add download</string>
+    <string name="add_explanation">Paste a magnet link or an authorized media URL. Torrent files are added with the system file picker from the torrent review step.</string>
+    <string name="add_input_label">Magnet link or media URL</string>
+    <string name="add_input_hint">Detects magnet links and supported media URLs</string>
+    <string name="add_submit">Add</string>
+
+    <string name="add_unsupported_title">Unsupported input</string>
+    <string name="add_unsupported_body">Enter a magnet link (magnet:?xt=urn:btih:…) or an http(s) media URL. PullDock does not search or index content.</string>
+
+    <string name="add_error_malformed_magnet">This magnet link looks malformed. Check that it contains a btih infohash.</string>
+    <string name="add_error_unsupported_scheme">Only magnet links and http(s) media URLs are supported.</string>
+    <string name="add_error_unsupported_provider">This media provider is not supported. PullDock will not attempt to bypass it.</string>
+    <string name="add_error_invalid_input">This input is not a valid download source.</string>
+    <string name="add_error_duplicate">This exact source is already in your queue.</string>
+    <string name="add_error_torrent">The torrent could not be added. Check the source and try again.</string>
+    <string name="add_error_extractor">The media could not be resolved right now. The provider may be unavailable or the URL unsupported.</string>
+    <string name="add_error_network">You appear to be offline. Reconnect and try again.</string>
+    <string name="add_error_generic">Something went wrong. Try again.</string>
+    <string name="add_no_formats_title">No downloadable formats</string>
+    <string name="add_no_formats_body">The source resolved but exposes no downloadable formats.</string>
+    <string name="add_format_audio_only">Audio only</string>
+    <string name="add_format_merge">merge required</string>
+    <string name="add_download_selected">Download selected format</string>
+    <string name="add_resolve_failed_title">Could not resolve this media</string>
+    <string name="add_retry">Try again</string>
+    <string name="add_error_runtime">The extraction runtime on this device is incompatible. Provider status shows details in Settings.</string>
+</resources>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="queue_title">Downloads</string>
+    <string name="queue_empty_title">Your queue is empty</string>
+    <string name="queue_empty_body">Torrent and media downloads you add appear here with live status, progress, and controls.</string>
+
+    <string name="queue_filter_all">All</string>
+    <string name="queue_filter_active">Active</string>
+    <string name="queue_filter_queued">Queued</string>
+    <string name="queue_filter_paused">Paused</string>
+    <string name="queue_filter_completed">Completed</string>
+    <string name="queue_filter_failed">Failed</string>
+
+    <string name="queue_action_pause">Pause</string>
+    <string name="queue_action_resume">Resume</string>
+    <string name="queue_action_retry">Retry</string>
+    <string name="queue_action_cancel">Cancel</string>
+    <string name="queue_action_remove">Remove</string>
+
+    <string name="queue_remove_title">Remove this download?</string>
+    <string name="queue_remove_message">The task is removed from the queue. The downloaded file (if any) is kept — deleting files is a separate action in the detail screen.</string>
+    <string name="queue_remove_confirm">Remove</string>
+    <string name="queue_remove_dismiss">Keep</string>
+
+    <string name="queue_error_action">That action is not available in the current state.</string>
+
+    <string name="queue_detail_none_title">Select a download</string>
+    <string name="queue_detail_none_body">Choose an item from the list to see its progress here.</string>
+</resources>

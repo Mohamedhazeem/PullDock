@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">Home</string>
+    <string name="home_add">Add download</string>
+    <string name="home_add_description">Add a torrent or authorized media download</string>
+    <string name="home_active_label">Active</string>
+    <string name="home_queued_label">Queued</string>
+    <string name="home_empty_title">No downloads yet</string>
+    <string name="home_empty_body">Use “Add download” to add a magnet link, a .torrent file, or an authorized media URL. Your recent transfers appear here.</string>
+</resources>

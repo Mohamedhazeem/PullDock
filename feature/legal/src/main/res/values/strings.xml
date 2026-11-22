@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="legal_title">Legal &amp; licenses</string>
+
+    <string name="legal_privacy_title">Privacy</string>
+    <string name="legal_privacy_body">PullDock is local-first. It has no accounts, no analytics, no advertising, and no upload path. It never reads your clipboard silently. Torrent transfers connect directly to peers, which exposes your IP address to those peers during transfer.</string>
+
+    <string name="legal_distribution_title">Distribution</string>
+    <string name="legal_distribution_body">PullDock v1 is distributed privately (sideloaded). Store eligibility is an open decision pending a completed policy assessment — no claims are made either way. PullDock is not a content search tool and is not marketed as enabling unauthorized downloads.</string>
+
+    <string name="legal_rights_title">Content responsibility</string>
+    <string name="legal_rights_body">You are responsible for downloading only content you have the right to download. PullDock does not bypass DRM, paywalls, authentication, private-account restrictions, or age restrictions, and never removes watermarks.</string>
+
+    <string name="legal_licenses_title">Third-party licenses</string>
+    <string name="legal_licenses_body">PullDock is built on open-source software, including the Kotlin standard library and coroutines (Apache 2.0), Jetpack Compose and the AndroidX libraries (Apache 2.0), Hilt/Dagger (Apache 2.0), Room (Apache 2.0), DataStore (Apache 2.0), and Media3/ExoPlayer (Apache 2.0). The complete generated report ships with the release.</string>
+
+    <string name="legal_extraction_title">Media extraction</string>
+    <string name="legal_extraction_body">Media downloads use a bundled, pinned open-source extraction runtime distributed inside signed application releases only. No executable code is downloaded or loaded from remote servers at runtime.</string>
+</resources>

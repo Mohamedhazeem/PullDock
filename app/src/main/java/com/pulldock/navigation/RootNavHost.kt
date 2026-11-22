@@ -1,40 +1,123 @@
 package com.pulldock.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.pulldock.R
+import com.pulldock.core.designsystem.components.PdLoadingState
+import com.pulldock.domain.download.repository.ConsentState
+import com.pulldock.domain.download.usecase.ObserveConsent
+import com.pulldock.feature.add.AddDownloadScreen
+import com.pulldock.feature.downloaddetail.DownloadDetailScreen
+import com.pulldock.feature.home.HomeScreen
+import com.pulldock.feature.legal.LegalScreen
+import com.pulldock.feature.onboarding.OnboardingScreen
+import com.pulldock.feature.queue.QueueScreen
+import com.pulldock.feature.settings.SettingsScreen
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 /**
- * Root navigation graph (plan.md §Navigation architecture). Slice 0 registers the four
- * primary shell destinations; the onboarding/consent gate (T049), the add-download
- * modal flow, download detail, player, provider status, and legal screens register
- * here as their slices land, with feature modules contributing their destinations.
+ * Root navigation graph (T049, plan.md §Navigation architecture). The consent gate
+ * (US1) decides the start destination: download actions are unreachable until the
+ * current legal version is acknowledged (US1 scenario 2). A version bump re-prompts
+ * on the next launch.
  */
 @Composable
-fun RootNavHost(modifier: Modifier = Modifier) {
+fun RootNavHost(modifier: Modifier = Modifier, useRail: Boolean) {
     val navController: NavHostController = rememberNavController()
+    val rootViewModel: RootViewModel = hiltViewModel()
+    val consent by rootViewModel.consent.collectAsStateWithLifecycle()
 
-    MainScaffold(navController = navController) { contentModifier ->
+    val resolved = consent
+    if (resolved == null) {
+        PdLoadingState(label = stringResource(R.string.root_loading))
+        return
+    }
+
+    MainScaffold(navController = navController, useRail = useRail) { contentModifier ->
         NavHost(
             navController = navController,
-            startDestination = PullDockDestination.Primary.HOME.route,
+            startDestination = if (resolved.isAcknowledged) {
+                PullDockDestination.Primary.HOME.route
+            } else {
+                Routes.ONBOARDING
+            },
             modifier = modifier.then(contentModifier),
         ) {
+            composable(Routes.ONBOARDING) {
+                OnboardingScreen(
+                    onAcknowledged = {
+                        navController.navigate(PullDockDestination.Primary.HOME.route) {
+                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        }
+                    },
+                )
+            }
             composable(PullDockDestination.Primary.HOME.route) {
-                ShellHomeContent()
+                HomeScreen(
+                    onAddDownload = { navController.navigate(Routes.ADD) },
+                    onOpenTask = { id -> navController.navigate(Routes.download(id)) },
+                )
             }
             composable(PullDockDestination.Primary.DOWNLOADS.route) {
-                ShellDownloadsContent()
+                QueueScreen(onOpenTask = { id -> navController.navigate(Routes.download(id)) })
             }
             composable(PullDockDestination.Primary.LIBRARY.route) {
-                ShellLibraryContent()
+                // Library ships with Slice 6 (T156); an honest empty state until then.
+                ShellEmptyState(
+                    title = stringResource(R.string.shell_library_title),
+                    message = stringResource(R.string.shell_library_empty),
+                )
             }
             composable(PullDockDestination.Primary.SETTINGS.route) {
-                ShellSettingsContent()
+                SettingsScreen(onOpenLegal = { navController.navigate(Routes.LEGAL) })
+            }
+            composable(Routes.ADD) {
+                AddDownloadScreen(onClose = navController::navigateUp)
+            }
+            composable(Routes.LEGAL) {
+                LegalScreen()
+            }
+            composable(
+                route = Routes.DOWNLOAD_DETAIL,
+                arguments = listOf(navArgument("taskId") { type = NavType.StringType }),
+            ) {
+                DownloadDetailScreen(onNavigateBack = navController::navigateUp)
             }
         }
     }
+}
+
+/** Route constants and builders; route strings are deep-link stable (plan.md). */
+object Routes {
+    const val ONBOARDING = "onboarding"
+    const val ADD = "add"
+    const val LEGAL = "legal"
+    const val DOWNLOAD_DETAIL = "download/{taskId}"
+
+    fun download(taskId: String): String = "download/$taskId"
+}
+
+/** Root-level consent observation for the navigation gate (US1). */
+@HiltViewModel
+class RootViewModel @Inject constructor(observeConsent: ObserveConsent) : ViewModel() {
+    val consent: StateFlow<ConsentState?> = observeConsent()
+        .map<ConsentState, ConsentState?> { it }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 }

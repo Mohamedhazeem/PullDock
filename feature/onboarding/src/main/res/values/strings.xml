@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_title">Welcome to PullDock</string>
+    <string name="onboarding_loading">Preparing consent information…</string>
+
+    <string name="onboarding_section_capabilities_title">What PullDock does</string>
+    <string name="onboarding_section_capabilities_body">PullDock downloads BitTorrent transfers and authorized media from supported providers, manages both in one queue, and plays finished media in-app. It does not search for or index content.</string>
+
+    <string name="onboarding_section_local_first_title">Local-first by design</string>
+    <string name="onboarding_section_local_first_body">Everything stays on this device: your downloads, your library, your settings. PullDock has no accounts, no analytics, and no upload path.</string>
+
+    <string name="onboarding_section_torrent_privacy_title">Torrent network behavior</string>
+    <string name="onboarding_section_torrent_privacy_body">BitTorrent transfers connect directly to other peers. During a torrent transfer, your IP address is visible to those peers — this is how the protocol works and cannot be avoided while transferring.</string>
+
+    <string name="onboarding_section_rights_title">Your responsibility</string>
+    <string name="onboarding_section_rights_body">You are responsible for downloading only content you have the right to download. PullDock does not bypass DRM, paywalls, login walls, or private accounts, and it will not attempt to.</string>
+
+    <string name="onboarding_section_permissions_title">Permissions we ask for</string>
+    <string name="onboarding_section_permissions_body">Notifications: progress and control of running downloads (Android 13+, optional — the app works without it). File access is handled through the system file picker and scoped storage only. No clipboard reading, no location, no contacts.</string>
+
+    <string name="onboarding_acknowledge">I understand — continue</string>
+    <string name="onboarding_acknowledge_description">Acknowledge the PullDock capabilities and privacy explanation to continue</string>
+</resources>
