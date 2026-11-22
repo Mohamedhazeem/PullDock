@@ -5,10 +5,71 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # assembles every module (app + libraries) so the whole graph is compiled.
+      - name: Build all modules (debug)
+        run: ./gradlew assembleDebug
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Android module unit tests + pure-Kotlin (JVM) module tests.
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest :core:common:test :core:model:test
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run Android lint (debug variants)
+        run: ./gradlew :app:lintDebug
+
+  abi-packaging:
+    # FR-076: PullDock ships 64-bit only (arm64-v8a, x86_64). 32-bit ABIs must never
+    # be packaged. This job fails the build if any 32-bit native library appears.
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,8 +86,23 @@ jobs:
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug
 
-      - name: Run unit tests
-        run: ./gradlew :app:testDebugUnitTest
+      - name: Verify 64-bit-only ABI packaging
+        run: scripts/ci/check-apk-abis.sh app/build/outputs/apk/debug
 
-      - name: Run lint
-        run: ./gradlew :app:lintDebug
+  secret-scan:
+    # Lightweight pattern scan over tracked files; supplement with a dedicated scanner
+    # (e.g. gitleaks) when one is adopted in Slice 7 (T176).
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan tracked files for secret patterns
+        run: scripts/ci/secret-scan.sh
+
+  # Planned quality gates (T176, Slice 7) activate here once their tooling lands in
+  # the repository — they are intentionally absent rather than fake-green:
+  #   - static analysis (Detekt/custom lint rules)
+  #   - formatting checks (ktlint/spotless)
+  #   - dependency verification report (gradle/verification-metadata.xml)
+  #   - license report
