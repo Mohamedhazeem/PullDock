@@ -235,19 +235,23 @@ independently, updates never execute remote code.
 **Purpose**: storage abstraction, MediaStore/SAF, finalization, library, Media3, streaming.
 Serves **US5**, **US6**, **US7**.
 
-- [ ] T150 [P] Implement `StorageRepository` (SAF/MediaStore/app-specific) in `core/storage/src/main/java/com/pulldock/core/storage/StorageRepositoryImpl.kt`
-- [ ] T151 Implement `FileFinalizer` with temp → verify → atomic publish in `core/storage/src/main/java/com/pulldock/core/storage/FileFinalizer.kt`
-- [ ] T152 Implement filename sanitization and `name (n).ext` collision strategy in `core/storage/src/main/java/com/pulldock/core/storage/FilenameSanitizer.kt`
-- [ ] T153 Implement path-traversal/reserved-name/unicode-collision rejection in `core/storage/src/main/java/com/pulldock/core/storage/PathValidator.kt`
-- [ ] T154 Implement MediaStore insertion and interrupted-write handling in `core/storage/src/main/java/com/pulldock/core/storage/MediaStoreWriter.kt`
-- [ ] T155 Implement `MediaLibraryRepository` and reconciliation in `data/download/src/main/java/com/pulldock/data/download/MediaLibraryRepositoryImpl.kt`
+- [X] T150 [P] Implement `StorageRepository` (SAF/MediaStore/app-specific) in `core/storage/src/main/java/com/pulldock/core/storage/StorageRepositoryImpl.kt`
+- [X] T151 Implement `FileFinalizer` with temp → verify → atomic publish in `core/storage/src/main/java/com/pulldock/core/storage/FileFinalizer.kt`
+- [X] T152 Implement filename sanitization and `name (n).ext` collision strategy in `core/storage/src/main/java/com/pulldock/core/storage/FilenameSanitizer.kt`
+- [X] T153 Implement path-traversal/reserved-name/unicode-collision rejection in `core/storage/src/main/java/com/pulldock/core/storage/PathValidator.kt`
+- [X] T154 Implement MediaStore insertion and interrupted-write handling in `core/storage/src/main/java/com/pulldock/core/storage/MediaStoreWriter.kt`
+- [X] T155 Implement `MediaLibraryRepository` and reconciliation in `data/download/src/main/java/com/pulldock/data/download/MediaLibraryRepositoryImpl.kt`
 - [ ] T156 [US5] Implement `LibraryScreen` + `LibraryViewModel` (sections, search, sort, filter) in `feature/library/src/main/java/com/pulldock/feature/library/`
+      *(Deferred open: the Library UI slice (with thumbnails T164 and reconciliation UI) is the remaining Slice 6 surface; the storage/finalization/streaming cores below are done and tested.)*
 - [ ] T157 [US5] Implement `PlayerScreen` + `PlayerViewModel` with Media3 in `feature/player/src/main/java/com/pulldock/feature/player/`
+      *(Deferred open with T158/T160/T165: player UI + position persistence + bridge lifecycle owner + track selection.)*
 - [ ] T158 Implement playback position persistence (throttled) in `feature/player/src/main/java/com/pulldock/feature/player/PlaybackPositionStore.kt`
-- [ ] T159 [US6] Implement loopback streaming bridge (token, byte-range, traversal defense) in `data/torrent/src/main/java/com/pulldock/data/torrent/StreamingBridge.kt`
+- [X] T159 [US6] Implement loopback streaming bridge (token, byte-range, traversal defense) in `data/torrent/src/main/java/com/pulldock/data/torrent/StreamingBridge.kt`
 - [ ] T160 Implement streaming lifecycle ownership in `feature/player/src/main/java/com/pulldock/feature/player/StreamingBridgeOwner.kt`
-- [ ] T161 Add storage tests: failed finalize never publishes incomplete output, collision strategy, traversal rejection in `core/storage/src/test/`
+- [X] T161 Add storage tests: failed finalize never publishes incomplete output, collision strategy, traversal rejection in `core/storage/src/test/`
+      *(8 tests green: sanitizer/traversal/confine/collision/finalizer no-partial-publish/never-overwrite.)*
 - [ ] T162 Add library reconciliation and playback tests in `data/download/src/test/` and `feature/player/src/test/`
+      *(Deferred open with the library/player surface.)*
 - [ ] T163 Verify Slice 6 on device: complete a download, library entry, playback resume, torrent streaming (record actual results)
 - [ ] T164 Implement async thumbnail loading with a size cache and cancel-on-recycle in `feature/library/src/main/java/com/pulldock/feature/library/ThumbnailLoader.kt`
 - [ ] T165 Implement audio/subtitle track selection when the media exposes more than one track in `feature/player/src/main/java/com/pulldock/feature/player/TrackSelection.kt` (hide the control otherwise)
