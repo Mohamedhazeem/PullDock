@@ -21,11 +21,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Settings UI state (T047): only controls with real backends appear. */
+/** Settings UI state (T047/T091): only controls with real backends appear. */
 data class SettingsUiState(
     val policy: DownloadPolicy? = null,
     val theme: AppearanceTheme = AppearanceTheme.SYSTEM,
     val savingPolicy: Boolean = false,
+    /** Per-provider extractor health (US8); keys follow ProviderId order. */
+    val providers: Map<com.pulldock.core.model.ProviderId, com.pulldock.domain.extractor.model.ProviderHealth> = emptyMap(),
 )
 
 /** One-shot settings events. */
@@ -42,6 +44,7 @@ sealed interface SettingsEvent {
 class SettingsViewModel @Inject constructor(
     private val policyRepository: NetworkPolicyRepository,
     private val appearanceRepository: com.pulldock.domain.download.repository.AppearanceRepository,
+    private val providerHealth: com.pulldock.domain.extractor.usecase.ObserveProviderHealth,
 ) : ViewModel() {
 
     private val saving = MutableStateFlow(false)
@@ -51,7 +54,12 @@ class SettingsViewModel @Inject constructor(
         appearanceRepository.observeTheme(),
         saving,
     ) { policy, theme, savingPolicy ->
-        SettingsUiState(policy = policy, theme = theme, savingPolicy = savingPolicy)
+        SettingsUiState(
+            policy = policy,
+            theme = theme,
+            savingPolicy = savingPolicy,
+            providers = providerHealth.all(),
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     private val _events = MutableSharedFlow<SettingsEvent>(extraBufferCapacity = 1)

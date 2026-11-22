@@ -126,6 +126,27 @@ fun SettingsScreen(
             }
         }
 
+        Section(stringResource(R.string.settings_section_providers)) {
+            if (state.providers.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.settings_providers_unavailable),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                state.providers.forEach { (id, health) ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = id.name.lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = health.state.name.lowercase().replace('_', ' '),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+
         Section(stringResource(R.string.settings_section_privacy)) {
             Text(
                 text = stringResource(R.string.settings_privacy_body),

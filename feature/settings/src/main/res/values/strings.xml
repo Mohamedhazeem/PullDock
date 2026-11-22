@@ -28,4 +28,6 @@
 
     <string name="settings_section_legal">Legal</string>
     <string name="settings_open_legal">Open legal &amp; licenses</string>
+    <string name="settings_section_providers">Media providers</string>
+    <string name="settings_providers_unavailable">Provider status is unavailable right now.</string>
 </resources>

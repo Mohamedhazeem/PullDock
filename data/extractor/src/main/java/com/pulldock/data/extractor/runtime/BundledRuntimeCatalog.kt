@@ -78,21 +78,21 @@ object BundledRuntimeCatalog {
     val providerPatterns: Map<ProviderId, List<Regex>> = mapOf(
         ProviderId.YOUTUBE to listOf(
             Regex("""^https?://(www\.|m\.)?youtube\.com/watch\?.*""", RegexOption.IGNORE_CASE),
-            Regex("""^https?://(www\.)?youtu\.be/[^/?&]+""", RegexOption.IGNORE_CASE),
-            Regex("""^https?://(www\.|m\.)?youtube\.com/shorts/[^/?&]+""", RegexOption.IGNORE_CASE),
+            Regex("""^https?://(www\.)?youtu\.be/[^/?&]+.*""", RegexOption.IGNORE_CASE),
+            Regex("""^https?://(www\.|m\.)?youtube\.com/shorts/[^/?&]+.*""", RegexOption.IGNORE_CASE),
         ),
         ProviderId.X to listOf(
             Regex("""^https?://(www\.)?(twitter|x)\.com/[^/]+/status/[^/?&]+""", RegexOption.IGNORE_CASE),
         ),
         ProviderId.INSTAGRAM to listOf(
-            Regex("""^https?://(www\.)?instagram\.com/(p|reel|tv)/[^/?&]+""", RegexOption.IGNORE_CASE),
+            Regex("""^https?://(www\.)?instagram\.com/(p|reel|tv)/[^/?&]+.*""", RegexOption.IGNORE_CASE),
         ),
         ProviderId.FACEBOOK to listOf(
-            Regex("""^https?://(www\.|m\.)?facebook\.com/[^/]+/videos/[^/?&]+""", RegexOption.IGNORE_CASE),
-            Regex("""^https?://(www\.|m\.)?fb\.watch/[^/?&]+""", RegexOption.IGNORE_CASE),
+            Regex("""^https?://(www\.|m\.)?facebook\.com/[^/]+/videos/[^/?&]+.*""", RegexOption.IGNORE_CASE),
+            Regex("""^https?://(www\.|m\.)?fb\.watch/[^/?&]+.*""", RegexOption.IGNORE_CASE),
         ),
         ProviderId.TIKTOK to listOf(
-            Regex("""^https?://(www\.)?tiktok\.com/@[^/]+/video/[^/?&]+""", RegexOption.IGNORE_CASE),
+            Regex("""^https?://(www\.)?tiktok\.com/@[^/]+/video/[^/?&]+.*""", RegexOption.IGNORE_CASE),
         ),
     )
 

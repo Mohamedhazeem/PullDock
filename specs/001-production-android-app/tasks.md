@@ -151,19 +151,19 @@ recovered.
 **HIGH RISK** — start with the runtime feasibility PoC.
 
 - [ ] T080 Run the extractor runtime feasibility PoC: Chaquopy CPython 3.13 + pinned yt-dlp on arm64-v8a/x86_64, verify resolve/download; record in `research.md` (resolves D2/D3)
-- [ ] T081 [P] Add `YtDlpRuntime` bootstrap and teardown in `engines/extractor-ytdlp/src/main/java/com/pulldock/engines/extractor/YtDlpRuntime.kt`
-- [ ] T082 [P] Add `FfmpegProcess`/`Ffprobe` with argument-array invocation, bounded output, exit codes in `engines/media-ffmpeg/src/main/java/com/pulldock/engines/ffmpeg/`
-- [ ] T083 Add `ExtractorRuntimeInfo` model and `ExtractorRuntimeValidator` in `data/extractor/src/main/java/com/pulldock/data/extractor/RuntimeValidator.kt`
-- [ ] T084 Implement provider registry and `Provider` implementations for YouTube, X, Instagram, Facebook, TikTok in `data/extractor/src/main/java/com/pulldock/data/extractor/provider/`
-- [ ] T085 Implement URL recognition and `UNSUPPORTED_PROVIDER` mapping in `data/extractor/src/main/java/com/pulldock/data/extractor/UrlValidator.kt`
-- [ ] T086 Implement `resolve` + `availableFormats` returning typed `MediaDescriptor`/`MediaFormat` in `data/extractor/src/main/java/com/pulldock/data/extractor/MediaExtractorImpl.kt`
-- [ ] T087 [US3] Implement format selection UI in `feature/add/src/main/java/com/pulldock/feature/add/FormatSelection.kt`
-- [ ] T088 Implement download to temp → verify → merge (FFmpeg) → finalize in `data/extractor/src/main/java/com/pulldock/data/extractor/DownloadPipeline.kt`
-- [ ] T089 Implement provider error mapping (unsupported, provider change, rate limit, merge failed) in `data/extractor/src/main/java/com/pulldock/data/extractor/ErrorMapper.kt`
-- [ ] T090 Implement cancellation, timeout, bounded retry, and exponential backoff with jitter in `data/extractor/src/main/java/com/pulldock/data/extractor/RetryPolicy.kt`
-- [ ] T091 [US8] Implement `ProviderHealth` states and Settings provider-status UI in `feature/settings/src/main/java/com/pulldock/feature/settings/ProviderStatus.kt`
-- [ ] T092 Add extractor runtime tests: compatible/mismatched combination, missing JS runtime, FFmpeg missing, provider failure isolation in `data/extractor/src/test/`
-- [ ] T093 Add provider regression tests with authorized fixtures (no live-only dependency) in `data/extractor/src/test/java/com/pulldock/data/extractor/provider/`
+- [X] T081 [P] Add `YtDlpRuntime` bootstrap and teardown in `engines/extractor-ytdlp/src/main/java/com/pulldock/engines/extractor/YtDlpRuntime.kt`
+- [X] T082 [P] Add `FfmpegProcess`/`Ffprobe` with argument-array invocation, bounded output, exit codes in `engines/media-ffmpeg/src/main/java/com/pulldock/engines/ffmpeg/`
+- [X] T083 Add `ExtractorRuntimeInfo` model and `ExtractorRuntimeValidator` in `data/extractor/src/main/java/com/pulldock/data/extractor/RuntimeValidator.kt`
+- [X] T084 Implement provider registry and `Provider` implementations for YouTube, X, Instagram, Facebook, TikTok in `data/extractor/src/main/java/com/pulldock/data/extractor/provider/`
+- [X] T085 Implement URL recognition and `UNSUPPORTED_PROVIDER` mapping in `data/extractor/src/main/java/com/pulldock/data/extractor/UrlValidator.kt`
+- [X] T086 Implement `resolve` + `availableFormats` returning typed `MediaDescriptor`/`MediaFormat` in `data/extractor/src/main/java/com/pulldock/data/extractor/MediaExtractorImpl.kt`
+- [X] T087 [US3] Implement format selection UI in `feature/add/src/main/java/com/pulldock/feature/add/FormatSelection.kt`
+- [X] T088 Implement download to temp → verify → merge (FFmpeg) → finalize in `data/extractor/src/main/java/com/pulldock/data/extractor/DownloadPipeline.kt`
+- [X] T089 Implement provider error mapping (unsupported, provider change, rate limit, merge failed) in `data/extractor/src/main/java/com/pulldock/data/extractor/ErrorMapper.kt`
+- [X] T090 Implement cancellation, timeout, bounded retry, and exponential backoff with jitter in `data/extractor/src/main/java/com/pulldock/data/extractor/RetryPolicy.kt`
+- [X] T091 [US8] Implement `ProviderHealth` states and Settings provider-status UI in `feature/settings/src/main/java/com/pulldock/feature/settings/ProviderStatus.kt`
+- [X] T092 Add extractor runtime tests: compatible/mismatched combination, missing JS runtime, FFmpeg missing, provider failure isolation in `data/extractor/src/test/`
+- [X] T093 Add provider regression tests with authorized fixtures (no live-only dependency) in `data/extractor/src/test/java/com/pulldock/data/extractor/provider/`
 - [ ] T094 Verify Slice 4: resolve an authorized fixture URL, select a format, download, merge, play (record actual results)
 
 **Checkpoint**: a supported authorized URL resolves, downloads, merges, and plays; provider
