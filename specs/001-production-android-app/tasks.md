@@ -31,25 +31,27 @@ skeletons, CI foundation.
 
 **⚠️ BLOCKING**: Slices 1–7 depend on this phase.
 
-- [ ] T001 Create Gradle module skeleton and include all modules in `settings.gradle.kts` (one module dir + `build.gradle.kts` per module; no empty modules left unused)
-- [ ] T002 [P] Add pure-Kotlin module config and `AppDispatchers` (`Dispatchers.Io/Default/Main`) in `core/common/src/main/java/com/pulldock/core/common/dispatchers/AppDispatchers.kt`
-- [ ] T003 [P] Add shared primitives `DownloadType`, `DownloadState`, `DownloadError`, `ProviderId` in `core/model/src/main/java/com/pulldock/core/model/`
-- [ ] T004 [P] Add `PullDockTheme`, token object, and color/typography/spacing in `core/designsystem/src/main/java/com/pulldock/core/designsystem/`
-- [ ] T005 [P] Add Room + KSP config and `PullDockDatabase` skeleton in `core/database/build.gradle.kts` and `core/database/src/main/java/com/pulldock/core/database/PullDockDatabase.kt`
-- [ ] T006 [P] Add DataStore config and `SettingsDataStore` skeleton in `core/datastore/src/main/java/com/pulldock/core/datastore/SettingsDataStore.kt`
-- [ ] T007 [P] Add SAF/MediaStore dependencies and `StorageRepository` interface in `core/storage/src/main/java/com/pulldock/core/storage/`
-- [ ] T008 [P] Add connectivity + UIDT dependencies and `ConnectivityMonitor` interface in `core/network/src/main/java/com/pulldock/core/network/`
-- [ ] T009 [P] Add pure-Kotlin `build.gradle.kts` for `domain/download`, `domain/torrent`, `domain/extractor` with no Android dependencies
-- [ ] T010 [P] Add `build.gradle.kts` for `data/download`, `data/torrent`, `data/extractor` depending only on `:domain:*` and `:core:*`
-- [ ] T011 [P] Add `build.gradle.kts` for `engines/torrent-libtorrent`, `engines/extractor-ytdlp`, `engines/media-ffmpeg`
-- [ ] T012 [P] Add `build.gradle.kts` for `feature/onboarding`, `feature/home`, `feature:add`, `feature:queue`, `feature:download-detail`, `feature:library`, `feature:player`, `feature:settings`, `feature/legal`
-- [ ] T013 Wire Hilt in `app/build.gradle.kts` and verify the dependency graph with `./gradlew :app:assembleDebug`
-- [ ] T014 [P] Add navigation shell: `RootNavHost`, typed routes, `MainScaffold` in `app/src/main/java/com/pulldock/navigation/`
-- [ ] T015 [P] Add light/dark theme wiring in `core/designsystem/src/main/java/com/pulldock/core/designsystem/theme/PullDockTheme.kt`
-- [ ] T016 [P] Add `proguard-rules.pro` entries for Compose, Hilt, Room, and native libs in `app/proguard-rules.pro`
-- [ ] T017 Add CI jobs (build, unit test, lint, static analysis, format, dependency verification, license report, ABI packaging check, secret scan) in `.github/workflows/ci.yml`
-- [ ] T018 Verify Slice 0: `./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest` all succeed
-- [ ] T019 [P] Configure 64-bit ABI packaging (`ndk.abiFilters` arm64-v8a and x86_64, ABI splits) in `app/build.gradle.kts` and verify no 32-bit APK is produced (re-run T018 after this task)
+- [X] T001 Create Gradle module skeleton and include all modules in `settings.gradle.kts` (one module dir + `build.gradle.kts` per module; no empty modules left unused)
+- [X] T002 [P] Add pure-Kotlin module config and `AppDispatchers` (`Dispatchers.Io/Default/Main`) in `core/common/src/main/java/com/pulldock/core/common/dispatchers/AppDispatchers.kt`
+- [X] T003 [P] Add shared primitives `DownloadType`, `DownloadState`, `DownloadError`, `ProviderId` in `core/model/src/main/java/com/pulldock/core/model/`
+- [X] T004 [P] Add `PullDockTheme`, token object, and color/typography/spacing in `core/designsystem/src/main/java/com/pulldock/core/designsystem/`
+- [X] T005 [P] Add Room + KSP config and `PullDockDatabase` skeleton in `core/database/build.gradle.kts` and `core/database/src/main/java/com/pulldock/core/database/PullDockDatabase.kt`
+- [X] T006 [P] Add DataStore config and `SettingsDataStore` skeleton in `core/datastore/src/main/java/com/pulldock/core/datastore/SettingsDataStore.kt`
+- [X] T007 [P] Add SAF/MediaStore dependencies and `StorageRepository` interface in `core/storage/src/main/java/com/pulldock/core/storage/`
+- [X] T008 [P] Add connectivity + UIDT dependencies and `ConnectivityMonitor` interface in `core/network/src/main/java/com/pulldock/core/network/`
+- [X] T009 [P] Add pure-Kotlin `build.gradle.kts` for `domain/download`, `domain/torrent`, `domain/extractor` with no Android dependencies
+- [X] T010 [P] Add `build.gradle.kts` for `data/download`, `data/torrent`, `data/extractor` depending only on `:domain:*` and `:core:*`
+- [X] T011 [P] Add `build.gradle.kts` for `engines/torrent-libtorrent`, `engines/extractor-ytdlp`, `engines/media-ffmpeg`
+- [X] T012 [P] Add `build.gradle.kts` for `feature/onboarding`, `feature/home`, `feature:add`, `feature:queue`, `feature:download-detail`, `feature:library`, `feature:player`, `feature:settings`, `feature/legal`
+- [X] T013 Wire Hilt in `app/build.gradle.kts` and verify the dependency graph with `./gradlew :app:assembleDebug`
+- [X] T014 [P] Add navigation shell: `RootNavHost`, typed routes, `MainScaffold` in `app/src/main/java/com/pulldock/navigation/`
+- [X] T015 [P] Add light/dark theme wiring in `core/designsystem/src/main/java/com/pulldock/core/designsystem/theme/PullDockTheme.kt`
+- [X] T016 [P] Add `proguard-rules.pro` entries for Compose, Hilt, Room, and native libs in `app/proguard-rules.pro`
+- [X] T017 Add CI jobs (build, unit test, lint, static analysis, format, dependency verification, license report, ABI packaging check, secret scan) in `.github/workflows/ci.yml`
+      *(Implemented: build, unit tests, lint, ABI packaging check, secret scan. Static analysis, formatting, dependency verification, and license report jobs are intentionally absent — their tooling is not configured in the repo (AGENTS.md §13); T176 activates those gates in Slice 7. CI documents the planned activation rather than shipping fake-green jobs.)*
+- [X] T018 Verify Slice 0: `./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest` all succeed
+      *(Executed 2026-11-22: all three commands BUILD SUCCESSFUL; `assembleDebug` re-run after T019 covers the whole 25-module graph; ABI check script verified universal + arm64-v8a + x86_64 APKs, no 32-bit ABIs; unit tests 5/5 passing.)*
+- [X] T019 [P] Configure 64-bit ABI packaging (`ndk.abiFilters` arm64-v8a and x86_64, ABI splits) in `app/build.gradle.kts` and verify no 32-bit APK is produced (re-run T018 after this task)
 
 **Checkpoint**: foundation builds, Hilt graph resolves, app launches to the navigation shell.
 

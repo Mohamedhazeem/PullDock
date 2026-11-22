@@ -39,54 +39,89 @@ conventions and workflow detail, but it MUST NOT contradict the constitution.
 
 ## 2. Repository Overview
 
-Inspected 2026-11-22. The repository contains a Spec Kit scaffold and an initial Android
-application module.
+Inspected 2026-11-22. The repository contains a Spec Kit scaffold and a 25-module Android
+application scaffold (Slice 0). See `specs/001-production-android-app/plan.md` §Module
+Design and ADR-0008 for the module-boundary rules; the summary below is the operative map.
 
 ### 2.1 Structure
 
 ```
 .
-├── app/                           # application module (com.pulldock)
-│   ├── build.gradle.kts
-│   ├── proguard-rules.pro
+├── app/                           # composition root (com.pulldock): MainActivity,
+│   │                              # navigation shell (RootNavHost, MainScaffold, routes),
+│   │                              # manifest, resources, Hilt graph, 64-bit ABI packaging
 │   └── src/
-│       ├── main/
-│       │   ├── AndroidManifest.xml
-│       │   ├── java/com/pulldock/
-│       │   │   ├── MainActivity.kt
-│       │   │   ├── PullDockApplication.kt
-│       │   │   └── ui/theme/{Color,Theme,Type}.kt
-│       │   └── res/               # strings, colors, themes, adaptive icons
-│       ├── test/java/com/pulldock/ExampleUnitTest.kt
-│       └── androidTest/java/com/pulldock/ExampleInstrumentedTest.kt
-├── gradle/
-│   ├── libs.versions.toml         # version catalog (single source of truth)
-│   └── wrapper/                   # Gradle 9.6.0 wrapper
-├── .specify/                      # Spec Kit 1.4.0 configuration, templates, constitution
-├── .zcode/skills/                 # mirrored Spec Kit skills
-├── specs/                         # per-feature documents (created by /speckit-specify)
-├── .github/workflows/             # CI
+│       ├── main/java/com/pulldock/
+│       │   ├── MainActivity.kt
+│       │   ├── PullDockApplication.kt
+│       │   └── navigation/        # PullDockDestination, RootNavHost, MainScaffold
+│       └── res/
+├── core/
+│   ├── common/                    # pure Kotlin: AppDispatchers (io/default/main)
+│   ├── model/                     # pure Kotlin: DownloadType, DownloadState, DownloadError,
+│   │                              # ProviderId, StorageKind
+│   ├── designsystem/              # Material 3 theme: PullDockTheme, color/typography,
+│   │                              # PdTokens (spacing/radius/elevation/status), LocalPdTokens
+│   ├── database/                  # Room: PullDockDatabase skeleton (v1), KSP schemas/
+│   ├── datastore/                 # DataStore: SettingsDataStore, DataStoreModule
+│   ├── storage/                   # StorageRepository contract (platform-facing)
+│   └── network/                   # ConnectivityMonitor contract (NetworkStatus)
+├── domain/{download,torrent,extractor}/   # pure Kotlin; content arrives in Slice 1
+├── data/{download,torrent,extractor}/     # repo impls/adapters; content in Slices 1,3,4,5
+├── engines/{torrent-libtorrent,extractor-ytdlp,media-ffmpeg}/  # native runtime modules;
+│                               # engine dependencies are pinned only after T060/T080 PoCs
+├── feature/{onboarding,home,add,queue,download-detail,library,player,settings,legal}/
+│                               # screen modules; content arrives in Slice 2+
+├── gradle/libs.versions.toml  # version catalog (single source of truth)
+├── gradle/wrapper/            # Gradle 9.6.0 wrapper
+├── scripts/ci/                # CI helpers: check-apk-abis.sh, secret-scan.sh
+├── .specify/                  # Spec Kit configuration, templates, constitution
+├── .zcode/skills/             # mirrored Spec Kit skills
+├── specs/                     # per-feature documents
+├── .github/workflows/         # CI: build, unit tests, lint, ABI packaging, secret scan
 ├── AGENTS.md
-├── README.md
-├── build.gradle.kts               # root build file
-├── settings.gradle.kts
-├── gradle.properties
-└── .gitignore
+└── README.md
 ```
 
 ### 2.2 Module responsibilities
 
-- `:app` — the Android application. Owns the manifest, resources, Compose UI, and the Hilt
-  composition root. Feature code belongs under `com.pulldock.<feature>`.
+- `:app` — the Android application and Hilt composition root. Owns the manifest,
+  resources, the navigation shell, and depends on every other module. Feature code
+  belongs in `:feature:<name>` under `com.pulldock.feature.<name>`.
+- `:core:common` — pure-Kotlin cross-cutting utilities. `AppDispatchers` is the only
+  sanctioned way to obtain dispatchers; never reference `Dispatchers` directly in
+  features/domain.
+- `:core:model` — pure-Kotlin shared primitives. `DownloadState` names are persisted in
+  the database and are a durable contract; `DownloadError` codes follow
+  `<CATEGORY>_<REASON>` and are likewise persisted.
+- `:core:designsystem` — the design system (theme, tokens, shared components). Screens
+  must not hardcode colors, spacing, or radii.
+- `:core:database` — Room. Schema exports land under `core/database/schemas/`; every
+  schema change needs a tested migration.
+- `:core:datastore` — preferences DataStore. `DataStoreModule` provides the single
+  process-wide instance.
+- `:core:storage` / `:core:network` — platform-facing contracts (`StorageRepository`,
+  `ConnectivityMonitor`). These contracts are deliberately framework-light and live
+  outside `:domain:*` so `core:*` never depends on `:domain:*`; the data layer maps
+  between them.
+- `:domain:*` — pure Kotlin (no Android, no Room, no engines, no Compose). Contracts and
+  use cases arrive in Slice 1.
+- `:data:*` — implements domain contracts; the only layer allowed to touch `:core:*`
+  infrastructure and `:engines:*`.
+- `:engines:*` — native/runtime integration. Engine dependencies are intentionally
+  absent until the feasibility PoCs (T060 torrent, T080 extractor) verify version, ABI,
+  and license (AGENTS.md §17).
 - `gradle/libs.versions.toml` — single source of truth for plugin and dependency versions.
   Pin versions here; never hardcode versions in module build files.
 
 ### 2.3 Not yet present
 
-- No feature packages yet (downloads, torrent, media, settings).
-- No Room database, DataStore store, Media3 player, or DI modules are wired up. The
-  dependencies are declared; implementations arrive in their own slices.
-- No static analysis (Detekt/ktlint) or coverage tooling.
+- Domain/data/feature module sources (Slices 1–2 create them; module build files and the
+  graph already exist).
+- Engine dependencies (libtorrent4j, Chaquopy/yt-dlp, FFmpeg) — pinned only after the
+  T060/T080 PoCs.
+- Static analysis (Detekt/ktlint), coverage tooling, dependency verification metadata —
+  CI documents where they activate (T176, Slice 7).
 
 Update this section whenever modules, packages, or build capabilities change.
 
