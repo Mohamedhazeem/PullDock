@@ -1,9 +1,9 @@
 <libraries>
   <library
       name=":@@:core:network::debug"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/34c3183e3336a37cbca1c84214fa9b16/transformed/out/jars/classes.jar:/home/hazeem/.gradle/caches/9.6.0/transforms/34c3183e3336a37cbca1c84214fa9b16/transformed/out/jars/libs/R.jar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/164915424c7540d559bf1102383acd81/transformed/out/jars/classes.jar:/home/hazeem/.gradle/caches/9.6.0/transforms/164915424c7540d559bf1102383acd81/transformed/out/jars/libs/R.jar"
       resolved="PullDock.core:network:unspecified"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/34c3183e3336a37cbca1c84214fa9b16/transformed/out"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/164915424c7540d559bf1102383acd81/transformed/out"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -17,10 +17,75 @@
       jars="/home/hazeem/My Projects/PullDock/core/common/build/libs/common.jar"
       resolved="::"/>
   <library
-      name="androidx.core:core-ktx:1.19.1@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/79275f1c715ae48b51e8e08af0f44c94/transformed/core-ktx-1.19.1/jars/classes.jar"
-      resolved="androidx.core:core-ktx:1.19.1"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/79275f1c715ae48b51e8e08af0f44c94/transformed/core-ktx-1.19.1"
+      name="com.google.dagger:hilt-android:2.60.1@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/dbaa9113b6a08a792a368df2a59f57c2/transformed/hilt-android-2.60.1/jars/classes.jar"
+      resolved="com.google.dagger:hilt-android:2.60.1"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/dbaa9113b6a08a792a368df2a59f57c2/transformed/hilt-android-2.60.1"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.fragment:fragment:1.5.1@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/0aa4fcca6a0bee184c2ddbb62fde0bbb/transformed/fragment-1.5.1/jars/classes.jar"
+      resolved="androidx.fragment:fragment:1.5.1"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/0aa4fcca6a0bee184c2ddbb62fde0bbb/transformed/fragment-1.5.1"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.activity:activity:1.5.1@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/f8ca657b891f8f9071abc9bcad11f36d/transformed/activity-1.5.1/jars/classes.jar"
+      resolved="androidx.activity:activity:1.5.1"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/f8ca657b891f8f9071abc9bcad11f36d/transformed/activity-1.5.1"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.loader:loader:1.0.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/1e6d4d6514e21e92e0be59a2b321c0b8/transformed/loader-1.0.0/jars/classes.jar"
+      resolved="androidx.loader:loader:1.0.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/1e6d4d6514e21e92e0be59a2b321c0b8/transformed/loader-1.0.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.viewpager:viewpager:1.0.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/62460dd870b69d1945408ca1b0393a3a/transformed/viewpager-1.0.0/jars/classes.jar"
+      resolved="androidx.viewpager:viewpager:1.0.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/62460dd870b69d1945408ca1b0393a3a/transformed/viewpager-1.0.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.customview:customview:1.0.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/2dde834642b809280397a05007cebfcb/transformed/customview-1.0.0/jars/classes.jar"
+      resolved="androidx.customview:customview:1.0.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/2dde834642b809280397a05007cebfcb/transformed/customview-1.0.0"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -31,9 +96,87 @@
       proguardRules="proguard.txt"/>
   <library
       name="androidx.core:core:1.19.1@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/d1c8a707ac5db32143a43eed387c3390/transformed/core-1.19.1/jars/classes.jar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/d37e931e7a116aad29937000a8e06881/transformed/core-1.19.1/jars/classes.jar"
       resolved="androidx.core:core:1.19.1"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/d1c8a707ac5db32143a43eed387c3390/transformed/core-1.19.1"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/d37e931e7a116aad29937000a8e06881/transformed/core-1.19.1"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.lifecycle:lifecycle-viewmodel:2.10.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/9c7741f443457ce19a417db2dbd1819d/transformed/lifecycle-viewmodel-2.10.0/jars/classes.jar"
+      resolved="androidx.lifecycle:lifecycle-viewmodel:2.10.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/9c7741f443457ce19a417db2dbd1819d/transformed/lifecycle-viewmodel-2.10.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.lifecycle:lifecycle-viewmodel-android:2.10.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/29e74aa6d4a005c483e39ca05d6e9460/transformed/lifecycle-viewmodel/jars/classes.jar"
+      resolved="androidx.lifecycle:lifecycle-viewmodel-android:2.10.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/29e74aa6d4a005c483e39ca05d6e9460/transformed/lifecycle-viewmodel"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.lifecycle:lifecycle-livedata-core-ktx:2.10.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/3d397a540282dc6d82d18ae00c91f10c/transformed/lifecycle-livedata-core-ktx-2.10.0/jars/classes.jar"
+      resolved="androidx.lifecycle:lifecycle-livedata-core-ktx:2.10.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/3d397a540282dc6d82d18ae00c91f10c/transformed/lifecycle-livedata-core-ktx-2.10.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.lifecycle:lifecycle-livedata-core:2.10.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/d5fd39c2fc84049174023dfdc1da8d5f/transformed/lifecycle-livedata-core-2.10.0/jars/classes.jar"
+      resolved="androidx.lifecycle:lifecycle-livedata-core:2.10.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/d5fd39c2fc84049174023dfdc1da8d5f/transformed/lifecycle-livedata-core-2.10.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.lifecycle:lifecycle-livedata:2.10.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/afeaea161aea96211853821ffe4c2b16/transformed/lifecycle-livedata-2.10.0/jars/classes.jar"
+      resolved="androidx.lifecycle:lifecycle-livedata:2.10.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/afeaea161aea96211853821ffe4c2b16/transformed/lifecycle-livedata-2.10.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.lifecycle:lifecycle-runtime-android:2.10.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/98fb42b1d3a85a2a36a8edd56361468c/transformed/lifecycle-runtime/jars/classes.jar"
+      resolved="androidx.lifecycle:lifecycle-runtime-android:2.10.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/98fb42b1d3a85a2a36a8edd56361468c/transformed/lifecycle-runtime"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -47,10 +190,23 @@
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/androidx.lifecycle/lifecycle-common-jvm/2.10.0/2b7a92c746f3339efc533a2da0024e596760f816/lifecycle-common-jvm-2.10.0.jar"
       resolved="androidx.lifecycle:lifecycle-common-jvm:2.10.0"/>
   <library
-      name="androidx.lifecycle:lifecycle-runtime-android:2.10.0@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/78a501ccbd54306f397ba47ee17c23f4/transformed/lifecycle-runtime/jars/classes.jar"
-      resolved="androidx.lifecycle:lifecycle-runtime-android:2.10.0"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/78a501ccbd54306f397ba47ee17c23f4/transformed/lifecycle-runtime"
+      name="androidx.lifecycle:lifecycle-viewmodel-savedstate-android:2.10.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/719d1737b2cc8f47c87ddd92e7797bf4/transformed/lifecycle-viewmodel-savedstate/jars/classes.jar"
+      resolved="androidx.lifecycle:lifecycle-viewmodel-savedstate-android:2.10.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/719d1737b2cc8f47c87ddd92e7797bf4/transformed/lifecycle-viewmodel-savedstate"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="androidx.core:core-ktx:1.19.1@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/147b50bd1c1cd02368e27fc2d59feed5/transformed/core-ktx-1.19.1/jars/classes.jar"
+      resolved="androidx.core:core-ktx:1.19.1"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/147b50bd1c1cd02368e27fc2d59feed5/transformed/core-ktx-1.19.1"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -68,14 +224,27 @@
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-test-jvm/1.11.0/1dfe8ce2b805d913922f283b386895bd0979dfcb/kotlinx-coroutines-test-jvm-1.11.0.jar"
       resolved="org.jetbrains.kotlinx:kotlinx-coroutines-test-jvm:1.11.0"/>
   <library
+      name="androidx.savedstate:savedstate-android:1.4.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/7b5487f764db243e93d9853d532bf4a1/transformed/savedstate/jars/classes.jar"
+      resolved="androidx.savedstate:savedstate-android:1.4.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/7b5487f764db243e93d9853d532bf4a1/transformed/savedstate"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
       name="org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.11.0@jar"
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm/1.11.0/3d57dc678bd8d72a60e7adf0eca5c54e3f4f4b79/kotlinx-coroutines-core-jvm-1.11.0.jar"
       resolved="org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.11.0"/>
   <library
       name="androidx.annotation:annotation-experimental:1.4.1@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/6d939fbcd9d998d2fb314589d4a3b76b/transformed/annotation-experimental-1.4.1/jars/classes.jar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/0093b937fcfb85a0cc4133454f5fb70b/transformed/annotation-experimental-1.4.1/jars/classes.jar"
       resolved="androidx.annotation:annotation-experimental:1.4.1"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/6d939fbcd9d998d2fb314589d4a3b76b/transformed/annotation-experimental-1.4.1"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/0093b937fcfb85a0cc4133454f5fb70b/transformed/annotation-experimental-1.4.1"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -86,9 +255,9 @@
       proguardRules="proguard.txt"/>
   <library
       name="androidx.core:core-viewtree:1.0.0@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/ba782f94f6e2c4ba61c314a249204250/transformed/core-viewtree-1.0.0/jars/classes.jar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/6d77c6c8fa092b1c4201b5a69b144ec7/transformed/core-viewtree-1.0.0/jars/classes.jar"
       resolved="androidx.core:core-viewtree:1.0.0"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/ba782f94f6e2c4ba61c314a249204250/transformed/core-viewtree-1.0.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/6d77c6c8fa092b1c4201b5a69b144ec7/transformed/core-viewtree-1.0.0"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -99,9 +268,9 @@
       proguardRules="proguard.txt"/>
   <library
       name="androidx.versionedparcelable:versionedparcelable:1.1.1@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/0e3237df86c8b09a0c6d68b98500eae5/transformed/versionedparcelable-1.1.1/jars/classes.jar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/b7bc65253e86336e9aeb152516d49d32/transformed/versionedparcelable-1.1.1/jars/classes.jar"
       resolved="androidx.versionedparcelable:versionedparcelable:1.1.1"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/0e3237df86c8b09a0c6d68b98500eae5/transformed/versionedparcelable-1.1.1"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/b7bc65253e86336e9aeb152516d49d32/transformed/versionedparcelable-1.1.1"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -111,10 +280,23 @@
       externalAnnotations="annotations.zip"
       proguardRules="proguard.txt"/>
   <library
-      name="androidx.collection:collection:1.0.0@jar"
-      jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/androidx.collection/collection/1.0.0/42858b26cafdaa69b6149f45dfc2894007bc2c7a/collection-1.0.0.jar"
-      resolved="androidx.collection:collection:1.0.0"
+      name="androidx.collection:collection:1.1.0@jar"
+      jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/androidx.collection/collection/1.1.0/1f27220b47669781457de0d600849a5de0e89909/collection-1.1.0.jar"
+      resolved="androidx.collection:collection:1.1.0"
       provided="true"/>
+  <library
+      name="androidx.arch.core:core-runtime:2.2.0@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/966ca680ae258acc2bbafc29f0e9c292/transformed/core-runtime-2.2.0/jars/classes.jar"
+      resolved="androidx.arch.core:core-runtime:2.2.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/966ca680ae258acc2bbafc29f0e9c292/transformed/core-runtime-2.2.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
   <library
       name="androidx.arch.core:core-common:2.2.0@jar"
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/androidx.arch.core/core-common/2.2.0/5e1b8b81dfd5f52c56a8d53b18ca759c19a301f3/core-common-2.2.0.jar"
@@ -123,6 +305,10 @@
       name="androidx.annotation:annotation-jvm:1.10.0@jar"
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/androidx.annotation/annotation-jvm/1.10.0/388cfaa79001d0f024d28f6a13d5a3dfc2f0e18f/annotation-jvm-1.10.0.jar"
       resolved="androidx.annotation:annotation-jvm:1.10.0"/>
+  <library
+      name="org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.7.3@jar"
+      jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm/1.7.3/1f226780b845ff9206474c05159245d861556249/kotlinx-serialization-core-jvm-1.7.3.jar"
+      resolved="org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.7.3"/>
   <library
       name="org.jetbrains.kotlin:kotlin-stdlib:2.4.20@jar"
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.4.20/94c1451890d164aed65d43b3db0b7ecef7c183e7/kotlin-stdlib-2.4.20.jar"
@@ -136,6 +322,35 @@
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/23.0.0/8cc20c07506ec18e0834947b84a864bfc094484e/annotations-23.0.0.jar"
       resolved="org.jetbrains:annotations:23.0.0"/>
   <library
+      name="com.google.dagger:hilt-core:2.60.1@jar"
+      jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/com.google.dagger/hilt-core/2.60.1/cf425401ef4214c1d1f9ed298dcd2bcbf8a0dd36/hilt-core-2.60.1.jar"
+      resolved="com.google.dagger:hilt-core:2.60.1"/>
+  <library
+      name="com.google.dagger:dagger:2.60.1@jar"
+      jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/com.google.dagger/dagger/2.60.1/440df415f28bf80fc0d1f98bcf8765c32e769d68/dagger-2.60.1.jar"
+      resolved="com.google.dagger:dagger:2.60.1"/>
+  <library
+      name="com.google.dagger:dagger-lint-aar:2.60.1@aar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/307ea68afed01eea241e89965b2a284d/transformed/dagger-lint-aar-2.60.1/jars/classes.jar"
+      resolved="com.google.dagger:dagger-lint-aar:2.60.1"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/307ea68afed01eea241e89965b2a284d/transformed/dagger-lint-aar-2.60.1"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
+      name="com.google.code.findbugs:jsr305:3.0.2@jar"
+      jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/com.google.code.findbugs/jsr305/3.0.2/25ea2e8b0c338a877313bd4672d3fe056ea78f0d/jsr305-3.0.2.jar"
+      resolved="com.google.code.findbugs:jsr305:3.0.2"/>
+  <library
+      name="javax.inject:javax.inject:1@jar"
+      jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/javax.inject/javax.inject/1/6975da39a7040257bd51d21a231b76c915872d38/javax.inject-1.jar"
+      resolved="javax.inject:javax.inject:1"/>
+  <library
       name="org.hamcrest:hamcrest-core:1.3@jar"
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/42a25dc3219429f0e5d060061f71acb49bf010a0/hamcrest-core-1.3.jar"
       resolved="org.hamcrest:hamcrest-core:1.3"/>
@@ -148,10 +363,14 @@
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/org.jspecify/jspecify/1.0.0/7425a601c1c7ec76645a78d22b8c6a627edee507/jspecify-1.0.0.jar"
       resolved="org.jspecify:jspecify:1.0.0"/>
   <library
+      name="jakarta.inject:jakarta.inject-api:2.0.1@jar"
+      jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/jakarta.inject/jakarta.inject-api/2.0.1/4c28afe1991a941d7702fe1362c365f0a8641d1e/jakarta.inject-api-2.0.1.jar"
+      resolved="jakarta.inject:jakarta.inject-api:2.0.1"/>
+  <library
       name="androidx.interpolator:interpolator:1.0.0@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/54c4090cf275e9e9d2506907451276b2/transformed/interpolator-1.0.0/jars/classes.jar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/0801a2b8b41b8d56d0ddd5317095d244/transformed/interpolator-1.0.0/jars/classes.jar"
       resolved="androidx.interpolator:interpolator:1.0.0"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/54c4090cf275e9e9d2506907451276b2/transformed/interpolator-1.0.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/0801a2b8b41b8d56d0ddd5317095d244/transformed/interpolator-1.0.0"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -162,9 +381,9 @@
       proguardRules="proguard.txt"/>
   <library
       name="androidx.profileinstaller:profileinstaller:1.4.0@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/2eb0814d7a572d30ba72435fb0779643/transformed/profileinstaller-1.4.0/jars/classes.jar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/a08290afa5c959b35b7447b46f7ccf23/transformed/profileinstaller-1.4.0/jars/classes.jar"
       resolved="androidx.profileinstaller:profileinstaller:1.4.0"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/2eb0814d7a572d30ba72435fb0779643/transformed/profileinstaller-1.4.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/a08290afa5c959b35b7447b46f7ccf23/transformed/profileinstaller-1.4.0"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -175,9 +394,9 @@
       proguardRules="proguard.txt"/>
   <library
       name="androidx.startup:startup-runtime:1.1.1@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/bda242aea701eb17ffe7c0a37bfe6665/transformed/startup-runtime-1.1.1/jars/classes.jar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/6bf9c7e5c524048aba524a4eb5c1fa13/transformed/startup-runtime-1.1.1/jars/classes.jar"
       resolved="androidx.startup:startup-runtime:1.1.1"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/bda242aea701eb17ffe7c0a37bfe6665/transformed/startup-runtime-1.1.1"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/6bf9c7e5c524048aba524a4eb5c1fa13/transformed/startup-runtime-1.1.1"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -188,9 +407,9 @@
       proguardRules="proguard.txt"/>
   <library
       name="androidx.tracing:tracing:1.2.0@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/12367b06e7fe8c67aaa539c05beb3b87/transformed/tracing-1.2.0/jars/classes.jar"
+      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/678b4e68f5028ea524ca025a5dcf0981/transformed/tracing-1.2.0/jars/classes.jar"
       resolved="androidx.tracing:tracing:1.2.0"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/12367b06e7fe8c67aaa539c05beb3b87/transformed/tracing-1.2.0"
+      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/678b4e68f5028ea524ca025a5dcf0981/transformed/tracing-1.2.0"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -204,24 +423,7 @@
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/androidx.collection/collection-jvm/1.4.2/bc60b5568a66d765a9fe8e266fd0c6c727e0b50b/collection-jvm-1.4.2.jar"
       resolved="androidx.collection:collection-jvm:1.4.2"/>
   <library
-      name="androidx.arch.core:core-runtime:2.2.0@aar"
-      jars="/home/hazeem/.gradle/caches/9.6.0/transforms/b016ed6097738b85ce826f02991e1eb6/transformed/core-runtime-2.2.0/jars/classes.jar"
-      resolved="androidx.arch.core:core-runtime:2.2.0"
-      folder="/home/hazeem/.gradle/caches/9.6.0/transforms/b016ed6097738b85ce826f02991e1eb6/transformed/core-runtime-2.2.0"
-      manifest="AndroidManifest.xml"
-      resFolder="res"
-      assetsFolder="assets"
-      lintJar="lint.jar"
-      publicResources="public.txt"
-      symbolFile="R.txt"
-      externalAnnotations="annotations.zip"
-      proguardRules="proguard.txt"/>
-  <library
       name="androidx.concurrent:concurrent-futures:1.1.0@jar"
       jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/androidx.concurrent/concurrent-futures/1.1.0/50b7fb98350d5f42a4e49704b03278542293ba48/concurrent-futures-1.1.0.jar"
       resolved="androidx.concurrent:concurrent-futures:1.1.0"/>
-  <library
-      name="javax.inject:javax.inject:1@jar"
-      jars="/home/hazeem/.gradle/caches/modules-2/files-2.1/javax.inject/javax.inject/1/6975da39a7040257bd51d21a231b76c915872d38/javax.inject-1.jar"
-      resolved="javax.inject:javax.inject:1"/>
 </libraries>

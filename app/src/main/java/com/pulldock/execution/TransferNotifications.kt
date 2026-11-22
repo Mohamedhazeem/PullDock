@@ -52,9 +52,22 @@ class TransferNotifications @Inject constructor(
             .build()
     }
 
-    /** Posts only when the user granted notifications (API 33+); silent no-op otherwise. */
+    /**
+     * Posts only when the user granted notifications (API 33+); silent no-op otherwise.
+     * The runtime permission check below IS the required guard; this lint version's
+     * NotificationPermission flow analysis does not recognize the nested SDK+grant
+     * guard, so the false positive is suppressed with the justification recorded here.
+     */
+    @android.annotation.SuppressLint("NotificationPermission")
     fun post(id: Int, notification: Notification) {
-        if (!permissionGranted()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Permission denied: in-app controls remain authoritative (FR-032).
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                return
+            }
+        }
         notificationManager().notify(id, notification)
     }
 
@@ -67,14 +80,6 @@ class TransferNotifications @Inject constructor(
         )
         notificationManager().createNotificationChannel(channel)
     }
-
-    private fun permissionGranted(): Boolean =
-        if (Build.VERSION.SDK_INT >= 33) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
 
     private fun notificationManager(): NotificationManager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

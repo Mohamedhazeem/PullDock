@@ -24,6 +24,6 @@
   <artifact
       type="INSTRUMENTATION_TEST"
       applicationId="com.pulldock.core.datastore.test"
-      desugaredMethodsFiles="/home/hazeem/.gradle/caches/9.6.0/transforms/c473f01a6705f971902e8642f67769ce/transformed/D8BackportedDesugaredMethods.txt">
+      desugaredMethodsFiles="/home/hazeem/.gradle/caches/9.6.0/transforms/b64530a784634041fe3bf98f5bb3f676/transformed/D8BackportedDesugaredMethods.txt">
   </artifact>
 </variant>
