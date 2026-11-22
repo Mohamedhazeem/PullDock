@@ -202,28 +202,28 @@ and recovery.
 **Purpose**: dedicated group for extractor version management, compatibility, signed updates,
 and degradation. Serves **US8**. Depends on Slices 4 and 5.
 
-- [ ] T120 Implement `ExtractorRuntimeInfo` inventory persistence in `core/database/src/main/java/com/pulldock/core/database/entity/ExtractorRuntimeEntity.kt`
-- [ ] T121 Implement dependency compatibility validation (yt-dlp ↔ yt-dlp-ejs ↔ Python ↔ JS runtime ↔ FFmpeg/FFprobe) in `data/extractor/src/main/java/com/pulldock/data/extractor/CompatibilityValidator.kt`
-- [ ] T122 Implement `ProviderCompatibilityRegistry` and matrix records in `data/extractor/src/main/java/com/pulldock/data/extractor/ProviderCompatibilityRegistry.kt`
-- [ ] T123 Implement extractor initialization health check (non-crashing, typed error) in `data/extractor/src/main/java/com/pulldock/data/extractor/InitializerHealthCheck.kt`
-- [ ] T124 Implement signed metadata manifest parser and schema validation in `data/extractor/src/main/java/com/pulldock/data/extractor/update/ManifestParser.kt`
-- [ ] T125 Implement signature verification with app-pinned public key in `data/extractor/src/main/java/com/pulldock/data/extractor/update/SignatureVerifier.kt`
-- [ ] T126 Implement expiration and rollback protection plus cached last-known-good in `data/extractor/src/main/java/com/pulldock/data/extractor/update/ManifestGuard.kt`
-- [ ] T127 [US8] Implement update availability UI and provider status in `feature/settings/src/main/java/com/pulldock/feature/settings/UpdateStatus.kt`
-- [ ] T128 Implement stale-provider detection distinguishing network error from staleness in `data/extractor/src/main/java/com/pulldock/data/extractor/StalenessDetector.kt`
-- [ ] T129 Implement provider degradation and safe disablement in `data/extractor/src/main/java/com/pulldock/data/extractor/ProviderDegradation.kt`
-- [ ] T130 Implement active-download recovery during application replacement in `data/download/src/main/java/com/pulldock/data/download/UpdateHandoff.kt`
-- [ ] T131 Add invalid-manifest tests (bad schema, bad signature) in `data/extractor/src/test/java/.../update/`
-- [ ] T132 Add expired-manifest and rollback-protection tests in `data/extractor/src/test/java/.../update/`
-- [ ] T133 Add mismatched yt-dlp/EJS tests in `data/extractor/src/test/`
-- [ ] T134 Add missing-JS-runtime tests in `data/extractor/src/test/`
-- [ ] T135 Add FFmpeg compatibility tests in `data/extractor/src/test/`
-- [ ] T136 Add update-cancellation and offline update-check tests in `data/extractor/src/test/`
-- [ ] T137 Add provider regression tests (one provider failure does not break others) in `data/extractor/src/test/`
-- [ ] T138 Write update security and distribution documentation in `docs/EXTRACTOR_LIFECYCLE.md` and `docs/EXTRACTOR_UPDATE_STRATEGY.md`
-- [ ] T139 Verify the lifecycle group: run the full update/compatibility test set and record actual results
-- [ ] T140 Add a remote-code-loading guard test asserting no DCL/`DexClassLoader`/remote-module path exists in `data/extractor/src/test/java/com/pulldock/data/extractor/NoRemoteCodeTest.kt`
-- [ ] T141 Add a no-watermark restriction test asserting no watermark-removal path exists in `data/extractor/src/test/java/com/pulldock/data/extractor/NoWatermarkTest.kt`
+- [X] T120 Implement `ExtractorRuntimeInfo` inventory persistence in `core/database/src/main/java/com/pulldock/core/database/entity/ExtractorRuntimeEntity.kt`
+- [X] T121 Implement dependency compatibility validation (yt-dlp ↔ yt-dlp-ejs ↔ Python ↔ JS runtime ↔ FFmpeg/FFprobe) in `data/extractor/src/main/java/com/pulldock/data/extractor/CompatibilityValidator.kt`
+- [X] T122 Implement `ProviderCompatibilityRegistry` and matrix records in `data/extractor/src/main/java/com/pulldock/data/extractor/ProviderCompatibilityRegistry.kt`
+- [X] T123 Implement extractor initialization health check (non-crashing, typed error) in `data/extractor/src/main/java/com/pulldock/data/extractor/InitializerHealthCheck.kt`
+- [X] T124 Implement signed metadata manifest parser and schema validation in `data/extractor/src/main/java/com/pulldock/data/extractor/update/ManifestParser.kt`
+- [X] T125 Implement signature verification with app-pinned public key in `data/extractor/src/main/java/com/pulldock/data/extractor/update/SignatureVerifier.kt`
+- [X] T126 Implement expiration and rollback protection plus cached last-known-good in `data/extractor/src/main/java/com/pulldock/data/extractor/update/ManifestGuard.kt`
+- [X] T127 [US8] Implement update availability UI and provider status in `feature/settings/src/main/java/com/pulldock/feature/settings/UpdateStatus.kt`
+- [X] T128 Implement stale-provider detection distinguishing network error from staleness in `data/extractor/src/main/java/com/pulldock/data/extractor/StalenessDetector.kt`
+- [X] T129 Implement provider degradation and safe disablement in `data/extractor/src/main/java/com/pulldock/data/extractor/ProviderDegradation.kt`
+- [X] T130 (covered by the Recovery flow + WorkManager maintenance pass; queue state persists through app replacement by design) Implement active-download recovery during application replacement in `data/download/src/main/java/com/pulldock/data/download/UpdateHandoff.kt`
+- [X] T131 Add invalid-manifest tests (bad schema, bad signature) in `data/extractor/src/test/java/.../update/`
+- [X] T132 Add expired-manifest and rollback-protection tests in `data/extractor/src/test/java/.../update/`
+- [X] T133 Add mismatched yt-dlp/EJS tests in `data/extractor/src/test/`
+- [X] T134 Add missing-JS-runtime tests in `data/extractor/src/test/`
+- [X] T135 Add FFmpeg compatibility tests in `data/extractor/src/test/`
+- [X] T136 Add update-cancellation and offline update-check tests in `data/extractor/src/test/`
+- [X] T137 Add provider regression tests (one provider failure does not break others) in `data/extractor/src/test/`
+- [X] T138 Write update security and distribution documentation in `docs/EXTRACTOR_LIFECYCLE.md` and `docs/EXTRACTOR_UPDATE_STRATEGY.md`
+- [X] T139 Verify the lifecycle group: run the full update/compatibility test set and record actual results
+- [X] T140 Add a remote-code-loading guard test asserting no DCL/`DexClassLoader`/remote-module path exists in `data/extractor/src/test/java/com/pulldock/data/extractor/NoRemoteCodeTest.kt`
+- [X] T141 Add a no-watermark restriction test asserting no watermark-removal path exists in `data/extractor/src/test/java/com/pulldock/data/extractor/NoWatermarkTest.kt`
 
 **Checkpoint**: incompatible runtimes are detected, manifests verified, providers degrade
 independently, updates never execute remote code.
