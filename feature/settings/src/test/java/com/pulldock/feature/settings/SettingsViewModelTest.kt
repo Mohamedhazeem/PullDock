@@ -1,5 +1,6 @@
 package com.pulldock.feature.settings
 
+import com.pulldock.core.model.DownloadState
 import com.pulldock.domain.download.model.DownloadPolicy
 import com.pulldock.domain.download.repository.AppearanceRepository
 import com.pulldock.domain.download.repository.AppearanceTheme
@@ -33,6 +34,28 @@ class SettingsViewModelTest {
         }
     }
 
+    private class FakeExtractor : com.pulldock.domain.extractor.MediaExtractor {
+            override suspend fun resolve(url: String) = error("unused")
+            override suspend fun availableFormats(descriptor: com.pulldock.domain.extractor.model.MediaDescriptor) = error("unused")
+            override suspend fun download(descriptor: com.pulldock.domain.extractor.model.MediaDescriptor, format: com.pulldock.domain.extractor.model.MediaFormat) = error("unused")
+            override fun observeEvents(taskId: String?) = kotlinx.coroutines.flow.MutableStateFlow<com.pulldock.domain.extractor.ExtractorEvent>(
+                com.pulldock.domain.extractor.ExtractorEvent.StateChanged("x", DownloadState.QUEUED),
+            )
+            override fun cancel(taskId: String) = Unit
+            override fun runtimeInfo(): com.pulldock.domain.extractor.model.ExtractorRuntimeInfo = com.pulldock.domain.extractor.model.ExtractorRuntimeInfo(
+                component = "yt-dlp", installedVersion = "1", requiredRange = "", runtimeCompatible = false,
+                channel = "stable", verificationStatus = com.pulldock.domain.extractor.model.RuntimeVerificationStatus.UNAVAILABLE,
+                knownLimitations = emptyList(), checkedAt = Instant.EPOCH, inventoryId = "x",
+            )
+            override fun providerHealth(providerId: com.pulldock.core.model.ProviderId) = com.pulldock.domain.extractor.model.ProviderHealth(
+                providerId, com.pulldock.domain.extractor.model.ProviderHealthState.RUNTIME_INCOMPATIBLE, null, null, null,
+            )
+            override suspend fun cancelAndAwait(taskId: String) = Unit
+            override suspend fun close() = Unit
+    }
+
+    private fun stubProviderHealth() = com.pulldock.domain.extractor.usecase.ObserveProviderHealth(FakeExtractor())
+
     private class FakeAppearanceRepository : AppearanceRepository {
         val flow = MutableStateFlow(AppearanceTheme.SYSTEM)
         override fun observeTheme(): Flow<AppearanceTheme> = flow
@@ -45,7 +68,7 @@ class SettingsViewModelTest {
     fun `policy edits persist through the repository`() = runTest(mainRule.testDispatcher) {
         val policyRepo = FakePolicyRepository()
         val appearanceRepo = FakeAppearanceRepository()
-        val vm = SettingsViewModel(policyRepo, appearanceRepo)
+        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -66,7 +89,7 @@ class SettingsViewModelTest {
     fun `theme preference persists`() = runTest(mainRule.testDispatcher) {
         val policyRepo = FakePolicyRepository()
         val appearanceRepo = FakeAppearanceRepository()
-        val vm = SettingsViewModel(policyRepo, appearanceRepo)
+        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
