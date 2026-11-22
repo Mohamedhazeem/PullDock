@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -33,6 +34,10 @@ dependencies {
     api(libs.androidx.room.runtime)
     api(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // RoomModule is a Hilt module owned by this module.
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
 
     implementation(project(":core:common"))
     implementation(project(":core:model"))

@@ -19,6 +19,10 @@ dependencies {
     api(project(":core:model"))
     api(project(":core:common"))
     api(libs.kotlinx.coroutines.core)
+    // The unified queue aggregates both engine contracts; download domain depends on
+    // the engine domain modules (domain -> domain only, never engines).
+    api(project(":domain:torrent"))
+    api(project(":domain:extractor"))
     implementation(libs.javax.inject)
 
     testImplementation(libs.junit)
