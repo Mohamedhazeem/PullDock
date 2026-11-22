@@ -91,6 +91,7 @@ sealed interface DownloadError {
         CORRUPT_PIECE,
         DUPLICATE_INFOHASH,
         INVALID_RESUME_DATA,
+        STREAMING_UNAVAILABLE,
     }
 
     /** Extractor/provider failure reasons (provider health is tracked separately). */

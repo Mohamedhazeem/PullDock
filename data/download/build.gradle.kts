@@ -40,5 +40,6 @@ dependencies {
     ksp(libs.hilt.android.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(project(":data:torrent"))
     testImplementation(libs.kotlinx.coroutines.test)
 }

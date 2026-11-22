@@ -43,6 +43,8 @@ class DownloadDetailViewModel @Inject constructor(
     private val cancelUc: CancelDownload,
     private val retryUc: RetryDownload,
     private val removeUc: RemoveDownload,
+    private val setSeedingPolicyUc: com.pulldock.domain.download.usecase.SetTorrentSeedingPolicy,
+    private val applyFileSelectionUc: com.pulldock.domain.download.usecase.ApplyTorrentFileSelection,
 ) : ViewModel() {
 
     val taskId: String = savedStateHandle.get<String>(KEY_TASK_ID).orEmpty()
@@ -58,6 +60,14 @@ class DownloadDetailViewModel @Inject constructor(
             else -> DownloadDetailUiState(loading = false, details = details, actionError = error)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DownloadDetailUiState())
+
+    /** Applies the seeding policy from the detail controls (T057, FR-011). */
+    fun setSeedingPolicy(id: String, policy: com.pulldock.domain.torrent.model.SeedingPolicy): Unit =
+        launchAction { setSeedingPolicyUc(id, policy) }
+
+    /** Applies a file selection (T067, FR-004). */
+    fun applyFileSelection(id: String, selection: com.pulldock.domain.torrent.model.FileSelection): Unit =
+        launchAction { applyFileSelectionUc(id, selection) }
 
     fun pause(id: String): Unit = launchAction { pauseUc(id) }
     fun resume(id: String): Unit = launchAction { resumeUc(id) }

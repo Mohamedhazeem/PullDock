@@ -91,6 +91,13 @@ fun AddDownloadScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        val picker = rememberTorrentFilePicker(viewModel::onTorrentFilePicked)
+        com.pulldock.core.designsystem.components.PdTextButton(
+            label = stringResource(R.string.add_pick_torrent),
+            onClick = picker::launch,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
         val failedError = state.failedError
         when {
             failedError != null -> PdErrorState(

@@ -77,7 +77,14 @@ fun DownloadDetailScreen(
                 }
 
                 details.torrent?.let { torrent ->
-                    TorrentSection(torrent)
+                    TorrentFileSelectionSection(
+                        details = torrent,
+                        onApply = { selection -> viewModel.applyFileSelection(details.task.id, selection) },
+                    )
+                    SeedingControlsSection(
+                        details = torrent,
+                        onApply = { policy -> viewModel.setSeedingPolicy(details.task.id, policy) },
+                    )
                 }
 
                 ActionsRow(
@@ -103,24 +110,6 @@ fun DownloadDetailScreen(
                 viewModel.remove(viewModel.taskId, deleteFile = false, onDone = onNavigateBack)
             },
             onDismiss = { confirmRemoval = false },
-        )
-    }
-}
-
-@Composable
-private fun TorrentSection(torrent: TorrentTaskDetails) {
-    val tokens = LocalPdTokens.current
-    Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
-        Text(stringResource(R.string.detail_torrent_section), style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = stringResource(R.string.detail_torrent_files, torrent.files.size, torrent.files.count { it.selected }),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = stringResource(R.string.detail_torrent_seeding, torrent.seedingPolicy.stopRatio ?: 0.0),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

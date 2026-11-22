@@ -26,4 +26,5 @@
     <string name="add_resolve_failed_title">Could not resolve this media</string>
     <string name="add_retry">Try again</string>
     <string name="add_error_runtime">The extraction runtime on this device is incompatible. Provider status shows details in Settings.</string>
+    <string name="add_pick_torrent">Choose a .torrent file…</string>
 </resources>

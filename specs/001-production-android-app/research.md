@@ -134,6 +134,16 @@ Resolved during `/speckit-plan`; recorded here so the plan has an audit trail.
 
 No NEEDS CLARIFICATION markers remain in the plan's Technical Context.
 
+## 9. T060 PoC — Partial Verification (2026-11-22, Slice 3)
+
+| Check | Status |
+|---|---|
+| libtorrent4j 2.1.0-39 published for arm64-v8a + x86_64 | ✅ Verified (Maven Central; jars ship `lib/<abi>/libtorrent4j.so`, 32-bit ABIs absent) |
+| Wrapper license | ✅ MIT (libtorrent4j pom); libtorrent native core is BSD-3-clause — both redistribution-compatible; recorded for the license report (T178) |
+| Java API compile against 2.1.0-39 | ✅ Verified (`SessionManager`, `AddTorrentParams`, `TorrentHandle`, `SaveResumeDataAlert`, `libtorrent.read_resume_data_ex` signatures confirmed from the artifact) |
+| On-device init/transfer/resume PoC | ⚠️ OPEN — requires a 64-bit device or emulator (no device in this environment). `RUNTIME` code paths compile against the real API but are NOT runtime-verified. minSdk 26 vs libtorrent4j floor remains unconfirmed on hardware (research.md §2 flagged this risk). |
+
+
 ## 8. Analyze Remediation (2026-11-22)
 
 Fixes applied after `/speckit-analyze` (read-only audit):

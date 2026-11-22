@@ -118,6 +118,22 @@ class AddDownloadViewModel @Inject constructor(
         }
     }
 
+    /** Submits a `.torrent` document picked via SAF (T065, FR-001). */
+    fun onTorrentFilePicked(uri: String) {
+        if (_uiState.value.submitting) return
+        _uiState.update { it.copy(submitting = true, inputError = null, failedError = null) }
+        viewModelScope.launch {
+            try {
+                when (val result = addTorrent(TorrentSource(TorrentSource.Kind.TORRENT_URI, uri), StorageDestinationDefaults.appSpecific())) {
+                    is UseCaseResult.Success -> _events.tryEmit(AddDownloadEvent.TorrentAdded)
+                    is UseCaseResult.Failure -> _uiState.update { it.copy(inputError = result.error) }
+                }
+            } finally {
+                _uiState.update { it.copy(submitting = false) }
+            }
+        }
+    }
+
     /** Dismisses the resolved-media sheet; the user can edit the URL instead. */
     fun dismissResolved() {
         _uiState.update { it.copy(resolvedDescriptor = null, formats = emptyList(), selectedFormat = null) }

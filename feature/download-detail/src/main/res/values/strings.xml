@@ -17,4 +17,9 @@
     <string name="detail_action_retry">Retry</string>
     <string name="detail_action_cancel">Cancel</string>
     <string name="detail_action_remove">Remove</string>
-</resources>
+    <string name="detail_files_section">Files</string>
+    <string name="detail_apply_selection">Apply selection</string>
+    <string name="detail_seeding_section">Seeding</string>
+    <string name="detail_seed_after_completion">Seed after completion</string>
+    <string name="detail_seeding_stop_note">Seeding stops automatically at ratio %1$.1f or the time limit — PullDock never seeds indefinitely.</string>
+<string name="detail_apply_seeding">Apply seeding policy</string></resources>

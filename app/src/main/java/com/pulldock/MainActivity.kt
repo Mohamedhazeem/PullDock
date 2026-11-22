@@ -1,5 +1,6 @@
 package com.pulldock
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,9 +41,13 @@ class MainActivity : ComponentActivity() {
     /** Persisted appearance preference; SYSTEM (default) until the user changes it. */
     private var themePreference by mutableStateOf(ThemePreference.SYSTEM)
 
+    /** Source extracted from a share/view intent; consumed once by the add flow. */
+    private var pendingSource: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        pendingSource = extractSource(intent)
         observeThemePreference()
         setContent {
             val darkTheme = when (themePreference) {
@@ -59,6 +64,15 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Pulls a magnet URI or torrent document URI out of a share/view intent (FR-001). */
+    private fun extractSource(intent: Intent?): String? = when (intent?.action) {
+        Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()?.takeIf {
+            it.startsWith("magnet:", ignoreCase = true)
+        } ?: intent.data?.toString()
+        Intent.ACTION_VIEW -> intent.data?.toString()
+        else -> null
     }
 
     /** Observes settings only while visible (lifecycle-respectful collection). */

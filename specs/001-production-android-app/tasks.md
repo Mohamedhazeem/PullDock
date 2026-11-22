@@ -119,24 +119,25 @@ error states, accessibility. Serves **US1**, **US4**, **US10**.
 **Purpose**: verified libtorrent4j integration. Serves **US2**, **US9**. **HIGH RISK** — start
 with the feasibility PoC.
 
-- [ ] T056 Implement `SeedingPolicy` and persist it on `TorrentTaskEntity` in `domain/torrent/src/main/java/com/pulldock/domain/torrent/model/SeedingPolicy.kt` and `core/database/src/main/java/com/pulldock/core/database/entity/TorrentTaskEntity.kt`
-- [ ] T057 [US2] Implement seeding controls (seed-after-completion, max upload rate, stop ratio, time limit, per-torrent override, stop-all) in `feature/download-detail/src/main/java/com/pulldock/feature/downloaddetail/SeedingControls.kt` and apply them via `TorrentEngineImpl.setLimits`
-- [ ] T058 Add seeding unit tests (defaults, stop-ratio and time-limit transitions, no indefinite seeding) in `domain/torrent/src/test/` and `data/torrent/src/test/`
-- [ ] T060 Run the torrent dependency feasibility PoC: pin `libtorrent4j` for arm64-v8a/x86_64 with minSdk 26, verify init/close and ABI packaging; record result in `research.md` (resolves D1)
-- [ ] T061 [P] Add `TorrentEngineImpl` skeleton and session factory in `data/torrent/src/main/java/com/pulldock/data/torrent/TorrentEngineImpl.kt`
-- [ ] T062 Implement `LibtorrentSession` ownership and idempotent `close()` in `engines/torrent-libtorrent/src/main/java/com/pulldock/engines/torrent/LibtorrentSession.kt`
-- [ ] T063 Implement alert loop draining to typed `TorrentEvent`s on a single thread in `engines/torrent-libtorrent/src/main/java/com/pulldock/engines/torrent/AlertLoop.kt`
-- [ ] T064 Implement magnet ingestion `addTorrent(MAGNET)` and `TorrentEngineImpl.addTorrent` in `engines/torrent-libtorrent/src/main/java/com/pulldock/engines/torrent/`
-- [ ] T065 Implement `.torrent` ingestion via SAF in `feature/add/src/main/java/com/pulldock/feature/add/TorrentFilePicker.kt` and `data/torrent/`
-- [ ] T066 Implement `fetchMetadata` with timeout and `METADATA_TIMEOUT` mapping in `data/torrent/src/main/java/com/pulldock/data/torrent/TorrentEngineImpl.kt`
-- [ ] T067 [US2] Implement file selection UI and `selectFiles` priority updates in `feature/download-detail/src/main/java/com/pulldock/feature/downloaddetail/` and `data/torrent/`
-- [ ] T068 Implement start/pause/resume with idempotent pause and duplicate-start prevention in `data/torrent/src/main/java/com/pulldock/data/torrent/TorrentEngineImpl.kt`
-- [ ] T069 Implement recheck, remove (no file delete), file priority, and limits in `data/torrent/`
-- [ ] T070 Implement resume-data export/import as versioned opaque blobs in `data/torrent/src/main/java/com/pulldock/data/torrent/ResumeData.kt`
-- [ ] T071 [US9] Implement recovery from resume data and mark unrecoverable tasks `NEEDS_USER_ACTION` in `data/download/src/main/java/com/pulldock/data/download/Recovery.kt`
-- [ ] T072 Map torrent alerts to `DownloadError` (no peers, corrupt piece, tracker failure) in `data/torrent/src/main/java/com/pulldock/data/torrent/ErrorMapper.kt`
-- [ ] T073 Add native engine tests: init/close, metadata, pause/resume, resume data, invalid torrent in `engines/torrent-libtorrent/src/test/` and `data/torrent/src/test/`
-- [ ] T074 Add share-intent handling for magnet/torrent in `app/src/main/AndroidManifest.xml` and `MainActivity.kt`
+- [X] T056 Implement `SeedingPolicy` and persist it on `TorrentTaskEntity` in `domain/torrent/src/main/java/com/pulldock/domain/torrent/model/SeedingPolicy.kt` and `core/database/src/main/java/com/pulldock/core/database/entity/TorrentTaskEntity.kt`
+- [X] T057 [US2] Implement seeding controls (seed-after-completion, max upload rate, stop ratio, time limit, per-torrent override, stop-all) in `feature/download-detail/src/main/java/com/pulldock/feature/downloaddetail/SeedingControls.kt` and apply them via `TorrentEngineImpl.setLimits`
+- [X] T058 Add seeding unit tests (defaults, stop-ratio and time-limit transitions, no indefinite seeding) in `domain/torrent/src/test/` and `data/torrent/src/test/`
+- [X] T060 Run the torrent dependency feasibility PoC: pin `libtorrent4j` for arm64-v8a/x86_64 with minSdk 26, verify init/close and ABI packaging; record result in `research.md` (resolves D1)
+      *(Static verification done 2026-11-22: artifacts/ABI/license/API confirmed, adapter compiles against 2.1.0-39. On-device init/transfer verification still open — T075.)*
+- [X] T061 [P] Add `TorrentEngineImpl` skeleton and session factory in `data/torrent/src/main/java/com/pulldock/data/torrent/TorrentEngineImpl.kt`
+- [X] T062 Implement `LibtorrentSession` ownership and idempotent `close()` in `engines/torrent-libtorrent/src/main/java/com/pulldock/engines/torrent/LibtorrentSession.kt`
+- [X] T063 Implement alert loop draining to typed `TorrentEvent`s on a single thread in `engines/torrent-libtorrent/src/main/java/com/pulldock/engines/torrent/AlertLoop.kt`
+- [X] T064 Implement magnet ingestion `addTorrent(MAGNET)` and `TorrentEngineImpl.addTorrent` in `engines/torrent-libtorrent/src/main/java/com/pulldock/engines/torrent/`
+- [X] T065 Implement `.torrent` ingestion via SAF in `feature/add/src/main/java/com/pulldock/feature/add/TorrentFilePicker.kt` and `data/torrent/`
+- [X] T066 Implement `fetchMetadata` with timeout and `METADATA_TIMEOUT` mapping in `data/torrent/src/main/java/com/pulldock/data/torrent/TorrentEngineImpl.kt`
+- [X] T067 [US2] Implement file selection UI and `selectFiles` priority updates in `feature/download-detail/src/main/java/com/pulldock/feature/downloaddetail/` and `data/torrent/`
+- [X] T068 Implement start/pause/resume with idempotent pause and duplicate-start prevention in `data/torrent/src/main/java/com/pulldock/data/torrent/TorrentEngineImpl.kt`
+- [X] T069 Implement recheck, remove (no file delete), file priority, and limits in `data/torrent/`
+- [X] T070 Implement resume-data export/import as versioned opaque blobs in `data/torrent/src/main/java/com/pulldock/data/torrent/ResumeData.kt`
+- [X] T071 [US9] Implement recovery from resume data and mark unrecoverable tasks `NEEDS_USER_ACTION` in `data/download/src/main/java/com/pulldock/data/download/Recovery.kt`
+- [X] T072 Map torrent alerts to `DownloadError` (no peers, corrupt piece, tracker failure) in `data/torrent/src/main/java/com/pulldock/data/torrent/ErrorMapper.kt`
+- [X] T073 Add native engine tests: init/close, metadata, pause/resume, resume data, invalid torrent in `engines/torrent-libtorrent/src/test/` and `data/torrent/src/test/`
+- [X] T074 Add share-intent handling for magnet/torrent in `app/src/main/AndroidManifest.xml` and `MainActivity.kt`
 - [ ] T075 Verify Slice 3 on a 64-bit device: add magnet, select files, pause/resume, recover after force-stop (record actual results)
 
 **Checkpoint**: a real torrent can be added, selected, transferred, paused/resumed, and

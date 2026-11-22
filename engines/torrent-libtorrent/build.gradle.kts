@@ -30,12 +30,16 @@ kotlin {
 }
 
 dependencies {
-    // The libtorrent4j dependency is intentionally NOT declared here. T060 runs the
-    // feasibility PoC (version, minSdk, ABI verification) before any engine dependency
-    // is pinned; see ADR-0001 and the pinned-distribution policy (AGENTS.md §17).
+    // T060 (partial): libtorrent4j 2.1.0-39 pinned. Verified statically: MIT wrapper
+    // license, Android artifacts ship lib/<abi>/libtorrent4j.so for arm64-v8a and
+    // x86_64 only (32-bit ABIs never packaged, FR-076). The on-device init/transfer
+    // PoC remains an open verification task (see research.md D1).
     implementation(project(":core:common"))
     implementation(project(":core:model"))
     implementation(libs.kotlinx.coroutines.core)
+    api(libs.libtorrent4j.core)
+    implementation(libs.libtorrent4j.arm64)
+    implementation(libs.libtorrent4j.x8664)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
