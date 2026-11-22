@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2866994197653960311.xml:2:13-83
+INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2866994197653960311.xml:2:13-83
+	package
+		INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2866994197653960311.xml
+	xmlns:android
+		ADDED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2866994197653960311.xml:2:23-81
+uses-sdk
+INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2866994197653960311.xml reason: use-sdk injection requested
+INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2866994197653960311.xml
+INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2866994197653960311.xml
+	android:targetSdkVersion
+		INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2866994197653960311.xml
+	android:minSdkVersion
+		INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2866994197653960311.xml
