@@ -176,18 +176,18 @@ failures are isolated.
 **Purpose**: one coordinator, concurrency, retry, background execution, notifications,
 recovery, network/battery policy. Serves **US4**, **US7**, **US9**.
 
-- [ ] T100 Implement scheduling, fairness, global/per-engine concurrency in `data/download/src/main/java/com/pulldock/data/download/QueueCoordinatorImpl.kt`
-- [ ] T101 Implement priority, manual reorder, and persisted queue order in `data/download/src/main/java/com/pulldock/data/download/QueueOrder.kt`
-- [ ] T102 Implement retry with persisted backoff/jitter and `RETRY_WAIT` in `data/download/src/main/java/com/pulldock/data/download/RetryCoordinator.kt`
-- [ ] T103 Implement duplicate prevention via `sourceHash` and coordinator check in `data/download/src/main/java/com/pulldock/data/download/DuplicateGuard.kt`
-- [ ] T104 Implement event reconciliation (idempotent by task id + sequence) in `data/download/src/main/java/com/pulldock/data/download/EventReconciler.kt`
+- [X] T100 Implement scheduling, fairness, global/per-engine concurrency in `data/download/src/main/java/com/pulldock/data/download/QueueCoordinatorImpl.kt`
+- [X] T101 Implement priority, manual reorder, and persisted queue order in `data/download/src/main/java/com/pulldock/data/download/QueueOrder.kt`
+- [X] T102 Implement retry with persisted backoff/jitter and `RETRY_WAIT` in `data/download/src/main/java/com/pulldock/data/download/RetryCoordinator.kt`
+- [X] T103 Implement duplicate prevention via `sourceHash` and coordinator check in `data/download/src/main/java/com/pulldock/data/download/DuplicateGuard.kt`
+- [X] T104 Implement event reconciliation (idempotent by task id + sequence) in `data/download/src/main/java/com/pulldock/data/download/EventReconciler.kt`
 - [ ] T105 [US7] Implement `NetworkPolicyRepository` and Wi-Fi-only/metered/battery policies in `core/datastore/src/main/java/com/pulldock/core/datastore/NetworkPolicyStore.kt`
-- [ ] T106 [US7] Implement battery-threshold pause and rate-limit enforcement in `data/download/src/main/java/com/pulldock/data/download/PolicyEnforcer.kt`
-- [ ] T107 Implement UIDT job scheduling (API 34+) in `core/network/src/main/java/com/pulldock/core/network/UidtScheduler.kt`
-- [ ] T108 Implement `dataSync` foreground service for API <34 with notification and prompt `stopSelf()` on timeout in `app/src/main/java/com/pulldock/execution/TransferService.kt`
-- [ ] T109 Implement WorkManager deferrable jobs (recovery, reconciliation, cleanup) in `app/src/main/java/com/pulldock/execution/`
-- [ ] T110 [US9] Implement boot recovery that restores state and does not auto-start a restricted service in `app/src/main/java/com/pulldock/execution/BootReceiver.kt`
-- [ ] T111 Implement notification pause/resume/stop actions and notification-permission fallback in `app/src/main/java/com/pulldock/execution/TransferNotifications.kt`
+- [X] T106 [US7] Implement battery-threshold pause and rate-limit enforcement in `data/download/src/main/java/com/pulldock/data/download/PolicyEnforcer.kt`
+- [X] T107 Implement UIDT job scheduling (API 34+) in `core/network/src/main/java/com/pulldock/core/network/UidtScheduler.kt`
+- [X] T108 Implement `dataSync` foreground service for API <34 with notification and prompt `stopSelf()` on timeout in `app/src/main/java/com/pulldock/execution/TransferService.kt`
+- [X] T109 Implement WorkManager deferrable jobs (recovery, reconciliation, cleanup) in `app/src/main/java/com/pulldock/execution/`
+- [X] T110 [US9] Implement boot recovery that restores state and does not auto-start a restricted service in `app/src/main/java/com/pulldock/execution/BootReceiver.kt`
+- [X] T111 Implement notification pause/resume/stop actions and notification-permission fallback in `app/src/main/java/com/pulldock/execution/TransferNotifications.kt`
 - [ ] T112 Add background execution tests (UIDT eligibility, dataSync timeout, boot path) in `app/src/androidTest/` and `core/network/src/test/`
 - [ ] T113 Add queue tests: concurrency limits, duplicate start, starvation, out-of-order events in `data/download/src/test/`
 - [ ] T114 Verify Slice 5 on device: background transfer, Doze, force-stop recovery, reboot recovery (record actual results)

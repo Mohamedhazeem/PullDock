@@ -1,16 +1,16 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7376024705979366907.xml:2:13-83
-INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7376024705979366907.xml:2:13-83
+ADDED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7940238989116536533.xml:2:13-83
+INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7940238989116536533.xml:2:13-83
 	package
-		INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7376024705979366907.xml
+		INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7940238989116536533.xml
 	xmlns:android
-		ADDED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7376024705979366907.xml:2:23-81
+		ADDED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7940238989116536533.xml:2:23-81
 uses-sdk
-INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7376024705979366907.xml reason: use-sdk injection requested
-INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7376024705979366907.xml
-INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7376024705979366907.xml
+INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7940238989116536533.xml reason: use-sdk injection requested
+INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7940238989116536533.xml
+INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7940238989116536533.xml
 	android:targetSdkVersion
-		INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7376024705979366907.xml
+		INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7940238989116536533.xml
 	android:minSdkVersion
-		INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7376024705979366907.xml
+		INJECTED from /home/hazeem/My Projects/PullDock/core/designsystem/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7940238989116536533.xml

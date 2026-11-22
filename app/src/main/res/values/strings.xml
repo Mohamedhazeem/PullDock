@@ -19,4 +19,8 @@
     <string name="shell_library_empty">Completed downloads appear in your library, ready to play.</string>
     <string name="shell_settings_title">Settings</string>
     <string name="shell_settings_empty">Download, network, battery, storage, and privacy controls arrive with the settings slice. PullDock is local-first: nothing you download leaves this device.</string>
+    <string name="transfer_notification_title">PullDock transfers running</string>
+    <string name="transfer_notification_running">Downloads in progress</string>
+    <string name="transfer_notification_stop">Stop</string>
+    <string name="transfer_channel_name">Transfers</string>
 </resources>
