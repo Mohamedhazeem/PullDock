@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PullDock Signed Update Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "publishedAt",
+    "expiresAt",
+    "approvedExtractorVersions",
+    "approvedRuntimeVersions",
+    "providerStatus",
+    "signature",
+    "algorithm"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "publishedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "recommendedAppVersion": { "type": ["string", "null"] },
+    "minimumAppVersion": { "type": ["string", "null"] },
+    "approvedExtractorVersions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "approvedRuntimeVersions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "providerStatus": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["state"],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "CURRENT",
+              "UPDATE_RECOMMENDED",
+              "UPDATE_REQUIRED",
+              "PLATFORM_CHANGE_SUSPECTED",
+              "PROVIDER_TEMPORARILY_UNAVAILABLE",
+              "PROVIDER_UNSUPPORTED",
+              "AUTHORIZATION_REQUIRED",
+              "VERSION_CHECK_UNAVAILABLE",
+              "RUNTIME_INCOMPATIBLE"
+            ]
+          },
+          "disabled": { "type": "boolean" },
+          "messageCode": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "releaseNotes": { "type": ["string", "null"] },
+    "signature": { "type": "string", "contentEncoding": "base64" },
+    "algorithm": { "type": "string", "enum": ["Ed25519", "ECDSA-P256-SHA256"] }
+  }
+}

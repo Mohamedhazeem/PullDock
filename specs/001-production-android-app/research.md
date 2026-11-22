@@ -110,3 +110,27 @@ Deferred to `/speckit-plan` (implementation-level, not blocking clarity):
 - **FR-053/FR-054 (expanded)**: in-process pinned extractor runtime; unsupported ABI/runtime
   reported as a typed "provider unavailable" state.
 - **FR-056 (tightened)**: remote signed manifest check is required in v1, non-blocking.
+
+## 7. Phase 0 Decisions (plan)
+
+Resolved during `/speckit-plan`; recorded here so the plan has an audit trail.
+
+| Unknown / risk | Decision | Status |
+|---|---|---|
+| Torrent engine choice | libtorrent4j behind `TorrentEngine` (ADR-0001) | Decided; exact version locked by PoC |
+| libtorrent4j minimum API vs minSdk 26 | Verify in PoC; 64-bit only | Open verification |
+| Extractor runtime | In-process Chaquopy CPython 3.13 + pinned yt-dlp (ADR-0002) | Decided |
+| JS runtime for yt-dlp-ejs | Verify Android-compatible runtime and license before pinning | Open verification |
+| FFmpeg/FFprobe | Maintained Android build, per-ABI, argument-array invocation (ADR-0003) | Decided; build/license verify |
+| TLS impersonation (free vs paid extractor) | Free tier + cookie path for v1; revisit as D4 | Deferred product/cost |
+| ABI coverage | 64-bit only: arm64-v8a, x86_64 | Decided |
+| Background execution | API-level matrix: UIDT (34+), `dataSync` FGS (<34), WorkManager (deferrable) (ADR-0005) | Decided |
+| Queue scheduling | Single `QueueCoordinator`, Room as source of truth (ADR-0004) | Decided |
+| File finalization | Temp + verify + atomic publish; `name (n).ext` collisions (ADR-0006) | Decided |
+| Streaming | Loopback-only bridge with token and byte-range (ADR-0007) | Decided |
+| Module boundaries | 25-module Clean Architecture graph (ADR-0008) | Decided |
+| Extractor updates | Metadata-only signed manifest; executable updates via app releases (ADR-0009) | Decided |
+| Security boundaries | UI→domain→data→engines; no remote code (ADR-0010) | Decided |
+
+No NEEDS CLARIFICATION markers remain in the plan's Technical Context.
+
