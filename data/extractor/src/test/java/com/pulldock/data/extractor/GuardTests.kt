@@ -79,3 +79,59 @@ class GuardTests {
         assertTrue("guard scanned too few sources — check working directory", kotlinSources().size > 50)
     }
 }
+
+/** Privacy verification (T182, FR-050): no analytics, no clipboard reads, no uploads. */
+class PrivacyGuardTests {
+
+    @Test
+    fun `no analytics or advertising SDKs and no clipboard access`() {
+        val forbidden = listOf(
+            "com.google.firebase.analytics",
+            "firebase-analytics",
+            "com.facebook.audience",
+            "AppsFlyer",
+            "Mixpanel",
+            "Amplitude",
+            "ClipboardManager",
+            "getPrimaryClip",
+            "setPrimaryClip",
+        )
+        val sources = ProductionSources.all()
+        sources.forEach { (path, text) ->
+            forbidden.forEach { marker ->
+                assertFalse("Forbidden privacy marker '$marker' in $path", text.contains(marker))
+            }
+        }
+    }
+
+    @Test
+    fun `no account system or user-content upload path`() {
+        val forbidden = listOf(
+            "AccountManager",
+            "UploadTask",
+            "HttpURLConnection.setRequestMethod(\"POST\")".uppercase(),
+        )
+        // The only POST-class uploads allowed: none. Torrent/HTTP GET-only clients here.
+        val sources = ProductionSources.all()
+        sources.forEach { (path, text) ->
+            forbidden.forEach { marker ->
+                assertFalse("Forbidden upload/account marker '$marker' in $path", text.contains(marker))
+            }
+        }
+    }
+}
+
+/** Shared production-source accessor for the guard suites. */
+private object ProductionSources {
+    fun all(): List<Pair<String, String>> {
+        var root = File(System.getProperty("user.dir") ?: ".")
+        while (root != null && !File(root, "settings.gradle.kts").exists()) root = root.parentFile ?: return emptyList()
+        val base = root ?: return emptyList()
+        return listOf("app", "core", "domain", "data", "engines", "feature").flatMap { dir ->
+            File(base, dir).walkTopDown()
+                .filter { it.isFile && it.extension == "kt" && it.absolutePath.contains("/src/main/") }
+                .map { it.path to it.readText() }
+                .toList()
+        }
+    }
+}

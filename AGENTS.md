@@ -114,14 +114,18 @@ Design and ADR-0008 for the module-boundary rules; the summary below is the oper
 - `gradle/libs.versions.toml` — single source of truth for plugin and dependency versions.
   Pin versions here; never hardcode versions in module build files.
 
-### 2.3 Not yet present
+### 2.3 Not yet present (status after Slices 0–5 + lifecycle/storage cores)
 
-- Domain/data/feature module sources (Slices 1–2 create them; module build files and the
-  graph already exist).
-- Engine dependencies (libtorrent4j, Chaquopy/yt-dlp, FFmpeg) — pinned only after the
-  T060/T080 PoCs.
+- Domain/data/feature module **sources are now present** for Slices 1–5 and the
+  lifecycle/storage cores; the remaining UI surfaces are the Library and Player
+  feature modules (T156–T158, T160, T164–T165).
+- libtorrent4j 2.1.0-39 is pinned (arm64-v8a/x86_64 jars, MIT wrapper). The
+  Chaquopy/yt-dlp and FFmpeg dependencies remain unpinned until the T080/D2 device
+  verifications.
+- Device-verified steps still open: torrent runtime PoC (T075/T060), extractor PoC
+  (T080/T094), background-execution behavior (T114/T163), connected tests.
 - Static analysis (Detekt/ktlint), coverage tooling, dependency verification metadata —
-  CI documents where they activate (T176, Slice 7).
+  CI documents where they activate (T176).
 
 Update this section whenever modules, packages, or build capabilities change.
 
