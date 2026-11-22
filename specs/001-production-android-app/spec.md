@@ -29,6 +29,23 @@ The application MUST be reliable, private by default, honest about its behavior,
 when things go wrong (network loss, process death, storage exhaustion, provider changes,
 platform background restrictions).
 
+## Clarifications
+
+### Session 2026-11-22
+
+- Q: Which media providers should PullDock actually support in v1? → A: All five candidates
+  (YouTube, X/Twitter, Instagram, Facebook, TikTok).
+- Q: How should media extraction run on Android, given the runtime constraints? → A: Bundle
+  an in-process Python runtime with a pinned yt-dlp; ship arm64-v8a and x86_64; update via
+  signed application releases.
+- Q: Which device and CPU architecture coverage should v1 guarantee? → A: 64-bit only
+  (arm64-v8a and x86_64); 32-bit devices are not supported.
+- Q: Should in-app streaming of incomplete torrents be part of v1? → A: Yes, include
+  streaming while downloading in v1 using the loopback-only bridge.
+- Q: Should v1 include the remote signed update and provider-compatibility metadata check?
+  → A: Yes, include a non-blocking signed manifest check with a pinned key and cached
+  last-known-good data.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — First launch: consent, privacy, and capability explanation (Priority: P1)
@@ -163,7 +180,7 @@ existing first.
 
 ---
 
-### User Story 6 — Stream eligible torrent media while downloading (Priority: P3)
+### User Story 6 — Stream eligible torrent media while downloading (Priority: P2)
 
 A user can start playback of a downloading torrent's media at a playable point.
 
@@ -333,7 +350,10 @@ player.
 #### Media extraction
 
 - **FR-014**: The app MUST resolve supported, authorized media URLs through a provider
-  registry with isolated provider implementations.
+  registry with isolated provider implementations. The v1 provider set is YouTube,
+  X/Twitter, Instagram, Facebook, and TikTok, each with its own documented URL patterns,
+  capabilities, authorization requirements, platform restrictions, legal/technical basis,
+  and policy assessment.
 - **FR-015**: The app MUST present available formats with resolution, container, video/audio
   codecs, estimated size, and whether merging is required.
 - **FR-016**: The app MUST support audio-only sources and separate audio/video streams.
@@ -435,15 +455,19 @@ player.
 - **FR-053**: The app MUST maintain an explicit, immutable extractor runtime inventory
   covering extractor, companion JS runtime, Python runtime, media processor/prober, native
   libraries and ABIs, and provider adapters, each with version, required compatibility,
-  runtime compatibility, channel, verification status, and known limitations.
+  runtime compatibility, channel, verification status, and known limitations. The extractor
+  runtime is bundled in-process and pinned; extractor components ship for arm64-v8a and
+  x86_64.
 - **FR-054**: The app MUST validate the extractor environment during initialization and
-  produce a typed, actionable error on failure without crashing.
+  produce a typed, actionable error on failure without crashing. An unsupported or
+  unavailable extractor ABI/runtime MUST be reported as a typed "provider unavailable"
+  state, never as a crash or a generic failure.
 - **FR-055**: The app MUST use a pinned, validated dependency combination in production and
   MUST NOT automatically install nightly or unvalidated components.
-- **FR-056**: The app MAY check a remote signed metadata manifest for update and provider
-  compatibility information. It MUST verify signatures with an app-pinned key, validate
-  schema and expiration, prevent rollback, use secure transport, and handle unavailable
-  servers and cached last-known-good data.
+- **FR-056**: The app MUST include a non-blocking check of a remote signed metadata manifest
+  for update and provider compatibility information in v1. It MUST verify signatures with an
+  app-pinned key, validate schema and expiration, prevent rollback, use secure transport,
+  and handle unavailable servers and cached last-known-good data.
 - **FR-057**: The app MUST reject invalid, expired, malformed, or incorrectly signed
   manifests.
 - **FR-058**: The app MUST NOT automatically download, replace, import, load, or execute
@@ -498,6 +522,8 @@ player.
 - **FR-075**: The app MUST document distribution and policy risk honestly, including that
   store eligibility is unresolved until a policy assessment is completed, and MUST NOT
   market the app as enabling unauthorized downloads.
+- **FR-076**: The app MUST ship 64-bit only (arm64-v8a and x86_64). 32-bit ABIs
+  (armeabi-v7a, x86) MUST NOT be packaged, and CI MUST verify native ABI packaging.
 
 ### Key Entities
 
@@ -557,6 +583,9 @@ player.
   tasks, with no data loss for completed files.
 - **SC-014**: Storage exhaustion, missing files, and database/file inconsistency are
   handled without corrupting existing downloads.
+- **SC-015**: A user can start playback of an eligible downloading torrent, seek within
+  available data, and the streaming bridge remains loopback-only and is terminated when
+  playback stops.
 
 ## Assumptions
 
@@ -564,13 +593,19 @@ player.
 - Initial distribution is private/sideloaded. Store distribution is an unresolved decision
   pending a policy assessment.
 - No-watermark transformation/removal is disabled for v1, as specified.
-- Torrent streaming is a P3 capability and may be deferred if the engine cannot support it
-  safely.
-- Provider support is limited to a documented set; unsupported providers are surfaced as
-  unsupported rather than bypassed.
+- Torrent streaming is included in v1 using a loopback-only bridge; it is not deferred.
+  Streaming is only available where the engine can serve playable data safely.
+- v1 supports all five candidate providers (YouTube, X/Twitter, Instagram, Facebook,
+  TikTok). Any provider outside this set is surfaced as unsupported rather than bypassed.
+- Media extraction bundles an in-process Python 3.13 runtime with a pinned yt-dlp,
+  distributed for arm64-v8a and x86_64. Extractor updates ship only through signed
+  application releases.
+- v1 includes a non-blocking remote signed update/provider-compatibility manifest check
+  with an app-pinned public key and cached last-known-good metadata.
 - Automated tests use owned, licensed, synthetic, or authorized fixtures; live social-media
   URLs are not the sole test dependency.
-- Minimum supported Android version is 26, subject to dependency compatibility.
+- Minimum supported Android version is 26, subject to dependency compatibility. v1 ships
+  64-bit only (arm64-v8a and x86_64); 32-bit devices are not supported.
 - Target/compile SDK and all dependency versions are the latest stable versions verified at
   implementation time and pinned in the version catalog.
 - The implementation proceeds in dependency-ordered vertical slices (foundation, domain and
