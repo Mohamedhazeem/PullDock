@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+/build
+*/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android
+local.properties
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+.cxx/
+.externalNativeBuild/
+captures/
+
+# IntelliJ / Android Studio
+*.iml
+.idea/
+.DS_Store
+
+# Kotlin
+.kotlin/
+
+# Spec Kit machine-local state (also covered by .specify/.gitignore)
+.specify/feature.json
+.specify/extensions/*/local-config.yml
+.specify/integrations/packages/
+.specify/integrations/packages.json
