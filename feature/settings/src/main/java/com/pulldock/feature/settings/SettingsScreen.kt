@@ -56,7 +56,6 @@ fun SettingsScreen(
             .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
     ) {
-        Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineMedium)
 
         val policy = state.policy
         if (policy == null) {

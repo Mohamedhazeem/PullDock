@@ -68,7 +68,6 @@ fun AddDownloadScreen(
             .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.xl),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
     ) {
-        Text(text = stringResource(R.string.add_title), style = MaterialTheme.typography.headlineMedium)
         Text(
             text = stringResource(R.string.add_explanation),
             style = MaterialTheme.typography.bodyMedium,
