@@ -1,5 +1,7 @@
 [versions]
 agp = "9.4.1"
+chaquopy = "17.2.0"
+yt-dlp = "2026.11.23"
 kotlin = "2.4.20"
 ksp = "2.3.14"
 hilt = "2.60.1"
@@ -59,6 +61,7 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 
 [plugins]
+chaquopy = { id = "com.chaquo.python", version.ref = "chaquopy" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

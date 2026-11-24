@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.chaquopy)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -74,6 +75,17 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+// Pinned extractor runtime (ADR-0012): built into signed releases at build time.
+// No executable code is downloaded or run at app runtime.
+chaquopy {
+    defaultConfig {
+        version = "3.12" // build machine has Python 3.12; 64-bit only, matching abiFilters
+        pip {
+            install("yt-dlp==${libs.versions.yt.dlp.get()}")
+        }
     }
 }
 
