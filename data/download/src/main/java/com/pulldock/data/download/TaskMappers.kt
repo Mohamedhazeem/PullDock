@@ -113,6 +113,7 @@ object TaskMappers {
             files = files.map(::toDomain),
             trackers = entity.trackers.split('\n').filter { it.isNotBlank() },
             peerCount = entity.peerCount,
+            seedCount = entity.seedCount,
             sequentialDownload = entity.sequentialDownload,
             resumeData = entity.resumeData?.let { ResumeBlob(version = entity.resumeDataVersion, bytes = it) },
             seedingPolicy = SeedingPolicy(
@@ -133,6 +134,7 @@ object TaskMappers {
         totalSize = details.totalSizeBytes,
         trackers = trackers,
         peerCount = details.peerCount,
+        seedCount = details.seedCount,
         sequentialDownload = details.sequentialDownload,
         resumeData = details.resumeData?.bytes,
         resumeDataVersion = details.resumeData?.version ?: 0,

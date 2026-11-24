@@ -46,6 +46,7 @@ class Recovery @Inject constructor(
                         }
                     } && repository.updateState(task.id, DownloadState.QUEUED)
                     if (restored) {
+                        markerDao.delete(marker.taskId)
                         resumed += 1
                     } else {
                         // Engine state cannot be reconstructed: explicit user action.

@@ -34,8 +34,10 @@ class EventReconciler(private val repository: DownloadRepository) {
 
         var changed = false
         if (state != null && state != task.state) {
-            // Only forward transitions through the state machine are applied.
-            if (DownloadStateMachine.canTransition(task.state, state)) {
+            // RUNNING -> QUEUED is legal only for startup recovery from persisted
+            // resume data; an engine event must never regress a live transfer.
+            val engineRegression = task.state == DownloadState.RUNNING && state == DownloadState.QUEUED
+            if (!engineRegression && DownloadStateMachine.canTransition(task.state, state)) {
                 changed = repository.updateState(taskId, state) || changed
             }
         }

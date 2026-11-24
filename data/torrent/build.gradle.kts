@@ -28,6 +28,7 @@ dependencies {
     // Torrent adapter: translates libtorrent alerts into typed domain events. Native
     // types stop at :engines:torrent-libtorrent and never reach domain or UI.
     api(project(":domain:torrent"))
+    implementation(project(":domain:download"))
     implementation(project(":core:common"))
     implementation(project(":core:model"))
     implementation(project(":engines:torrent-libtorrent"))

@@ -17,6 +17,7 @@ import com.pulldock.domain.extractor.MediaExtractor
 import com.pulldock.domain.extractor.model.MediaDescriptor
 import com.pulldock.domain.extractor.model.ProcessingStatus
 import com.pulldock.domain.torrent.TorrentEngine
+import com.pulldock.domain.torrent.TorrentEvent
 import com.pulldock.domain.torrent.TorrentResult
 import com.pulldock.domain.torrent.model.TorrentSource
 import javax.inject.Inject
@@ -54,6 +55,9 @@ class QueueCoordinatorImpl @Inject constructor(
     private val extractor: MediaExtractor,
     private val retryCoordinator: RetryCoordinator,
     private val policyEnforcer: PolicyEnforcer,
+    private val detailsRecorder: TorrentDetailsRecorder,
+    private val completionFinalizer: CompletionFinalizer,
+    private val resumeDataPersister: ResumeDataPersister,
     private val batteryMonitor: com.pulldock.core.network.BatteryMonitor,
     private val dispatchers: AppDispatchers,
 ) : QueueCoordinator {
@@ -69,6 +73,16 @@ class QueueCoordinatorImpl @Inject constructor(
     /** Single-flight scheduling guard: ticks never overlap. */
     private val ticking = java.util.concurrent.atomic.AtomicBoolean(false)
 
+    /** Monotonic event sequence (T104) and engine-id → task-id resolution cache. */
+    private val eventSequence = java.util.concurrent.atomic.AtomicLong(0)
+    private val engineToTask = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private val uploadedBytes = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private val currentPeerCount = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    private val currentSeedCount = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    /** Last (uploadedBytes, timestamp) used to derive upload rate for the UI. */
+    private val lastUploadSample = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Long>>()
+    private val metadataAttempted = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
     init {
         scope.launch {
             combine(
@@ -80,9 +94,14 @@ class QueueCoordinatorImpl @Inject constructor(
                 }
         }
         scope.launch { schedulingLoop() }
+        scope.launch { observeTorrentEvents() }
+        resumeDataPersister.start()
     }
 
     override suspend fun enqueue(task: DownloadTask) {
+        // New tasks enter the scheduling queue as QUEUED (state-machine §2.2):
+        // without this transition nothing would ever dispatch them.
+        repository.updateState(task.id, DownloadState.QUEUED)
         repository.reorder(listOf(task.id))
     }
 
@@ -94,6 +113,7 @@ class QueueCoordinatorImpl @Inject constructor(
         val engineId = task.engineTaskId
         if (task.type == DownloadType.TORRENT && engineId != null) {
             torrentEngine.pause(engineId)
+            resumeDataPersister.checkpoint(task.id)
         }
         if (task.type == DownloadType.EXTRACTOR && engineId != null) {
             extractor.cancel(engineId)
@@ -173,7 +193,99 @@ class QueueCoordinatorImpl @Inject constructor(
         }
     }
 
-    /** Scheduling tick: retry promotion → policy enforcement → dispatch. */
+    /**
+     * Bridges the engine's hot event stream into the persisted queue (T104). Without
+     * this collector, progress/state alerts never reach the database and a task that
+     * is genuinely downloading still appears idle in the UI.
+     */
+    private suspend fun observeTorrentEvents() {
+        torrentEngine.observeEvents(null).collect { event ->
+            val engineTaskId = event.taskId()
+            val taskId = engineToTask[engineTaskId]
+                ?: repository.observeQueue(QueueFilter.ALL).first().firstOrNull { it.engineTaskId == engineTaskId }?.id
+                ?: return@collect
+            engineToTask[engineTaskId] = taskId
+            when (event) {
+                is TorrentEvent.MetadataAvailable ->
+                    detailsRecorder.recordMetadata(taskId, event.metadata)
+                is TorrentEvent.PeerCount -> {
+                    currentPeerCount[engineTaskId] = event.peers
+                    currentSeedCount[engineTaskId] = event.seeds
+                    detailsRecorder.updateStats(taskId, event.peers, event.seeds, uploadedBytes.getOrDefault(engineTaskId, 0L))
+                }
+                is TorrentEvent.SeedingStats -> {
+                    uploadedBytes[engineTaskId] = event.uploadedBytes
+                    detailsRecorder.updateStats(taskId, currentPeerCount.getOrDefault(engineTaskId, 0), currentSeedCount.getOrDefault(engineTaskId, 0), event.uploadedBytes)
+                }
+                is TorrentEvent.Progress -> {
+                    // Alert-order fallback: metadata may arrive before the handle cache
+                    // is readable. Fetch once without blocking the event collector.
+                    if (metadataAttempted.add(engineTaskId)) {
+                        scope.launch {
+                            val task = repository.getTask(taskId) ?: return@launch
+                            if (repository.getTorrentDetails(taskId)?.files.isNullOrEmpty()) {
+                                when (val meta = torrentEngine.fetchMetadata(engineTaskId, java.time.Duration.ofSeconds(3))) {
+                                    is TorrentResult.Success -> detailsRecorder.recordMetadata(taskId, meta.value)
+                                    is TorrentResult.Failure -> Unit
+                                }
+                            }
+                        }
+                    }
+                    val now = System.currentTimeMillis()
+                    val previous = lastUploadSample[engineTaskId]
+                    if (previous != null && now > previous.second) {
+                        val rate = (event.uploadedBytes - previous.first) * 1000 / (now - previous.second)
+                        detailsRecorder.updateUploadSpeed(taskId, rate.coerceAtLeast(0))
+                    }
+                    lastUploadSample[engineTaskId] = event.uploadedBytes to now
+                    onEngineEvent(
+                        taskId = taskId,
+                        sequence = eventSequence.incrementAndGet(),
+                        progressBytes = event.downloadedBytes,
+                        totalBytes = event.totalBytes,
+                        speed = event.speedBytesPerSec,
+                        state = null,
+                        error = null,
+                    )
+                }
+                is TorrentEvent.StateChanged -> {
+                    onEngineEvent(
+                        taskId = taskId,
+                        sequence = eventSequence.incrementAndGet(),
+                        progressBytes = null,
+                        totalBytes = null,
+                        speed = null,
+                        state = event.state,
+                        error = null,
+                    )
+                    // FR-030: verification and finalization precede COMPLETED.
+                    if (event.state == DownloadState.VERIFYING) completionFinalizer.finalize(taskId)
+                }
+                is TorrentEvent.Error -> onEngineEvent(
+                    taskId = taskId,
+                    sequence = eventSequence.incrementAndGet(),
+                    progressBytes = null,
+                    totalBytes = null,
+                    speed = null,
+                    state = DownloadState.FAILED,
+                    error = event.error,
+                )
+                else -> Unit // peer counts/seeding stats have no persisted field yet
+            }
+        }
+    }
+
+    private fun TorrentEvent.taskId(): String = when (this) {
+        is TorrentEvent.MetadataAvailable -> taskId
+        is TorrentEvent.Progress -> taskId
+        is TorrentEvent.PeerCount -> taskId
+        is TorrentEvent.PieceVerified -> taskId
+        is TorrentEvent.StateChanged -> taskId
+        is TorrentEvent.Error -> taskId
+        is TorrentEvent.SeedingStats -> taskId
+    }
+
+    /** Applies a single-flight scheduling tick: retry promotion → policy → dispatch. */
     private suspend fun schedulingLoop() {
         while (scope.isActive) {
             if (ticking.compareAndSet(false, true)) {
@@ -220,9 +332,10 @@ class QueueCoordinatorImpl @Inject constructor(
     }
 
     private suspend fun startTorrent(task: DownloadTask): DownloadError? {
-        val engineId = task.engineTaskId ?: when (val added = torrentEngine.addTorrent(TorrentSource(TorrentSource.Kind.MAGNET, task.source))) {
+        val engineId = task.engineTaskId ?: when (val added = torrentEngine.addTorrent(task.asTorrentSource())) {
             is TorrentResult.Success -> {
                 repository.updateEngineTaskId(task.id, added.value)
+                engineToTask[added.value] = task.id
                 added.value
             }
             is TorrentResult.Failure -> return added.error

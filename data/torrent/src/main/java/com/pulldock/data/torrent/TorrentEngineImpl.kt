@@ -5,6 +5,7 @@ import com.pulldock.core.common.dispatchers.AppDispatchers
 import com.pulldock.core.model.DownloadError
 import com.pulldock.core.model.DownloadState
 import com.pulldock.core.model.TransferLimits
+import com.pulldock.domain.download.repository.StoragePreferencesRepository
 import com.pulldock.domain.torrent.EngineTaskId
 import com.pulldock.domain.torrent.StreamingHandle
 import com.pulldock.domain.torrent.TorrentEngine
@@ -65,6 +66,7 @@ class TorrentEngineImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val session: LibtorrentSession,
     private val dispatchers: AppDispatchers,
+    private val storagePreferences: StoragePreferencesRepository,
 ) : TorrentEngine {
 
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.default)
@@ -91,12 +93,13 @@ class TorrentEngineImpl @Inject constructor(
 
     override suspend fun addTorrent(source: TorrentSource): TorrentResult<EngineTaskId> {
         ensureSession()
+        val savePath = defaultSavePath()
         val result = session.execute {
             try {
                 when (source.kind) {
                     TorrentSource.Kind.MAGNET -> {
                         val params = AddTorrentParams.parseMagnetUri(source.value)
-                        addParams(params)
+                        addParams(params, savePath)
                     }
                     TorrentSource.Kind.TORRENT_URI -> {
                         val bytes = readTorrentBytes(source.value)
@@ -105,7 +108,7 @@ class TorrentEngineImpl @Inject constructor(
                             )
                         val params = AddTorrentParams()
                         params.torrentInfo = TorrentInfo.bdecode(bytes)
-                        addParams(params)
+                        addParams(params, savePath)
                     }
                 }
             } catch (e: CancellationException) {
@@ -118,8 +121,8 @@ class TorrentEngineImpl @Inject constructor(
     }
 
     /** Uniform ingestion; duplicate infohashes resolve to the existing id (FR-006). */
-    private fun addParams(params: AddTorrentParams): TorrentResult<EngineTaskId> {
-        params.savePath = defaultSavePath()
+    private fun addParams(params: AddTorrentParams, savePath: String): TorrentResult<EngineTaskId> {
+        params.savePath = savePath
         val infoHashHex = params.infoHashes.v1.toHex().lowercase()
         session.manager().find(Sha1Hash.parseHex(infoHashHex))?.let {
             return TorrentResult.Success(it.infoHash().toHex().lowercase())
@@ -323,13 +326,14 @@ class TorrentEngineImpl @Inject constructor(
         if (!ResumeData.isUsable(blob)) {
             return TorrentResult.Failure(DownloadError.TorrentEngine(DownloadError.TorrentReason.INVALID_RESUME_DATA))
         }
+        val savePath = defaultSavePath()
         return session.execute {
             try {
                 val swigParams = org.libtorrent4j.swig.libtorrent.read_resume_data_ex(
                     org.libtorrent4j.swig.byte_vector(blob.bytes),
                     org.libtorrent4j.swig.error_code(),
                 )
-                swigParams.save_path = defaultSavePath()
+                swigParams.save_path = savePath
                 session.manager().swig().async_add_torrent(swigParams)
                 waitForHandle(taskId, ADD_WAIT_MS)?.let { handles[taskId] = it }
                 TorrentResult.Success(Unit)
@@ -370,6 +374,15 @@ class TorrentEngineImpl @Inject constructor(
                 is EngineObservation.Added -> emitState(observation.infoHashHex, DownloadState.STARTING)
                 is EngineObservation.MetadataReady -> {
                     metadataWaiters.remove(observation.infoHashHex)?.invoke()
+                    // Persist the real name/size/files once available (FR-003); the
+                    // untrusted name is sanitized by the data-layer recorder.
+                    val metadata = findHandle(observation.infoHashHex)?.torrentFile()?.let(::toMetadata)
+                    if (metadata != null) {
+                        emit(
+                            observation.infoHashHex,
+                            TorrentEvent.MetadataAvailable(observation.infoHashHex, metadata),
+                        )
+                    }
                     emitState(observation.infoHashHex, DownloadState.AWAITING_FILE_SELECTION)
                 }
                 is EngineObservation.MetadataFailed ->
@@ -411,7 +424,14 @@ class TorrentEngineImpl @Inject constructor(
                             ),
                         )
                     }
-                    emit(taskId, TorrentEvent.PeerCount(taskId, status.numPeers()))
+                    emit(
+                        taskId,
+                        TorrentEvent.PeerCount(
+                            taskId = taskId,
+                            peers = status.numPeers(),
+                            seeds = status.numSeeds(),
+                        ),
+                    )
                     applySeedingStopConditions(taskId)
                 } catch (_: Exception) {
                     // Session shutting down or handle gone; close() cancels this loop.
@@ -489,8 +509,13 @@ class TorrentEngineImpl @Inject constructor(
     private fun notFound(): DownloadError =
         DownloadError.TorrentEngine(DownloadError.TorrentReason.METADATA_TIMEOUT, "unknown engine task")
 
-    private fun defaultSavePath(): String =
-        (context.getExternalFilesDir(null) ?: context.filesDir).absolutePath
+    private suspend fun defaultSavePath(): String {
+        val root = context.getExternalFilesDir(null) ?: context.filesDir
+        val folder = storagePreferences.currentDownloadFolder()
+        if (folder.isNullOrBlank()) return root.absolutePath
+        val target = java.io.File(root, folder)
+        return if (target.exists() || target.mkdirs()) target.absolutePath else root.absolutePath
+    }
 
     /** Reads a picked `.torrent` document; SAF content URIs go through ContentResolver. */
     private fun readTorrentBytes(uri: String): ByteArray? = try {
