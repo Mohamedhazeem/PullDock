@@ -20,4 +20,16 @@
     <string name="home_item_unavailable">File unavailable</string>
     <string name="home_empty_title">No downloads yet</string>
     <string name="home_empty_body">Use “Add download” to add a magnet link, a .torrent file, or an authorized media URL. Your recent transfers appear here.</string>
+    <string name="home_filter_all">All</string>
+    <string name="home_filter_button">Filter downloads</string>
+    <string name="home_filter_active">Active</string>
+    <string name="home_filter_queued">Queued</string>
+    <string name="home_filter_paused">Paused</string>
+    <string name="home_filter_completed">Completed</string>
+    <string name="home_filter_failed">Failed</string>
+    <string name="home_action_delete">Delete</string>
+    <string name="home_delete_title">Delete this download?</string>
+    <string name="home_delete_body">The task and its downloaded file will be permanently deleted.</string>
+    <string name="home_delete_confirm">Delete</string>
+    <string name="home_delete_dismiss">Keep</string>
 </resources>

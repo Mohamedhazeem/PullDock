@@ -1,26 +1,35 @@
 package com.pulldock.feature.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,9 +40,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -46,14 +58,13 @@ import com.pulldock.core.designsystem.components.PdEmptyState
 import com.pulldock.core.designsystem.components.PdProgress
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.core.model.DownloadState
+import com.pulldock.core.model.formatBytes
 import com.pulldock.core.model.formatSpeed
 import com.pulldock.domain.download.model.DownloadTask
+import com.pulldock.domain.download.repository.QueueFilter
 import com.pulldock.domain.torrent.model.TorrentTaskDetails
 
-/**
- * Home: a calm, focused view of live transfers only (FR-023/US4). Each card carries
- * its own controls and stable telemetry slots; completed media lives in the Library.
- */
+/** Single unified transfer screen (FR-023): filters + pause/resume/delete only. */
 @Composable
 fun HomeScreen(
     onAddDownload: () -> Unit,
@@ -63,6 +74,7 @@ fun HomeScreen(
     val tokens = LocalPdTokens.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    var filterMenuExpanded by remember { mutableStateOf(false) }
     val actionMessage = state.actionError?.let { stringResource(R.string.home_error_action) }
     LaunchedEffect(state.actionError) {
         actionMessage?.let {
@@ -87,24 +99,53 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.xl),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+                .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
-            Text(
-                text = stringResource(R.string.home_title),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Text(
-                text = stringResource(R.string.home_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                // Menu and its anchor share a Box so the popup opens directly under the icon.
+                Box {
+                    val filterDescription = stringResource(R.string.home_filter_button)
+                    IconButton(
+                        onClick = { filterMenuExpanded = true },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .semantics { contentDescription = filterDescription },
+                    ) {
+                        Icon(
+                            Icons.Filled.FilterList,
+                            contentDescription = filterDescription,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = filterMenuExpanded,
+                        onDismissRequest = { filterMenuExpanded = false },
+                        offset = androidx.compose.ui.unit.DpOffset(x = 200.dp, y = 4.dp),
+                        modifier = Modifier.width(180.dp),
+                    ) {
+                        QueueFilter.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        filterLabel(option),
+                                        color = if (option == state.filter) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setFilter(option)
+                                    filterMenuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
 
             when {
-                state.loading -> CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-                state.recent.isEmpty() -> PdEmptyState(
+                state.loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                state.tasks.isEmpty() -> PdEmptyState(
                     title = stringResource(R.string.home_empty_title),
                     message = stringResource(R.string.home_empty_body),
                     icon = Icons.Filled.CloudDownload,
@@ -114,16 +155,15 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
                 ) {
-                    items(state.recent, key = { it.id }) { task ->
-                        RecentTaskCard(
+                    items(state.tasks, key = { it.id }) { task ->
+                        TaskCard(
                             task = task,
                             details = state.torrentDetails[task.id],
                             onOpen = { onOpenTask(task.id) },
                             onPause = { viewModel.pause(task.id) },
                             onResume = { viewModel.resume(task.id) },
                             onRetry = { viewModel.retry(task.id) },
-                            onCancel = { viewModel.cancel(task.id) },
-                            onRemove = { viewModel.requestRemove(task.id) },
+                            onDelete = { viewModel.requestDelete(task.id) },
                         )
                     }
                 }
@@ -131,78 +171,125 @@ fun HomeScreen(
         }
     }
 
-    state.pendingRemoval?.let {
+    state.pendingDelete?.let {
         PdConfirmDialog(
-            title = stringResource(R.string.home_remove_title),
-            text = stringResource(R.string.home_remove_body),
-            confirmLabel = stringResource(R.string.home_remove_confirm),
-            dismissLabel = stringResource(R.string.home_remove_dismiss),
-            onConfirm = { viewModel.confirmRemove(deleteFile = false) },
-            onDismiss = viewModel::dismissRemove,
+            title = stringResource(R.string.home_delete_title),
+            text = stringResource(R.string.home_delete_body),
+            confirmLabel = stringResource(R.string.home_delete_confirm),
+            dismissLabel = stringResource(R.string.home_delete_dismiss),
+            onConfirm = viewModel::confirmDelete,
+            onDismiss = viewModel::dismissDelete,
         )
     }
 }
 
-/** Elevated task card with inline controls and fixed-height telemetry slots. */
 @Composable
-private fun RecentTaskCard(
+private fun TaskCard(
     task: DownloadTask,
     details: TorrentTaskDetails?,
     onOpen: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onRetry: () -> Unit,
-    onCancel: () -> Unit,
-    onRemove: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val tokens = LocalPdTokens.current
-    val stateLabel = task.state.name.lowercase().replace('_', ' ')
-    ElevatedCard(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
+    val stateLabel = stateLabel(task.state)
+    val sizeText = task.progress.totalBytes?.let { total ->
+        if (total > 0) "${formatBytes(task.progress.downloadedBytes)} / ${formatBytes(total)}"
+        else formatBytes(task.progress.downloadedBytes)
+    } ?: formatBytes(task.progress.downloadedBytes)
+
+    ElevatedCard(
+        onClick = onOpen,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(tokens.radius.lg),
+    ) {
         Column(
             modifier = Modifier.padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.md),
             verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = task.displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                )
-                Text(text = stateLabel, style = MaterialTheme.typography.bodySmall)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(tokens.radius.md))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.CloudDownload,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+                Spacer(Modifier.width(tokens.spacing.md))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(task.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                    Text(
+                        text = "${task.type.name.lowercase().replaceFirstChar { it.uppercase() }} · $stateLabel",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            PdProgress(fraction = task.progress.percent?.toFloat(), summary = stateLabel)
+
+            // Progress summary shows size, not a repeated state label.
+            PdProgress(fraction = task.progress.percent?.toFloat(), summary = sizeText)
+
             Row(
                 modifier = Modifier.fillMaxWidth().height(24.dp),
                 horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
             ) {
                 val upload = task.uploadSpeed ?: 0L
                 StatSlot(
-                    value = "↓ " + if (task.progress.speedBytesPerSec > 0) formatSpeed(task.progress.speedBytesPerSec.toDouble()) else "—",
-                    modifier = Modifier.weight(1f),
+                    "↓ " + if (task.progress.speedBytesPerSec > 0) formatSpeed(task.progress.speedBytesPerSec.toDouble()) else "—",
+                    Modifier.weight(1f),
                 )
-                StatSlot(
-                    value = "↑ " + if (upload > 0) formatSpeed(upload.toDouble()) else "—",
-                    modifier = Modifier.weight(1f),
-                )
+                StatSlot("↑ " + if (upload > 0) formatSpeed(upload.toDouble()) else "—", Modifier.weight(1f))
                 StatSlot("${details?.peerCount ?: 0} peers", Modifier.weight(1f))
                 StatSlot("${details?.seedCount ?: 0} seeds", Modifier.weight(1f))
             }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
             ) {
                 when (task.state) {
-                    DownloadState.RUNNING -> CardAction(Icons.Filled.Pause, stringResource(R.string.home_action_pause), onPause)
-                    DownloadState.PAUSED -> CardAction(Icons.Filled.PlayArrow, stringResource(R.string.home_action_resume), onResume)
-                    DownloadState.FAILED, DownloadState.NEEDS_USER_ACTION, DownloadState.BLOCKED ->
-                        CardAction(Icons.Filled.Replay, stringResource(R.string.home_action_retry), onRetry)
+                    DownloadState.RUNNING -> ActionButton(
+                        Icons.Filled.Pause,
+                        stringResource(R.string.home_action_pause),
+                        onPause,
+                        primary = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    DownloadState.PAUSED -> ActionButton(
+                        Icons.Filled.PlayArrow,
+                        stringResource(R.string.home_action_resume),
+                        onResume,
+                        primary = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    DownloadState.FAILED, DownloadState.NEEDS_USER_ACTION, DownloadState.BLOCKED,
+                    DownloadState.NEEDS_PERMISSION -> ActionButton(
+                        Icons.Filled.PlayArrow,
+                        stringResource(R.string.home_action_resume),
+                        onRetry,
+                        primary = true,
+                        modifier = Modifier.weight(1f),
+                    )
                     else -> Unit
                 }
-                if (task.state !in setOf(DownloadState.COMPLETED, DownloadState.CANCELLED, DownloadState.REMOVING)) {
-                    CardAction(Icons.Filled.Close, stringResource(R.string.home_action_cancel), onCancel)
-                }
-                CardAction(Icons.Filled.Delete, stringResource(R.string.home_action_remove), onRemove)
+                ActionButton(
+                    Icons.Filled.Delete,
+                    stringResource(R.string.home_action_delete),
+                    onDelete,
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
@@ -211,7 +298,7 @@ private fun RecentTaskCard(
 @Composable
 private fun StatSlot(value: String, modifier: Modifier = Modifier) {
     Text(
-        text = value,
+        value,
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
@@ -220,13 +307,36 @@ private fun StatSlot(value: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun CardAction(icon: ImageVector, label: String, onClick: () -> Unit) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier
-            .size(48.dp)
-            .semantics { contentDescription = label },
-    ) {
-        Icon(imageVector = icon, contentDescription = label)
+private fun ActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    primary: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val tokens = LocalPdTokens.current
+    val content: @Composable RowScope.() -> Unit = {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(tokens.spacing.xs))
+        Text(label)
     }
+    val height = Modifier.heightIn(min = 48.dp)
+    if (primary) {
+        androidx.compose.material3.FilledTonalButton(onClick = onClick, modifier = modifier.then(height), content = content)
+    } else {
+        androidx.compose.material3.OutlinedButton(onClick = onClick, modifier = modifier.then(height), content = content)
+    }
+}
+
+@Composable
+private fun stateLabel(state: DownloadState): String = state.name.lowercase().replace('_', ' ')
+
+@Composable
+private fun filterLabel(filter: QueueFilter): String = when (filter) {
+    QueueFilter.ALL -> stringResource(R.string.home_filter_all)
+    QueueFilter.ACTIVE -> stringResource(R.string.home_filter_active)
+    QueueFilter.QUEUED -> stringResource(R.string.home_filter_queued)
+    QueueFilter.PAUSED -> stringResource(R.string.home_filter_paused)
+    QueueFilter.COMPLETED -> stringResource(R.string.home_filter_completed)
+    QueueFilter.FAILED -> stringResource(R.string.home_filter_failed)
 }
