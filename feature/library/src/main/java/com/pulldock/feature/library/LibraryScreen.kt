@@ -1,19 +1,26 @@
 package com.pulldock.feature.library
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -22,10 +29,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.pulldock.core.designsystem.components.PdConfirmDialog
@@ -47,40 +59,70 @@ fun LibraryScreen(
 ) {
     val tokens = LocalPdTokens.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var filterMenuExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.xl),
-        verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+            .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.md),
+        verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(stringResource(R.string.library_title), style = MaterialTheme.typography.headlineMedium)
-            TextButton(onClick = viewModel::reconcile) { Text(stringResource(R.string.library_reconcile)) }
-        }
-
-        OutlinedTextField(
-            value = state.query.searchText.orEmpty(),
-            onValueChange = viewModel::setSearch,
-            label = { Text(stringResource(R.string.library_search)) },
-            singleLine = true,
+        Row(
             modifier = Modifier.fillMaxWidth(),
-        )
-
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-            items(LibrarySection.entries) { section ->
-                FilterChip(
-                    selected = state.query.section == section,
-                    onClick = { viewModel.setSection(section) },
-                    label = { Text(sectionLabel(section)) },
-                )
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+        ) {
+            OutlinedTextField(
+                value = state.query.searchText.orEmpty(),
+                onValueChange = viewModel::setSearch,
+                label = { Text(stringResource(R.string.library_search)) },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+            // Same filter-icon dropdown pattern as Home, anchored beside the search field.
+            Box {
+                val filterDescription = stringResource(R.string.library_filter_button)
+                IconButton(
+                    onClick = { filterMenuExpanded = true },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .semantics { contentDescription = filterDescription },
+                ) {
+                    Icon(Icons.Filled.FilterList, contentDescription = filterDescription, tint = MaterialTheme.colorScheme.primary)
+                }
+                DropdownMenu(
+                    expanded = filterMenuExpanded,
+                    onDismissRequest = { filterMenuExpanded = false },
+                    offset = androidx.compose.ui.unit.DpOffset(x = (-40).dp, y = 4.dp),
+                    modifier = Modifier.width(190.dp),
+                ) {
+                    LibrarySection.entries.forEach { section ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    sectionLabel(section),
+                                    color = if (section == state.query.section) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                )
+                            },
+                            onClick = { viewModel.setSection(section); filterMenuExpanded = false },
+                        )
+                    }
+                    HorizontalDivider()
+                    LibrarySort.entries.forEach { sort ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    sortLabel(sort),
+                                    color = if (sort == state.query.sortBy) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                )
+                            },
+                            onClick = { viewModel.setSort(sort); filterMenuExpanded = false },
+                        )
+                    }
+                }
             }
-            item {
-                FilterChip(
-                    selected = false,
-                    onClick = { viewModel.setSort(nextSort(state.query.sortBy)) },
-                    label = { Text(stringResource(R.string.library_sort, sortLabel(state.query.sortBy))) },
-                )
+            IconButton(onClick = viewModel::reconcile, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.library_reconcile))
             }
         }
 
@@ -95,7 +137,7 @@ fun LibraryScreen(
         if (!state.loading && state.items.isEmpty()) {
             PdEmptyState(
                 title = stringResource(R.string.library_empty_title),
-                message = stringResource(R.string.library_empty_body),
+                message = "",
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
@@ -186,10 +228,3 @@ private fun sortLabel(sort: LibrarySort): String = when (sort) {
     LibrarySort.SIZE_DESC -> stringResource(R.string.library_sort_size)
 }
 
-private fun nextSort(sort: LibrarySort): LibrarySort = when (sort) {
-    LibrarySort.NEWEST_FIRST -> LibrarySort.TITLE_ASC
-    LibrarySort.TITLE_ASC -> LibrarySort.SIZE_DESC
-    LibrarySort.SIZE_DESC -> LibrarySort.OLDEST_FIRST
-    LibrarySort.OLDEST_FIRST -> LibrarySort.TITLE_DESC
-    LibrarySort.TITLE_DESC -> LibrarySort.NEWEST_FIRST
-}
