@@ -26,7 +26,6 @@ import com.pulldock.feature.legal.LegalScreen
 import com.pulldock.feature.library.LibraryScreen
 import com.pulldock.feature.onboarding.OnboardingScreen
 import com.pulldock.feature.player.PlayerScreen
-import com.pulldock.feature.queue.QueueScreen
 import com.pulldock.feature.settings.SettingsScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -91,9 +90,6 @@ fun RootNavHost(
                     onAddDownload = { navController.navigate(Routes.ADD) },
                     onOpenTask = { id -> navController.navigate(Routes.download(id)) },
                 )
-            }
-            composable(PullDockDestination.Primary.DOWNLOADS.route) {
-                QueueScreen(onOpenTask = { id -> navController.navigate(Routes.download(id)) })
             }
             composable(PullDockDestination.Primary.LIBRARY.route) {
                 LibraryScreen(onPlay = { itemId -> navController.navigate(Routes.player(itemId)) })

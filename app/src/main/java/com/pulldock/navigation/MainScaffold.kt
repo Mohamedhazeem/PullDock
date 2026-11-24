@@ -118,7 +118,6 @@ private fun NavHostController.navigateToPrimary(destination: PullDockDestination
 private val PullDockDestination.Primary.selectedIcon: ImageVector
     get() = when (this) {
         PullDockDestination.Primary.HOME -> Icons.Filled.Home
-        PullDockDestination.Primary.DOWNLOADS -> Icons.Filled.Download
         PullDockDestination.Primary.LIBRARY -> Icons.Filled.LibraryMusic
         PullDockDestination.Primary.SETTINGS -> Icons.Filled.Settings
     }
@@ -126,7 +125,6 @@ private val PullDockDestination.Primary.selectedIcon: ImageVector
 private val PullDockDestination.Primary.unselectedIcon: ImageVector
     get() = when (this) {
         PullDockDestination.Primary.HOME -> Icons.Outlined.Home
-        PullDockDestination.Primary.DOWNLOADS -> Icons.Outlined.Download
         PullDockDestination.Primary.LIBRARY -> Icons.Outlined.LibraryMusic
         PullDockDestination.Primary.SETTINGS -> Icons.Outlined.Settings
     }
