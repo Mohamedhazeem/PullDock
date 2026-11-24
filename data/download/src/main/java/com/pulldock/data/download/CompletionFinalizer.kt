@@ -62,6 +62,38 @@ class CompletionFinalizer @Inject constructor(
         }
     }
 
+    /** Publishes a verified extractor temp file, then completes the task. */
+    suspend fun finalizeMedia(taskId: String, tempPath: String): String? {
+        val entity = taskDao.getById(taskId) ?: return null
+        if (entity.state != DownloadState.RUNNING.name) return null
+        val temp = java.io.File(tempPath)
+        if (!temp.isFile || temp.length() <= 0L) return fail(entity)
+
+        val root = context.getExternalFilesDir(null) ?: return fail(entity)
+        val folder = storagePreferences.currentDownloadFolder()
+        val saveRoot = if (folder.isNullOrBlank()) root else java.io.File(root, folder).takeIf { it.exists() || it.mkdirs() } ?: root
+        val extension = temp.extension.ifBlank { "mp4" }
+        val filename = FilenameSanitizer.sanitize(entity.displayName) + "." + extension
+        return when (val result = FileFinalizer(saveRoot) { it.exists() && it.length() > 0L }.publish(temp, filename)) {
+            is FileFinalizer.Result.Published -> {
+                val uri = java.io.File(result.path).toURI().toString()
+                val now = System.currentTimeMillis()
+                if (taskDao.completeWithOutput(taskId, uri, java.io.File(result.path).name, now) > 0) {
+                    library.record(
+                        task = TaskMappers.toDomain(entity).copy(
+                            state = DownloadState.COMPLETED,
+                            outputUri = uri,
+                            completedAt = Instant.ofEpochMilli(now),
+                        ),
+                        fileUri = uri,
+                    )
+                    uri
+                } else null
+            }
+            is FileFinalizer.Result.Rejected -> fail(entity)
+        }
+    }
+
     private suspend fun fail(entity: DownloadTaskEntity): Nothing? {
         taskDao.updateState(
             id = entity.id,

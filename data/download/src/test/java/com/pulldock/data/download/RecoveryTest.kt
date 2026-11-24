@@ -102,7 +102,11 @@ class RecoveryTest {
 
     private class StubEngine(private val importSucceeds: Boolean) : TorrentEngine {
         var imported: ResumeBlob? = null
-        override suspend fun addTorrent(source: com.pulldock.domain.torrent.model.TorrentSource) = error("unused")
+        var addedSources = 0
+        override suspend fun addTorrent(source: com.pulldock.domain.torrent.model.TorrentSource): TorrentResult<String> {
+            addedSources += 1
+            return TorrentResult.Success("engine-re-added")
+        }
         override suspend fun fetchMetadata(taskId: String, timeout: java.time.Duration) = error("unused")
         override suspend fun selectFiles(taskId: String, selection: com.pulldock.domain.torrent.model.FileSelection) = error("unused")
         override suspend fun setSequential(taskId: String, enabled: Boolean) = error("unused")
@@ -176,7 +180,7 @@ class RecoveryTest {
     }
 
     @Test
-    fun `unreconstructable engine state marks NEEDS_USER_ACTION, never drops (US9 scenario 2)`() = runTest {
+    fun `invalid resume data falls back to a fresh engine add (US9 scenario 2)`() = runTest {
         val repo = FakeRepository()
         repo.tasks["t1"] = task("t1", DownloadType.TORRENT)
         val markers = FakeMarkerDao()
@@ -187,9 +191,9 @@ class RecoveryTest {
 
         val report = recovery.recover()
 
-        assertEquals(0, report.resumed)
-        assertEquals(1, report.needsUserAction)
-        assertEquals(DownloadState.NEEDS_USER_ACTION, repo.tasks["t1"]?.state)
+        assertEquals(1, report.resumed)
+        assertEquals(0, report.needsUserAction)
+        assertEquals(DownloadState.QUEUED, repo.tasks["t1"]?.state)
     }
 
     @Test

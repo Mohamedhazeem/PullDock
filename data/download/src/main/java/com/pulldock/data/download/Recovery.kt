@@ -2,19 +2,23 @@ package com.pulldock.data.download
 
 import com.pulldock.core.database.dao.RecoveryMarkerDao
 import com.pulldock.core.model.DownloadState
+import com.pulldock.core.model.DownloadType
 import com.pulldock.domain.download.queue.RecoveryReport
 import com.pulldock.domain.download.repository.DownloadRepository
+import com.pulldock.domain.download.repository.QueueFilter
+import com.pulldock.domain.download.state.DownloadStateMachine
 import com.pulldock.domain.torrent.TorrentEngine
 import com.pulldock.domain.torrent.TorrentResult
 import com.pulldock.domain.torrent.model.ResumeBlob
+import com.pulldock.domain.torrent.model.TorrentSource
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 
 /**
- * Startup recovery (T071, US9, FR-034/FR-064): interrupted tasks are either restored
- * from persisted resume data or explicitly marked `NEEDS_USER_ACTION` — never silently
- * dropped. Torrent recovery restores the engine session from the versioned resume
- * blob; extractor tasks re-enter the queue for a fresh resolve (no engine state to
- * rebuild).
+ * Startup recovery (T071/T110, US9, FR-034/FR-064): interrupted tasks are restored from
+ * resume data when available, otherwise re-added to the engine from their source. The
+ * engine reuses the already-downloaded files in app storage and verifies pieces, so a
+ * force-stop never leaves a "running" task with no live handle (data-model §4.3).
  */
 class Recovery @Inject constructor(
     private val repository: DownloadRepository,
@@ -36,35 +40,67 @@ class Recovery @Inject constructor(
                     markerDao.delete(marker.taskId)
                     failed += 1
                 }
-                task.type == com.pulldock.core.model.DownloadType.TORRENT -> {
+                task.type == DownloadType.TORRENT -> {
                     val details = repository.getTorrentDetails(task.id)
                     val blob = details?.resumeData
-                    val restored = blob != null && run {
-                        when (val result = torrentEngine.importResumeData(task.engineTaskId ?: task.id, blob)) {
-                            is TorrentResult.Success -> true
-                            is TorrentResult.Failure -> false
-                        }
-                    } && repository.updateState(task.id, DownloadState.QUEUED)
-                    if (restored) {
+                    val restored = blob != null && importResumed(task.engineTaskId ?: task.id, blob)
+                    if (restored && repository.updateState(task.id, DownloadState.QUEUED)) {
                         markerDao.delete(marker.taskId)
                         resumed += 1
                     } else {
-                        // Engine state cannot be reconstructed: explicit user action.
-                        repository.updateState(task.id, DownloadState.NEEDS_USER_ACTION)
-                        needsUserAction += 1
+                        // No usable resume blob: fall back to a fresh engine add below.
+                        if (requeueFromSource(task.id)) resumed += 1 else {
+                            repository.updateState(task.id, DownloadState.NEEDS_USER_ACTION)
+                            needsUserAction += 1
+                        }
+                        markerDao.delete(marker.taskId)
                     }
                 }
                 else -> {
-                    // Extractor tasks carry no engine-side state to rebuild.
                     repository.updateState(task.id, DownloadState.QUEUED)
+                    markerDao.delete(marker.taskId)
                     resumed += 1
                 }
             }
         }
+
+        // Tasks left in an active state by a force-stop may have no marker at all.
+        repository.observeQueue(QueueFilter.ALL).first()
+            .filter { it.state in DownloadStateMachine.activeStates && it.engineTaskId != null }
+            .forEach { task ->
+                if (requeueFromSource(task.id)) resumed += 1 else {
+                    repository.updateState(task.id, DownloadState.NEEDS_USER_ACTION)
+                    needsUserAction += 1
+                }
+            }
+
         return RecoveryReport(resumed = resumed, needsUserAction = needsUserAction, failed = failed)
     }
 
-    /** Records an interruption marker for a task (called on unexpected shutdown paths). */
+    private suspend fun importResumed(engineTaskId: String, blob: ResumeBlob): Boolean =
+        when (torrentEngine.importResumeData(engineTaskId, blob)) {
+            is TorrentResult.Success -> true
+            is TorrentResult.Failure -> false
+        }
+
+    /** Re-adds a torrent from its persisted source; piece data on disk is reused. */
+    private suspend fun requeueFromSource(taskId: String): Boolean {
+        val task = repository.getTask(taskId) ?: return false
+        if (task.type == DownloadType.TORRENT) {
+            val source = if (task.source.startsWith("magnet:", ignoreCase = true)) {
+                TorrentSource(TorrentSource.Kind.MAGNET, task.source)
+            } else {
+                TorrentSource(TorrentSource.Kind.TORRENT_URI, task.source)
+            }
+            when (torrentEngine.addTorrent(source)) {
+                is TorrentResult.Success -> Unit
+                is TorrentResult.Failure -> return false
+            }
+        }
+        return repository.updateState(taskId, DownloadState.QUEUED)
+    }
+
+    /** Records an interruption marker for a task (called by resume checkpoints). */
     suspend fun markInterrupted(taskId: String, reason: String, resumeDataPresent: Boolean) {
         markerDao.upsert(
             com.pulldock.core.database.entity.RecoveryMarkerEntity(
@@ -77,5 +113,4 @@ class Recovery @Inject constructor(
             ),
         )
     }
-
 }

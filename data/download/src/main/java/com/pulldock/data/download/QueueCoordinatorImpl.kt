@@ -16,6 +16,7 @@ import com.pulldock.domain.download.state.DownloadStateMachine
 import com.pulldock.domain.extractor.MediaExtractor
 import com.pulldock.domain.extractor.model.MediaDescriptor
 import com.pulldock.domain.extractor.model.ProcessingStatus
+import com.pulldock.domain.extractor.ExtractorEvent
 import com.pulldock.domain.torrent.TorrentEngine
 import com.pulldock.domain.torrent.TorrentEvent
 import com.pulldock.domain.torrent.TorrentResult
@@ -95,6 +96,7 @@ class QueueCoordinatorImpl @Inject constructor(
         }
         scope.launch { schedulingLoop() }
         scope.launch { observeTorrentEvents() }
+        scope.launch { observeExtractorEvents() }
         resumeDataPersister.start()
     }
 
@@ -275,6 +277,59 @@ class QueueCoordinatorImpl @Inject constructor(
         }
     }
 
+    /** Bridges media-extractor events into the persisted queue and completion flow. */
+    private suspend fun observeExtractorEvents() {
+        extractor.observeEvents(null).collect { event ->
+            val taskId = engineToTask[event.taskId()]
+                ?: repository.observeQueue(QueueFilter.ALL).first()
+                    .firstOrNull { it.engineTaskId == event.taskId() }?.id
+                ?: return@collect
+            when (event) {
+                is ExtractorEvent.Progress -> onEngineEvent(
+                    taskId = taskId,
+                    sequence = eventSequence.incrementAndGet(),
+                    progressBytes = event.downloadedBytes,
+                    totalBytes = event.totalBytes,
+                    speed = event.speedBytesPerSec,
+                    state = null,
+                    error = null,
+                )
+                is ExtractorEvent.StateChanged -> onEngineEvent(
+                    taskId = taskId,
+                    sequence = eventSequence.incrementAndGet(),
+                    progressBytes = null,
+                    totalBytes = null,
+                    speed = null,
+                    state = event.state,
+                    error = null,
+                )
+                is ExtractorEvent.Error -> onEngineEvent(
+                    taskId = taskId,
+                    sequence = eventSequence.incrementAndGet(),
+                    progressBytes = null,
+                    totalBytes = null,
+                    speed = null,
+                    state = DownloadState.FAILED,
+                    error = event.error,
+                )
+                is ExtractorEvent.Processing -> {
+                    if (event.status == com.pulldock.domain.extractor.model.ProcessingStatus.DONE) {
+                        repository.getTask(taskId)?.engineTaskId?.let { path ->
+                            completionFinalizer.finalizeMedia(taskId, path)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun ExtractorEvent.taskId(): String = when (this) {
+        is ExtractorEvent.Progress -> taskId
+        is ExtractorEvent.Processing -> taskId
+        is ExtractorEvent.StateChanged -> taskId
+        is ExtractorEvent.Error -> taskId
+    }
+
     private fun TorrentEvent.taskId(): String = when (this) {
         is TorrentEvent.MetadataAvailable -> taskId
         is TorrentEvent.Progress -> taskId
@@ -365,7 +420,10 @@ class QueueCoordinatorImpl @Inject constructor(
         return when (val result = extractor.download(descriptor, format)) {
             is com.pulldock.domain.extractor.ExtractorResult.Success -> {
                 repository.updateEngineTaskId(task.id, result.value)
+                engineToTask[result.value] = task.id
                 repository.updateState(task.id, DownloadState.RUNNING)
+                // download() returns only after the temp file is complete.
+                completionFinalizer.finalizeMedia(task.id, result.value)
                 null
             }
             is com.pulldock.domain.extractor.ExtractorResult.Failure -> result.error
