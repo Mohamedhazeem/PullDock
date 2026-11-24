@@ -46,7 +46,7 @@ sealed interface TorrentEvent {
         val uploadedBytes: Long,
     ) : TorrentEvent
 
-    data class PeerCount(val taskId: EngineTaskId, val peers: Int) : TorrentEvent
+    data class PeerCount(val taskId: EngineTaskId, val peers: Int, val seeds: Int = 0) : TorrentEvent
     data class PieceVerified(val taskId: EngineTaskId, val failedPieces: Int) : TorrentEvent
     data class StateChanged(val taskId: EngineTaskId, val state: DownloadState) : TorrentEvent
     data class Error(val taskId: EngineTaskId, val error: DownloadError) : TorrentEvent

@@ -18,6 +18,8 @@ class DownloadStateMachineTest {
     fun `every documented legal transition is accepted`() {
         val legal = listOf(
             DownloadState.CREATED to DownloadState.VALIDATING,
+            DownloadState.CREATED to DownloadState.QUEUED,
+            DownloadState.RUNNING to DownloadState.QUEUED, // recovery from resume data
             DownloadState.VALIDATING to DownloadState.RESOLVING,
             DownloadState.VALIDATING to DownloadState.AWAITING_FILE_SELECTION,
             DownloadState.VALIDATING to DownloadState.FAILED,
@@ -75,9 +77,8 @@ class DownloadStateMachineTest {
             DownloadState.AWAITING_FILE_SELECTION to DownloadState.RUNNING,
             DownloadState.AWAITING_FORMAT_SELECTION to DownloadState.RUNNING,
             DownloadState.AWAITING_FILE_SELECTION to DownloadState.COMPLETED,
-            // CREATED goes through VALIDATING; no direct start.
+            // CREATED goes through VALIDATING or is accepted by the queue.
             DownloadState.CREATED to DownloadState.RUNNING,
-            DownloadState.CREATED to DownloadState.QUEUED,
             DownloadState.CREATED to DownloadState.COMPLETED,
             // VERIFYING must never report COMPLETED backwards or skip processing.
             DownloadState.VERIFYING to DownloadState.RUNNING,
@@ -87,7 +88,6 @@ class DownloadStateMachineTest {
             DownloadState.REMOVING to DownloadState.RUNNING,
             DownloadState.REMOVING to DownloadState.REMOVING,
             // Terminal targets from running states without the documented trigger.
-            DownloadState.RUNNING to DownloadState.QUEUED,
             DownloadState.PAUSED to DownloadState.RUNNING,
             DownloadState.FAILED to DownloadState.RUNNING,
         )
@@ -123,6 +123,8 @@ class DownloadStateMachineTest {
         // Expected = documented table + user-cancel catch-all + removal catch-all.
         val table = setOf(
             DownloadState.CREATED to DownloadState.VALIDATING,
+            DownloadState.CREATED to DownloadState.QUEUED,
+            DownloadState.RUNNING to DownloadState.QUEUED,
             DownloadState.VALIDATING to DownloadState.RESOLVING,
             DownloadState.VALIDATING to DownloadState.AWAITING_FILE_SELECTION,
             DownloadState.VALIDATING to DownloadState.FAILED,

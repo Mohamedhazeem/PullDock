@@ -31,6 +31,8 @@ data class LibraryItem(
     val thumbnailUri: String?,
     /** Set when reconciliation finds the file missing (FR-043); entry is not playable. */
     val fileAvailable: Boolean,
+    /** Deterministic source key; used to prevent downloading the same content twice. */
+    val sourceHash: String? = null,
 )
 
 /** Result of reconciling library records with actual files (data-model.md §4.6). */
@@ -41,8 +43,24 @@ interface MediaLibraryRepository {
     fun observe(query: LibraryQuery): Flow<List<LibraryItem>>
     suspend fun get(itemId: String): LibraryItem?
     suspend fun recordFromTask(taskId: String): LibraryItem?
+    /** An available library entry for a previously downloaded source (dedupe). */
+    suspend fun findBySourceHash(hash: String): LibraryItem?
     suspend fun reconcile(): ReconcileReport
     suspend fun delete(itemId: String, deleteFile: Boolean): Unit
+}
+
+/** User-selected destination (FR-038): a validated relative subfolder of app-specific storage. */
+interface StoragePreferencesRepository {
+    fun observeDownloadFolder(): Flow<String?>
+    suspend fun currentDownloadFolder(): String?
+    suspend fun setDownloadFolder(relativePath: String?)
+}
+
+/** Preferred media quality (FR-016/US3): a height used to auto-select the closest format. */
+interface MediaPreferencesRepository {
+    fun observeDefaultQuality(): Flow<Int?>
+    suspend fun currentDefaultQuality(): Int?
+    suspend fun setDefaultQuality(height: Int?)
 }
 
 /**

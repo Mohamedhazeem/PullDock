@@ -90,6 +90,8 @@ data class TorrentTaskDetails(
     val files: List<TorrentFile>,
     val trackers: List<String>,
     val peerCount: Int,
+    /** Number of seeds among connected peers (libtorrent num_seeds). */
+    val seedCount: Int = 0,
     val sequentialDownload: Boolean,
     val resumeData: ResumeBlob?,
     val seedingPolicy: SeedingPolicy,

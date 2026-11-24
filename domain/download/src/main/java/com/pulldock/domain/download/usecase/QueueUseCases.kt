@@ -6,6 +6,7 @@ import com.pulldock.domain.download.model.DownloadTask
 import com.pulldock.domain.download.model.StorageDestination
 import com.pulldock.domain.download.queue.QueueCoordinator
 import com.pulldock.domain.download.repository.DownloadRepository
+import com.pulldock.domain.download.repository.MediaLibraryRepository
 import com.pulldock.domain.torrent.TorrentEngine
 import com.pulldock.domain.torrent.TorrentMetadata
 import com.pulldock.domain.torrent.TorrentResult
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class AddTorrent @Inject constructor(
     private val repository: DownloadRepository,
     private val coordinator: QueueCoordinator,
+    private val library: MediaLibraryRepository,
 ) {
 
     suspend operator fun invoke(source: TorrentSource, destination: StorageDestination): UseCaseResult<DownloadTask> {
@@ -31,9 +33,19 @@ class AddTorrent @Inject constructor(
         }
         validation?.let { return UseCaseResult.Failure(it) }
 
-        val existing = repository.findBySourceHash(com.pulldock.domain.download.model.SourceHashing.forTorrent(source))
+        val sourceHash = com.pulldock.domain.download.model.SourceHashing.forTorrent(source)
+        val existing = repository.findBySourceHash(sourceHash)
         if (existing != null && !existing.state.isTerminal) {
             return UseCaseResult.Failure(DownloadError.TorrentEngine(DownloadError.TorrentReason.DUPLICATE_INFOHASH))
+        }
+        // Never fetch content that is already finalized and present on this device.
+        if (library.findBySourceHash(sourceHash) != null) {
+            return UseCaseResult.Failure(
+                DownloadError.TorrentEngine(
+                    DownloadError.TorrentReason.DUPLICATE_INFOHASH,
+                    "already downloaded",
+                ),
+            )
         }
 
         val created = repository.addTorrent(source, destination)

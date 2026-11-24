@@ -22,6 +22,16 @@ import org.junit.Test
  * Use-case guards verified with in-memory fakes (constitution X: meaningful behavior,
  * including failure paths — not mocked-success-only).
  */
+private class FakeLibraryForDedupe : com.pulldock.domain.download.repository.MediaLibraryRepository {
+    override fun observe(query: com.pulldock.domain.download.repository.LibraryQuery) =
+        kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.pulldock.domain.download.repository.LibraryItem>())
+    override suspend fun get(itemId: String) = null
+    override suspend fun recordFromTask(taskId: String) = null
+    override suspend fun findBySourceHash(hash: String) = null
+    override suspend fun reconcile() = com.pulldock.domain.download.repository.ReconcileReport(0, 0, 0)
+    override suspend fun delete(itemId: String, deleteFile: Boolean) = Unit
+}
+
 class QueueUseCasesTest {
 
     private val destination = StorageDestination(StorageKind.APP_SPECIFIC, null, "App storage", null)
@@ -173,7 +183,7 @@ class QueueUseCasesTest {
     fun `valid hex magnet passes validation and creates a queued task`() = runTest {
         val repo = FakeRepository()
         val coordinator = FakeCoordinator(repo)
-        val addTorrent = AddTorrent(repo, coordinator)
+        val addTorrent = AddTorrent(repo, coordinator, FakeLibraryForDedupe())
 
         val magnet = "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567&dn=test"
         val result = addTorrent(TorrentSource(TorrentSource.Kind.MAGNET, magnet), destination)
@@ -184,7 +194,7 @@ class QueueUseCasesTest {
 
     @Test
     fun `valid base32 magnet is accepted`() = runTest {
-        val result = AddTorrent(FakeRepository(), FakeCoordinator(FakeRepository()))
+        val result = AddTorrent(FakeRepository(), FakeCoordinator(FakeRepository()), FakeLibraryForDedupe())
             .invoke(TorrentSource(TorrentSource.Kind.MAGNET, "magnet:?xt=urn:btih:ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"), destination)
         assertTrue(result is UseCaseResult.Success)
     }
@@ -192,7 +202,7 @@ class QueueUseCasesTest {
     @Test
     fun `malformed magnet is rejected with typed error and no task`() = runTest {
         val repo = FakeRepository()
-        val addTorrent = AddTorrent(repo, FakeCoordinator(repo))
+        val addTorrent = AddTorrent(repo, FakeCoordinator(repo), FakeLibraryForDedupe())
 
         val bad = listOf(
             "",
@@ -214,7 +224,7 @@ class QueueUseCasesTest {
     fun `duplicate magnet for an active task is rejected`() = runTest {
         val repo = FakeRepository()
         val coordinator = FakeCoordinator(repo)
-        val addTorrent = AddTorrent(repo, coordinator)
+        val addTorrent = AddTorrent(repo, coordinator, FakeLibraryForDedupe())
         val magnet = "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567"
 
         val first = addTorrent(TorrentSource(TorrentSource.Kind.MAGNET, magnet), destination)
@@ -233,7 +243,7 @@ class QueueUseCasesTest {
     fun `same magnet after terminal state is allowed as a new task`() = runTest {
         val repo = FakeRepository()
         val coordinator = FakeCoordinator(repo)
-        val addTorrent = AddTorrent(repo, coordinator)
+        val addTorrent = AddTorrent(repo, coordinator, FakeLibraryForDedupe())
         val magnet = "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567"
 
         val first = (addTorrent(TorrentSource(TorrentSource.Kind.MAGNET, magnet), destination) as UseCaseResult.Success).value

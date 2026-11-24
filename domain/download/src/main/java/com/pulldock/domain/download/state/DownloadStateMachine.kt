@@ -23,6 +23,9 @@ object DownloadStateMachine {
     private val legalTransitions: Map<DownloadState, Set<DownloadState>> = mapOf(
         DownloadState.CREATED to setOf(
             DownloadState.VALIDATING,
+            // Newly added tasks are accepted by the queue coordinator; `enqueue`
+            // performs this transition (state-machine §2.2, data-model.md).
+            DownloadState.QUEUED,
         ),
         DownloadState.VALIDATING to setOf(
             DownloadState.RESOLVING,
@@ -54,6 +57,9 @@ object DownloadStateMachine {
             DownloadState.PAUSING,
             DownloadState.VERIFYING,
             DownloadState.FAILED,
+            // Process death: the engine session is gone and the task is re-queued
+            // from persisted resume data (T071/T074, US9).
+            DownloadState.QUEUED,
         ),
         DownloadState.PAUSING to setOf(
             DownloadState.PAUSED,
