@@ -18,4 +18,5 @@
     <string name="player_rotate">Rotate</string>
     <string name="player_lock">Lock controls</string>
     <string name="player_unlock">Unlock controls</string>
+    <string name="player_audio_mode">Audio playback</string>
 </resources>

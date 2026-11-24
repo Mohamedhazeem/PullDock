@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -47,6 +48,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -165,17 +167,55 @@ fun PlayerScreen(
         return
     }
 
+    val isAudio = item.fileUri.hasAudioExtension()
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(
-            factory = { ctx ->
-                PlayerView(ctx).apply {
-                    this.player = player
-                    useController = false
-                    resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
+        if (isAudio) {
+            // Music mode: no video surface; artwork placeholder + track title.
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(220.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.MusicNote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(104.dp),
+                    )
                 }
-            },
-            modifier = Modifier.fillMaxSize(),
-        )
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    item.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+                Text(
+                    stringResource(R.string.player_audio_mode),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.7f),
+                )
+            }
+        } else {
+            AndroidView(
+                factory = { ctx ->
+                    PlayerView(ctx).apply {
+                        this.player = player
+                        useController = false
+                        resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    }
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
 
         // Tap toggles chrome; double-tap seeks ±10s; vertical drag adjusts brightness/volume.
         Box(
@@ -367,6 +407,10 @@ private fun formatTime(ms: Long): String {
     val total = ms / 1000
     return "%d:%02d".format(total / 60, total % 60)
 }
+
+private fun String.hasAudioExtension(): Boolean =
+    listOf("mp3", "m4a", "aac", "flac", "ogg", "wav", "opus", "wma")
+        .any { endsWith(".$it", ignoreCase = true) }
 
 private fun normalizeMediaUri(uri: String): String =
     if (uri.startsWith("file:/", ignoreCase = true) && !uri.startsWith("file:///", ignoreCase = true)) {
