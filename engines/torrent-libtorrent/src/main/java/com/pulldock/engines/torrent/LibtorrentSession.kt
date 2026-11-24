@@ -80,7 +80,13 @@ class LibtorrentSession(private val dispatchers: AppDispatchers) : AutoCloseable
      * per-task limits are applied by the adapter at the torrent level (FR-008).
      */
     private fun defaultSettings() = org.libtorrent4j.SettingsPack().apply {
-        // Keep library defaults except explicit concurrency guards; the coordinator
-        // applies user policy via applySettings when it changes (T100/T106).
+        // Magnet ingestion depends on peer discovery: DHT + LSD with explicit
+        // bootstrap routers, plus library defaults for concurrency guards. The
+        // coordinator applies user policy via per-task limits (FR-008).
+        setEnableDht(true)
+        setEnableLsd(true)
+        setDhtBootstrapNodes(
+            "dht.transmissionbt.com:6881,router.bittorrent.com:6881,router.utorrent.com:6881,router.bitcomet.com:6881",
+        )
     }
 }

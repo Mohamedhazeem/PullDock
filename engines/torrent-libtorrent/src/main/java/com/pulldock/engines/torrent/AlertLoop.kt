@@ -60,23 +60,23 @@ class AlertLoop(private val sink: (EngineObservation) -> Unit) : AlertListener {
     override fun alert(alert: Alert<*>) {
         when (alert) {
             is AddTorrentAlert -> alert.handle()?.infoHash()?.let {
-                sink(EngineObservation.Added(it.toHex()))
+                sink(EngineObservation.Added(it.toHex().lowercase()))
             }
             is MetadataReceivedAlert -> alert.handle()?.infoHash()?.let {
-                sink(EngineObservation.MetadataReady(it.toHex()))
+                sink(EngineObservation.MetadataReady(it.toHex().lowercase()))
             }
             is MetadataFailedAlert -> alert.handle()?.infoHash()?.let {
-                sink(EngineObservation.MetadataFailed(it.toHex()))
+                sink(EngineObservation.MetadataFailed(it.toHex().lowercase()))
             }
             is TorrentFinishedAlert -> alert.handle()?.infoHash()?.let {
-                sink(EngineObservation.Finished(it.toHex()))
+                sink(EngineObservation.Finished(it.toHex().lowercase()))
             }
             is TorrentErrorAlert -> alert.handle()?.infoHash()?.let {
                 // Sanitized: engine message only, never peer/tracker URLs (FR-049).
-                sink(EngineObservation.Failed(it.toHex(), alert.message()))
+                sink(EngineObservation.Failed(it.toHex().lowercase(), alert.message()))
             }
             is FileErrorAlert -> alert.handle()?.infoHash()?.let {
-                sink(EngineObservation.FileFailed(it.toHex(), alert.filename() ?: ""))
+                sink(EngineObservation.FileFailed(it.toHex().lowercase(), alert.filename() ?: ""))
             }
             is SaveResumeDataAlert -> {
                 val params = alert.params()
@@ -84,7 +84,7 @@ class AlertLoop(private val sink: (EngineObservation) -> Unit) : AlertListener {
                 if (params != null && hash != null) {
                     sink(
                         EngineObservation.ResumeDataReady(
-                            infoHashHex = hash.toHex(),
+                            infoHashHex = hash.toHex().lowercase(),
                             bytes = org.libtorrent4j.AddTorrentParams.writeResumeDataBuf(params),
                             version = params.version,
                         ),
