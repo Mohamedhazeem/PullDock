@@ -12,3 +12,4 @@
 | [ADR-0008](ADR-0008-module-boundaries.md) | Module boundaries | Accepted |
 | [ADR-0009](ADR-0009-extractor-update.md) | Extractor update and compatibility architecture | Accepted |
 | [ADR-0010](ADR-0010-security-boundaries.md) | Security boundaries and no remote code execution | Accepted |
+| [ADR-0011](ADR-0011-completion-library-playback.md) | Completion, library, and local playback wiring | Accepted |

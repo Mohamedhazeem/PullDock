@@ -40,4 +40,6 @@ Honest, user-visible constraints. Nothing here is hidden in the UI.
 - Torrent on-device PoC (T075/T060): engine compiles against libtorrent4j 2.1.0-39;
   runtime init/transfer/resume verification needs a 64-bit device or emulator.
 - Instrumentation suites (connected tests) and migration-from-fixture runs need a device.
-- Library/player UI (T156–T158, T160, T164–T165) is the remaining Slice 6 surface.
+- Library/player UI (T156–T158, T165) is implemented as of 2026-11-24; the remaining
+  Slice 6 gaps are the streaming-bridge lifecycle owner (T160), thumbnails (T164), and
+  device verification (T163). Torrent streaming is still unverified on a device.

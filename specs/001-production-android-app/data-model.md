@@ -115,6 +115,7 @@ invariants, and the Room schema. It is a design artifact, not an implementation.
 | From | To | Trigger |
 |---|---|---|
 | CREATED | VALIDATING | add request |
+| CREATED | QUEUED | task added; the queue coordinator accepts it into the queue |
 | VALIDATING | RESOLVING | torrent valid |
 | VALIDATING | AWAITING_FILE_SELECTION | torrent needs selection |
 | VALIDATING | FAILED | invalid input |
@@ -132,6 +133,7 @@ invariants, and the Room schema. It is a design artifact, not an implementation.
 | STARTING | FAILED | start error |
 | RUNNING | PAUSING | pause request |
 | RUNNING | VERIFYING | transfer done |
+| RUNNING | QUEUED | process death; re-queued from persisted resume data |
 | RUNNING | FAILED | engine error |
 | RUNNING | CANCELLED | cancel request |
 | PAUSING | PAUSED | engine paused |

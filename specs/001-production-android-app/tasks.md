@@ -185,8 +185,10 @@ recovery, network/battery policy. Serves **US4**, **US7**, **US9**.
 - [X] T106 [US7] Implement battery-threshold pause and rate-limit enforcement in `data/download/src/main/java/com/pulldock/data/download/PolicyEnforcer.kt`
 - [X] T107 Implement UIDT job scheduling (API 34+) in `core/network/src/main/java/com/pulldock/core/network/UidtScheduler.kt`
 - [X] T108 Implement `dataSync` foreground service for API <34 with notification and prompt `stopSelf()` on timeout in `app/src/main/java/com/pulldock/execution/TransferService.kt`
+      *(Controller wiring added 2026-11-24: `TransferServiceController` starts/stops it with active queue state.)*
 - [X] T109 Implement WorkManager deferrable jobs (recovery, reconciliation, cleanup) in `app/src/main/java/com/pulldock/execution/`
 - [X] T110 [US9] Implement boot recovery that restores state and does not auto-start a restricted service in `app/src/main/java/com/pulldock/execution/BootReceiver.kt`
+      *(2026-11-24: resume checkpoints + startup recovery wired; `RUNNING → QUEUED` recovery transition documented.)*
 - [X] T111 Implement notification pause/resume/stop actions and notification-permission fallback in `app/src/main/java/com/pulldock/execution/TransferNotifications.kt`
 - [ ] T112 Add background execution tests (UIDT eligibility, dataSync timeout, boot path) in `app/src/androidTest/` and `core/network/src/test/`
 - [ ] T113 Add queue tests: concurrency limits, duplicate start, starvation, out-of-order events in `data/download/src/test/`
@@ -236,16 +238,19 @@ independently, updates never execute remote code.
 Serves **US5**, **US6**, **US7**.
 
 - [X] T150 [P] Implement `StorageRepository` (SAF/MediaStore/app-specific) in `core/storage/src/main/java/com/pulldock/core/storage/StorageRepositoryImpl.kt`
+      *(2026-11-24 note: no `StorageRepositoryImpl` on disk; finalization uses `FileFinalizer` directly in `CompletionFinalizer` with validated app-specific subfolders. T150 remains an open gap.)*
 - [X] T151 Implement `FileFinalizer` with temp → verify → atomic publish in `core/storage/src/main/java/com/pulldock/core/storage/FileFinalizer.kt`
 - [X] T152 Implement filename sanitization and `name (n).ext` collision strategy in `core/storage/src/main/java/com/pulldock/core/storage/FilenameSanitizer.kt`
 - [X] T153 Implement path-traversal/reserved-name/unicode-collision rejection in `core/storage/src/main/java/com/pulldock/core/storage/PathValidator.kt`
 - [X] T154 Implement MediaStore insertion and interrupted-write handling in `core/storage/src/main/java/com/pulldock/core/storage/MediaStoreWriter.kt`
 - [X] T155 Implement `MediaLibraryRepository` and reconciliation in `data/download/src/main/java/com/pulldock/data/download/MediaLibraryRepositoryImpl.kt`
-- [ ] T156 [US5] Implement `LibraryScreen` + `LibraryViewModel` (sections, search, sort, filter) in `feature/library/src/main/java/com/pulldock/feature/library/`
-      *(Deferred open: the Library UI slice (with thumbnails T164 and reconciliation UI) is the remaining Slice 6 surface; the storage/finalization/streaming cores below are done and tested.)*
-- [ ] T157 [US5] Implement `PlayerScreen` + `PlayerViewModel` with Media3 in `feature/player/src/main/java/com/pulldock/feature/player/`
-      *(Deferred open with T158/T160/T165: player UI + position persistence + bridge lifecycle owner + track selection.)*
-- [ ] T158 Implement playback position persistence (throttled) in `feature/player/src/main/java/com/pulldock/feature/player/PlaybackPositionStore.kt`
+      *(Implemented 2026-11-24 with Room v2 `library_item` + migration 1→2.)*
+- [X] T156 [US5] Implement `LibraryScreen` + `LibraryViewModel` (sections, search, sort, filter) in `feature/library/src/main/java/com/pulldock/feature/library/`
+      *(Implemented 2026-11-24; reconciliation UI and playback entry wired. Thumbnails remain T164.)*
+- [X] T157 [US5] Implement `PlayerScreen` + `PlayerViewModel` with Media3 in `feature/player/src/main/java/com/pulldock/feature/player/`
+      *(Implemented 2026-11-24 using Media3 ExoPlayer; streaming-bridge lifecycle owner remains T160.)*
+- [X] T158 Implement playback position persistence (throttled) in `feature/player/src/main/java/com/pulldock/feature/player/PlaybackPositionStore.kt`
+      *(DataStore-backed, saved on player disposal.)*
 - [X] T159 [US6] Implement loopback streaming bridge (token, byte-range, traversal defense) in `data/torrent/src/main/java/com/pulldock/data/torrent/StreamingBridge.kt`
 - [ ] T160 Implement streaming lifecycle ownership in `feature/player/src/main/java/com/pulldock/feature/player/StreamingBridgeOwner.kt`
 - [X] T161 Add storage tests: failed finalize never publishes incomplete output, collision strategy, traversal rejection in `core/storage/src/test/`
@@ -254,7 +259,8 @@ Serves **US5**, **US6**, **US7**.
       *(Deferred open with the library/player surface.)*
 - [ ] T163 Verify Slice 6 on device: complete a download, library entry, playback resume, torrent streaming (record actual results)
 - [ ] T164 Implement async thumbnail loading with a size cache and cancel-on-recycle in `feature/library/src/main/java/com/pulldock/feature/library/ThumbnailLoader.kt`
-- [ ] T165 Implement audio/subtitle track selection when the media exposes more than one track in `feature/player/src/main/java/com/pulldock/feature/player/TrackSelection.kt` (hide the control otherwise)
+- [X] T165 Implement audio/subtitle track selection when the media exposes more than one track in `feature/player/src/main/java/com/pulldock/feature/player/TrackSelection.kt` (hide the control otherwise)
+      *(Implemented inline in `PlayerScreen.kt` via Media3 `TrackSelectionParameters`; hidden for ≤1 track.)*
 
 **Checkpoint**: files finalize safely, library stays consistent, playback and streaming work.
 

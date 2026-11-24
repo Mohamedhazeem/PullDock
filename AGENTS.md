@@ -116,9 +116,10 @@ Design and ADR-0008 for the module-boundary rules; the summary below is the oper
 
 ### 2.3 Not yet present (status after Slices 0–5 + lifecycle/storage cores)
 
-- Domain/data/feature module **sources are now present** for Slices 1–5 and the
-  lifecycle/storage cores; the remaining UI surfaces are the Library and Player
-  feature modules (T156–T158, T160, T164–T165).
+- Domain/data/feature module **sources are now present** for Slices 1–6: Library and
+  Player (T156–T158/T165) landed 2026-11-24 along with the completion/library wiring
+  (ADR-0011). Still open: streaming-bridge lifecycle owner (T160), thumbnails (T164),
+  and device verification (T163).
 - libtorrent4j 2.1.0-39 is pinned (arm64-v8a/x86_64 jars, MIT wrapper). The
   Chaquopy/yt-dlp and FFmpeg dependencies remain unpinned until the T080/D2 device
   verifications.

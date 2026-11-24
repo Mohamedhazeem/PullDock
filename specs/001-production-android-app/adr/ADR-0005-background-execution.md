@@ -38,3 +38,14 @@ Use an API-level-aware matrix:
   service.
 - Notification actions provide pause/resume/stop; denied notification permission degrades
   gracefully.
+
+## 2026-11-24 implementation update
+
+- `TransferServiceController` starts/stops the `dataSync` foreground service from live
+  queue state; previously the service class existed but was never started.
+- `ResumeDataPersister` checkpoints libtorrent resume blobs every 30s and on pause, and
+  creates recovery markers; `Recovery.recover()` runs once at process start (and boot),
+  deleting markers after a successful restore.
+- The periodic WorkManager job now reconciles library files only, so it cannot restart
+  transfers that are live in the current process. `RUNNING → QUEUED` is legal solely for
+  recovery; `EventReconciler` rejects engine events that attempt that regression.
