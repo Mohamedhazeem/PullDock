@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
     private var themePreference by mutableStateOf(ThemePreference.SYSTEM)
 
     /** Source extracted from a share/view intent; consumed once by the add flow. */
-    private var pendingSource: String? = null
+    private var pendingSource by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,20 +60,39 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     RootNavHost(
                         useRail = windowSize.widthSizeClass >= WindowWidthSizeClass.Medium,
+                        pendingSource = pendingSource,
+                        onPendingSourceConsumed = { pendingSource = null },
                     )
                 }
             }
         }
     }
 
-    /** Pulls a magnet URI or torrent document URI out of a share/view intent (FR-001). */
-    private fun extractSource(intent: Intent?): String? = when (intent?.action) {
-        Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()?.takeIf {
-            it.startsWith("magnet:", ignoreCase = true)
-        } ?: intent.data?.toString()
-        Intent.ACTION_VIEW -> intent.data?.toString()
-        else -> null
+    /** Incoming magnet/file intents while the activity is already running (singleTop). */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingSource = extractSource(intent)
     }
+
+    /** Pulls a magnet, http(s) media URL, or torrent document URI out of an intent (FR-001/FR-002). */
+    private fun extractSource(intent: Intent?): String? {
+        val action = intent?.action ?: return null
+        val data = intent.data?.toString()
+        return when (action) {
+            Intent.ACTION_SEND -> {
+                val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()
+                listOfNotNull(text, data).firstOrNull(::isSupportedSource)
+            }
+            Intent.ACTION_VIEW -> data?.takeIf(::isSupportedSource)
+            else -> null
+        }
+    }
+
+    /** Only sources the add flow can actually classify are forwarded. */
+    private fun isSupportedSource(value: String): Boolean = listOf(
+        "magnet:", "http://", "https://", "content://", "file://",
+    ).any { value.startsWith(it, ignoreCase = true) }
 
     /** Observes settings only while visible (lifecycle-respectful collection). */
     private fun observeThemePreference() {

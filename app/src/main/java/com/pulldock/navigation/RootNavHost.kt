@@ -1,6 +1,7 @@
 package com.pulldock.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -22,7 +23,9 @@ import com.pulldock.feature.add.AddDownloadScreen
 import com.pulldock.feature.downloaddetail.DownloadDetailScreen
 import com.pulldock.feature.home.HomeScreen
 import com.pulldock.feature.legal.LegalScreen
+import com.pulldock.feature.library.LibraryScreen
 import com.pulldock.feature.onboarding.OnboardingScreen
+import com.pulldock.feature.player.PlayerScreen
 import com.pulldock.feature.queue.QueueScreen
 import com.pulldock.feature.settings.SettingsScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,7 +42,12 @@ import kotlinx.coroutines.flow.stateIn
  * on the next launch.
  */
 @Composable
-fun RootNavHost(modifier: Modifier = Modifier, useRail: Boolean) {
+fun RootNavHost(
+    modifier: Modifier = Modifier,
+    useRail: Boolean,
+    pendingSource: String? = null,
+    onPendingSourceConsumed: () -> Unit = {},
+) {
     val navController: NavHostController = rememberNavController()
     val rootViewModel: RootViewModel = hiltViewModel()
     val consent by rootViewModel.consent.collectAsStateWithLifecycle()
@@ -50,8 +58,17 @@ fun RootNavHost(modifier: Modifier = Modifier, useRail: Boolean) {
         return
     }
 
-    MainScaffold(navController = navController, useRail = useRail) { contentModifier ->
-        NavHost(
+    // A magnet/file opened from a browser or share sheet navigates straight to Add.
+    // Consent comes first (US1); the source is consumed exactly once.
+    LaunchedEffect(pendingSource, resolved?.isAcknowledged) {
+        val source = pendingSource
+        if (source != null && resolved?.isAcknowledged == true) {
+            navController.navigate(Routes.addSource(source))
+            onPendingSourceConsumed()
+        }
+    }
+
+    MainScaffold(navController = navController, useRail = useRail) { contentModifier ->        NavHost(
             navController = navController,
             startDestination = if (resolved.isAcknowledged) {
                 PullDockDestination.Primary.HOME.route
@@ -73,22 +90,25 @@ fun RootNavHost(modifier: Modifier = Modifier, useRail: Boolean) {
                 HomeScreen(
                     onAddDownload = { navController.navigate(Routes.ADD) },
                     onOpenTask = { id -> navController.navigate(Routes.download(id)) },
+                    onPlayItem = { id -> navController.navigate(Routes.player(id)) },
                 )
             }
             composable(PullDockDestination.Primary.DOWNLOADS.route) {
                 QueueScreen(onOpenTask = { id -> navController.navigate(Routes.download(id)) })
             }
             composable(PullDockDestination.Primary.LIBRARY.route) {
-                // Library ships with Slice 6 (T156); an honest empty state until then.
-                ShellEmptyState(
-                    title = stringResource(R.string.shell_library_title),
-                    message = stringResource(R.string.shell_library_empty),
-                )
+                LibraryScreen(onPlay = { itemId -> navController.navigate(Routes.player(itemId)) })
             }
             composable(PullDockDestination.Primary.SETTINGS.route) {
                 SettingsScreen(onOpenLegal = { navController.navigate(Routes.LEGAL) })
             }
             composable(Routes.ADD) {
+                AddDownloadScreen(onClose = navController::navigateUp)
+            }
+            composable(
+                route = Routes.ADD_WITH_SOURCE,
+                arguments = listOf(navArgument("source") { type = NavType.StringType }),
+            ) {
                 AddDownloadScreen(onClose = navController::navigateUp)
             }
             composable(Routes.LEGAL) {
@@ -100,6 +120,12 @@ fun RootNavHost(modifier: Modifier = Modifier, useRail: Boolean) {
             ) {
                 DownloadDetailScreen(onNavigateBack = navController::navigateUp)
             }
+            composable(
+                route = Routes.PLAYER,
+                arguments = listOf(navArgument("itemId") { type = NavType.StringType }),
+            ) {
+                PlayerScreen(onBack = navController::navigateUp)
+            }
         }
     }
 }
@@ -108,10 +134,16 @@ fun RootNavHost(modifier: Modifier = Modifier, useRail: Boolean) {
 object Routes {
     const val ONBOARDING = "onboarding"
     const val ADD = "add"
+    const val ADD_WITH_SOURCE = "add?source={source}"
     const val LEGAL = "legal"
     const val DOWNLOAD_DETAIL = "download/{taskId}"
+    const val PLAYER = "player/{itemId}"
+
+    fun addSource(source: String): String =
+        "add?source=${android.net.Uri.encode(source)}"
 
     fun download(taskId: String): String = "download/$taskId"
+    fun player(itemId: String): String = "player/$itemId"
 }
 
 /** Root-level consent observation for the navigation gate (US1). */

@@ -39,11 +39,13 @@ class TransferService : Service() {
     @Inject lateinit var dispatchers: AppDispatchers
     @Inject lateinit var notifications: TransferNotifications
 
-    private val scope = CoroutineScope(SupervisorJob() + dispatchers.default)
+    private lateinit var scope: CoroutineScope
     private var enforcementJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
+        // Hilt injects fields in onCreate's generated super call; scope must be built after.
+        scope = CoroutineScope(SupervisorJob() + dispatchers.default)
         startForeground(
             TransferNotifications.TRANSFER_NOTIFICATION_ID,
             notifications.buildOngoing(

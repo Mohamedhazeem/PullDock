@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Required by the torrent session (DHT/tracker/peer sockets) and media resolution. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".PullDockApplication"
         android:allowBackup="true"
@@ -14,6 +17,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.PullDock">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,6 +29,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
                 <data android:mimeType="application/x-bittorrent" />
+            </intent-filter>
+            <!-- Browser/torrent-site magnet links: ACTION_VIEW with the magnet scheme (FR-001) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="magnet" />
             </intent-filter>
             <!-- Open a .torrent document from other apps (FR-001) -->
             <intent-filter>

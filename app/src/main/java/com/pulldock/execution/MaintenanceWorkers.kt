@@ -7,7 +7,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.pulldock.data.download.Recovery
+import com.pulldock.domain.download.repository.MediaLibraryRepository
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -22,10 +22,12 @@ class RecoveryWorker(
     parameters: WorkerParameters,
 ) : CoroutineWorker(context, parameters) {
 
-    @Inject lateinit var recovery: Recovery
+    @Inject lateinit var library: MediaLibraryRepository
 
     override suspend fun doWork(): Result = try {
-        recovery.recover()
+        // Periodic job reconciles files only. Engine recovery runs once at process
+        // start (or boot), never while transfers are live in this process.
+        library.reconcile()
         Result.success()
     } catch (_: Exception) {
         Result.retry() // deferrable: transient failure is retried by WorkManager
