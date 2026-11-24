@@ -8,6 +8,7 @@ import com.pulldock.domain.extractor.ExtractorEvent
 import com.pulldock.domain.extractor.ExtractorResult
 import com.pulldock.domain.extractor.ExtractorRuntime
 import com.pulldock.domain.extractor.MediaExtractor
+import com.pulldock.data.extractor.provider.DirectProvider
 import com.pulldock.data.extractor.provider.FacebookProvider
 import com.pulldock.data.extractor.provider.InstagramProvider
 import com.pulldock.data.extractor.provider.TikTokProvider
@@ -40,7 +41,7 @@ class MediaExtractorImpl @Inject constructor(
 ) : MediaExtractor {
 
     private val providers = listOf(
-        YouTubeProvider(), XProvider(), InstagramProvider(), FacebookProvider(), TikTokProvider(),
+        YouTubeProvider(), XProvider(), InstagramProvider(), FacebookProvider(), TikTokProvider(), DirectProvider(),
     )
 
     private val events = MutableSharedFlow<ExtractorEvent>(extraBufferCapacity = 128)
