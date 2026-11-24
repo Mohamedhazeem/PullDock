@@ -11,4 +11,6 @@ enum class ProviderId {
     INSTAGRAM,
     FACEBOOK,
     TIKTOK,
+    /** Generic authorized http(s) media/file URL handled by the bundled extractor. */
+    DIRECT,
 }
