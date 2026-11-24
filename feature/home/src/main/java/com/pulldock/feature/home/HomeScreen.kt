@@ -120,25 +120,22 @@ fun HomeScreen(
                 )
             }
 
-            if (state.loading) {
-                val loadingDesc = stringResource(R.string.home_loading)
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .semantics { contentDescription = loadingDesc },
-                )
-            } else if (state.recent.isEmpty()) {
-                PdEmptyState(
-                    title = stringResource(R.string.home_empty_title),
-                    message = stringResource(R.string.home_empty_body),
-                    icon = Icons.Filled.CloudDownload,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
-                ) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+            ) {
+                if (state.loading) {
+                    item { CircularProgressIndicator() }
+                } else if (state.recent.isEmpty() && state.completed.isEmpty()) {
+                    item {
+                        PdEmptyState(
+                            title = stringResource(R.string.home_empty_title),
+                            message = stringResource(R.string.home_empty_body),
+                            icon = Icons.Filled.CloudDownload,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                } else {
                     items(state.recent, key = { it.id }) { task ->
                         RecentTaskCard(
                             task = task,
@@ -151,17 +148,20 @@ fun HomeScreen(
                             onRemove = { viewModel.requestRemove(task.id) },
                         )
                     }
-                }
-            }
-
-            if (state.completed.isNotEmpty()) {
-                Text(
-                    stringResource(R.string.home_completed_title),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.md)) {
-                    items(state.completed, key = { it.id }) { item ->
-                        CompletedCard(item = item, onPlay = { onPlayItem(item.id) })
+                    if (state.completed.isNotEmpty()) {
+                        item {
+                            Text(
+                                stringResource(R.string.home_completed_title),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                        }
+                        item {
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.md)) {
+                                items(state.completed, key = { it.id }) { item ->
+                                    CompletedCard(item = item, onPlay = { onPlayItem(item.id) })
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -251,10 +251,10 @@ private fun RecentTaskCard(
                     .height(24.dp),
                 horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
             ) {
-                StatSlot("↓ " + if (task.progress.speedBytesPerSec > 0) formatSpeed(task.progress.speedBytesPerSec.toDouble()) else "—")
-                StatSlot("↑ " + if ((task.uploadSpeed ?: 0L) > 0) formatSpeed(task.uploadSpeed!!.toDouble()) else "—")
-                StatSlot("${details?.peerCount ?: 0} peers")
-                StatSlot("${details?.seedCount ?: 0} seeds")
+                StatSlot("↓ " + if (task.progress.speedBytesPerSec > 0) formatSpeed(task.progress.speedBytesPerSec.toDouble()) else "—", Modifier.weight(1f))
+                StatSlot("↑ " + if ((task.uploadSpeed ?: 0L) > 0) formatSpeed(task.uploadSpeed!!.toDouble()) else "—", Modifier.weight(1f))
+                StatSlot("${details?.peerCount ?: 0} peers", Modifier.weight(1f))
+                StatSlot("${details?.seedCount ?: 0} seeds", Modifier.weight(1f))
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -285,14 +285,13 @@ private fun RecentTaskCard(
 
 /** Fixed-width telemetry slot — no card resizing when numbers change. */
 @Composable
-private fun StatSlot(value: String) {
+private fun StatSlot(value: String, modifier: Modifier = Modifier) {
     Text(
         text = value,
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
-        modifier = Modifier
-            .weight(1f)
+        modifier = modifier
             .height(24.dp),
     )
 }

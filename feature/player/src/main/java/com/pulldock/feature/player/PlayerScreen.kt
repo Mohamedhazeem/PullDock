@@ -42,7 +42,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -152,13 +151,14 @@ fun PlayerScreen(
     ) { innerPadding ->
         if (state.loading) {
             Text(stringResource(R.string.player_loading), modifier = Modifier.padding(innerPadding))
-        } else if (state.item == null || !state.item.fileAvailable) {
+        } else if (state.item?.fileAvailable != true) {
             PdEmptyState(
                 title = stringResource(R.string.player_missing_title),
                 message = stringResource(R.string.player_missing_body),
                 modifier = Modifier.fillMaxSize().padding(innerPadding),
             )
         } else {
+            val item = state.item ?: return@Scaffold
             Column(
                 modifier = Modifier.fillMaxSize().padding(innerPadding).padding(tokens.spacing.md),
                 verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
@@ -282,12 +282,12 @@ private fun toggleFullscreen(context: Context, enable: Boolean) {
     if (enable) {
         activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         WindowCompat.getInsetsController(activity.window, activity.window.decorView)?.hide(
-            WindowInsetsControllerCompat.BOTTOM_SYSTEM_BARS or WindowInsetsControllerCompat.TOP_SYSTEM_BARS,
+            androidx.core.view.WindowInsetsCompat.Type.systemBars(),
         )
     } else {
         activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         WindowCompat.getInsetsController(activity.window, activity.window.decorView)?.show(
-            WindowInsetsControllerCompat.BOTTOM_SYSTEM_BARS or WindowInsetsControllerCompat.TOP_SYSTEM_BARS,
+            androidx.core.view.WindowInsetsCompat.Type.systemBars(),
         )
     }
 }

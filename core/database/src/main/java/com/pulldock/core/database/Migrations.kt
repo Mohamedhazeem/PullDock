@@ -46,7 +46,6 @@ object Migrations {
     private val MIGRATION_3_4 = object : Migration(3, 4) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("ALTER TABLE `library_item` ADD COLUMN `sourceHash` TEXT")
-            db.execSQL("CREATE INDEX IF NOT EXISTS `index_library_item_sourceHash` ON `library_item` (`sourceHash`)")
         }
     }
 
