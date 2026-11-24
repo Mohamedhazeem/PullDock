@@ -3,12 +3,9 @@ package com.pulldock.feature.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pulldock.core.model.DownloadError
+import com.pulldock.core.model.DownloadState
 import com.pulldock.domain.download.model.DownloadTask
 import com.pulldock.domain.download.repository.QueueFilter
-import com.pulldock.domain.download.repository.LibraryItem
-import com.pulldock.domain.download.repository.LibraryQuery
-import com.pulldock.domain.download.repository.MediaLibraryRepository
-import com.pulldock.domain.download.state.DownloadStateMachine
 import com.pulldock.domain.download.usecase.CancelDownload
 import com.pulldock.domain.download.usecase.ObserveDownloadDetails
 import com.pulldock.domain.download.usecase.ObserveDownloadQueue
@@ -20,7 +17,6 @@ import com.pulldock.domain.download.usecase.UseCaseResult
 import com.pulldock.domain.torrent.model.TorrentTaskDetails
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,14 +28,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Home dashboard state: summary, recent tasks with torrent stats, and action feedback. */
+/** Home dashboard state: live transfers with their torrent telemetry and action feedback. */
 data class HomeUiState(
     val loading: Boolean = true,
-    val activeCount: Int = 0,
-    val queuedCount: Int = 0,
     val recent: List<DownloadTask> = emptyList(),
     val torrentDetails: Map<String, TorrentTaskDetails> = emptyMap(),
-    val completed: List<LibraryItem> = emptyList(),
     val pendingRemoval: String? = null,
     val actionError: DownloadError? = null,
 )
@@ -53,43 +46,35 @@ class HomeViewModel @Inject constructor(
     private val retryUc: RetryDownload,
     private val cancelUc: CancelDownload,
     private val removeUc: RemoveDownload,
-    library: MediaLibraryRepository,
 ) : ViewModel() {
 
     private val extras = MutableStateFlow(HomeExtras())
 
     val uiState: StateFlow<HomeUiState> = observeDownloadQueue(QueueFilter.ALL)
-        .flatMapLatest { tasks ->
-            val recent = tasks.sortedByDescending { it.updatedAt.toEpochMilli() }.take(RECENT_LIMIT)
+        .map { tasks ->
+            tasks
+                .filter { it.state != DownloadState.COMPLETED && it.state != DownloadState.CANCELLED }
+                .sortedByDescending { it.updatedAt.toEpochMilli() }
+                .take(RECENT_LIMIT)
+        }
+        .flatMapLatest { recent ->
             if (recent.isEmpty()) {
-                flowOf(Triple(tasks, recent, emptyMap<String, TorrentTaskDetails>()))
+                flowOf(recent to emptyMap<String, TorrentTaskDetails>())
             } else {
                 combine(
                     recent.map { task ->
                         observeDownloadDetails(task.id).map { details -> task.id to details?.torrent }
                     },
                 ) { entries ->
-                    Triple(
-                        tasks,
-                        recent,
-                        entries.mapNotNull { (id, details) -> details?.let { id to it } }.toMap(),
-                    )
+                    recent to entries.mapNotNull { (id, details) -> details?.let { id to it } }.toMap()
                 }
             }
         }
-        .combine(extras) { (all, recent, details), extra -> Triple(all, recent, details) to extra }
-        .combine(library.observe(LibraryQuery())) { (data, extra), completed ->
-            val (all, recent, details) = data
+        .combine(extras) { (recent, details), extra ->
             HomeUiState(
                 loading = false,
-                activeCount = all.count { it.state in DownloadStateMachine.activeStates },
-                queuedCount = all.count {
-                    it.state == com.pulldock.core.model.DownloadState.QUEUED ||
-                        it.state == com.pulldock.core.model.DownloadState.RETRY_WAIT
-                },
                 recent = recent,
                 torrentDetails = details,
-                completed = completed.take(COMPLETED_LIMIT),
                 pendingRemoval = extra.pendingRemoval,
                 actionError = extra.actionError,
             )
@@ -126,6 +111,5 @@ class HomeViewModel @Inject constructor(
 
     private companion object {
         const val RECENT_LIMIT = 5
-        const val COMPLETED_LIMIT = 3
     }
 }

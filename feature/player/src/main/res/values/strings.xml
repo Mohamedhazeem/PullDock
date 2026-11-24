@@ -13,4 +13,9 @@
     <string name="player_speed">Speed %1$sx</string>
     <string name="player_volume">Mute</string>
     <string name="player_fullscreen">Fullscreen</string>
+    <string name="player_play">Play</string>
+    <string name="player_play_pause">Play or pause</string>
+    <string name="player_rotate">Rotate</string>
+    <string name="player_lock">Lock controls</string>
+    <string name="player_unlock">Unlock controls</string>
 </resources>

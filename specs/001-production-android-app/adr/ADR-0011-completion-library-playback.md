@@ -50,3 +50,6 @@ a fully downloaded file on disk.
 - `VERIFYING` and `POST_PROCESSING` are never reported as `COMPLETED`.
 - Reconciliation keeps broken records visible but non-playable.
 - A failed finalization never publishes an incomplete file.
+- 2026-11-24 update: `library_item.sourceHash` (Room v4) prevents re-downloading an
+  already-finalized source; Home shows only live transfers, and completed media lives
+  exclusively in the Library. Player controls are overlaid on the Media3 surface.

@@ -8,20 +8,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -43,29 +39,25 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pulldock.core.designsystem.components.PdConfirmDialog
 import com.pulldock.core.designsystem.components.PdEmptyState
 import com.pulldock.core.designsystem.components.PdProgress
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.core.model.DownloadState
-import com.pulldock.core.model.formatBytes
 import com.pulldock.core.model.formatSpeed
 import com.pulldock.domain.download.model.DownloadTask
-import com.pulldock.domain.download.repository.LibraryItem
 import com.pulldock.domain.torrent.model.TorrentTaskDetails
 
 /**
- * Home: modern dashboard with inline per-task controls (FR-007), live torrent telemetry
- * (FR-044/US4), and honest empty/loading states (FR-067). All numbers come from the
- * live queue — nothing is faked.
+ * Home: a calm, focused view of live transfers only (FR-023/US4). Each card carries
+ * its own controls and stable telemetry slots; completed media lives in the Library.
  */
 @Composable
 fun HomeScreen(
     onAddDownload: () -> Unit,
     onOpenTask: (String) -> Unit,
-    onPlayItem: (String) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val tokens = LocalPdTokens.current
@@ -96,46 +88,32 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.xl),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
         ) {
-            val titleDescription = stringResource(R.string.home_title)
             Text(
                 text = stringResource(R.string.home_title),
                 style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.semantics { contentDescription = titleDescription },
+            )
+            Text(
+                text = stringResource(R.string.home_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.md)) {
-                SummaryCard(
-                    label = stringResource(R.string.home_active_label),
-                    value = state.activeCount.toString(),
+            when {
+                state.loading -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+                state.recent.isEmpty() -> PdEmptyState(
+                    title = stringResource(R.string.home_empty_title),
+                    message = stringResource(R.string.home_empty_body),
                     icon = Icons.Filled.CloudDownload,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxSize(),
                 )
-                SummaryCard(
-                    label = stringResource(R.string.home_queued_label),
-                    value = state.queuedCount.toString(),
-                    icon = Icons.Filled.Download,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
-            ) {
-                if (state.loading) {
-                    item { CircularProgressIndicator() }
-                } else if (state.recent.isEmpty() && state.completed.isEmpty()) {
-                    item {
-                        PdEmptyState(
-                            title = stringResource(R.string.home_empty_title),
-                            message = stringResource(R.string.home_empty_body),
-                            icon = Icons.Filled.CloudDownload,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-                } else {
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+                ) {
                     items(state.recent, key = { it.id }) { task ->
                         RecentTaskCard(
                             task = task,
@@ -148,27 +126,12 @@ fun HomeScreen(
                             onRemove = { viewModel.requestRemove(task.id) },
                         )
                     }
-                    if (state.completed.isNotEmpty()) {
-                        item {
-                            Text(
-                                stringResource(R.string.home_completed_title),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                        }
-                        item {
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.md)) {
-                                items(state.completed, key = { it.id }) { item ->
-                                    CompletedCard(item = item, onPlay = { onPlayItem(item.id) })
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
     }
 
-    state.pendingRemoval?.let { id ->
+    state.pendingRemoval?.let {
         PdConfirmDialog(
             title = stringResource(R.string.home_remove_title),
             text = stringResource(R.string.home_remove_body),
@@ -180,40 +143,7 @@ fun HomeScreen(
     }
 }
 
-/** Compact summary card: value + icon, label beneath. */
-@Composable
-private fun SummaryCard(
-    label: String,
-    value: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-) {
-    val tokens = LocalPdTokens.current
-    Card(modifier = modifier) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(imageVector = icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = tokens.spacing.md),
-            ) {
-                Text(text = value, style = MaterialTheme.typography.headlineMedium)
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-/** Elevated task card with live progress, telemetry, and inline controls (FR-007/FR-044). */
+/** Elevated task card with inline controls and fixed-height telemetry slots. */
 @Composable
 private fun RecentTaskCard(
     task: DownloadTask,
@@ -232,27 +162,29 @@ private fun RecentTaskCard(
             modifier = Modifier.padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.md),
             verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     text = task.displayName,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
+                    maxLines = 1,
                 )
                 Text(text = stateLabel, style = MaterialTheme.typography.bodySmall)
             }
             PdProgress(fraction = task.progress.percent?.toFloat(), summary = stateLabel)
-            // Fixed slots keep the card height stable as speeds fluctuate (no layout jump).
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(24.dp),
+                modifier = Modifier.fillMaxWidth().height(24.dp),
                 horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
             ) {
-                StatSlot("↓ " + if (task.progress.speedBytesPerSec > 0) formatSpeed(task.progress.speedBytesPerSec.toDouble()) else "—", Modifier.weight(1f))
-                StatSlot("↑ " + if ((task.uploadSpeed ?: 0L) > 0) formatSpeed(task.uploadSpeed!!.toDouble()) else "—", Modifier.weight(1f))
+                val upload = task.uploadSpeed ?: 0L
+                StatSlot(
+                    value = "↓ " + if (task.progress.speedBytesPerSec > 0) formatSpeed(task.progress.speedBytesPerSec.toDouble()) else "—",
+                    modifier = Modifier.weight(1f),
+                )
+                StatSlot(
+                    value = "↑ " + if (upload > 0) formatSpeed(upload.toDouble()) else "—",
+                    modifier = Modifier.weight(1f),
+                )
                 StatSlot("${details?.peerCount ?: 0} peers", Modifier.weight(1f))
                 StatSlot("${details?.seedCount ?: 0} seeds", Modifier.weight(1f))
             }
@@ -267,14 +199,7 @@ private fun RecentTaskCard(
                         CardAction(Icons.Filled.Replay, stringResource(R.string.home_action_retry), onRetry)
                     else -> Unit
                 }
-                if (task.state !in setOf(
-                        DownloadState.COMPLETED,
-                        DownloadState.CANCELLED,
-                        DownloadState.REMOVING,
-                        DownloadState.FAILED,
-                        DownloadState.NEEDS_USER_ACTION,
-                    )
-                ) {
+                if (task.state !in setOf(DownloadState.COMPLETED, DownloadState.CANCELLED, DownloadState.REMOVING)) {
                     CardAction(Icons.Filled.Close, stringResource(R.string.home_action_cancel), onCancel)
                 }
                 CardAction(Icons.Filled.Delete, stringResource(R.string.home_action_remove), onRemove)
@@ -283,7 +208,6 @@ private fun RecentTaskCard(
     }
 }
 
-/** Fixed-width telemetry slot — no card resizing when numbers change. */
 @Composable
 private fun StatSlot(value: String, modifier: Modifier = Modifier) {
     Text(
@@ -291,41 +215,8 @@ private fun StatSlot(value: String, modifier: Modifier = Modifier) {
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         maxLines = 1,
-        modifier = modifier
-            .height(24.dp),
+        modifier = modifier.height(24.dp),
     )
-}
-
-/** Completed item on the dashboard; opens the player directly. */
-@Composable
-private fun CompletedCard(item: LibraryItem, onPlay: () -> Unit) {
-    val tokens = LocalPdTokens.current
-    val playLabel = stringResource(R.string.home_play_item, item.title)
-    Card(modifier = Modifier.width(220.dp)) {
-        Column(
-            modifier = Modifier.padding(tokens.spacing.md),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
-        ) {
-            Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 2)
-            Text(
-                text = item.sizeBytes?.let(::formatBytes) ?: stringResource(R.string.home_completed_ready),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (item.fileAvailable) {
-                androidx.compose.material3.FilledTonalButton(onClick = onPlay, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = playLabel)
-                    Text(stringResource(R.string.home_play))
-                }
-            } else {
-                Text(
-                    stringResource(R.string.home_item_unavailable),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
-    }
 }
 
 @Composable
@@ -333,7 +224,7 @@ private fun CardAction(icon: ImageVector, label: String, onClick: () -> Unit) {
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .size(40.dp)
+            .size(48.dp)
             .semantics { contentDescription = label },
     ) {
         Icon(imageVector = icon, contentDescription = label)

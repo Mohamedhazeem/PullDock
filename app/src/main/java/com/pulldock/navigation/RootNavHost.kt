@@ -90,7 +90,6 @@ fun RootNavHost(
                 HomeScreen(
                     onAddDownload = { navController.navigate(Routes.ADD) },
                     onOpenTask = { id -> navController.navigate(Routes.download(id)) },
-                    onPlayItem = { id -> navController.navigate(Routes.player(id)) },
                 )
             }
             composable(PullDockDestination.Primary.DOWNLOADS.route) {
