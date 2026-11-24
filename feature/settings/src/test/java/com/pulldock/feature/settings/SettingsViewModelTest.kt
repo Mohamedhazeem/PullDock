@@ -64,11 +64,27 @@ class SettingsViewModelTest {
         }
     }
 
+    private class FakeStoragePreferences : com.pulldock.domain.download.repository.StoragePreferencesRepository {
+        val flow = MutableStateFlow<String?>(null)
+        override fun observeDownloadFolder(): Flow<String?> = flow
+        override suspend fun currentDownloadFolder(): String? = flow.value
+        override suspend fun setDownloadFolder(relativePath: String?) {
+            flow.value = relativePath
+        }
+    }
+
+    private class FakeMediaPreferences : com.pulldock.domain.download.repository.MediaPreferencesRepository {
+        var height: Int? = null
+        override fun observeDefaultQuality() = MutableStateFlow(height)
+        override suspend fun currentDefaultQuality(): Int? = height
+        override suspend fun setDefaultQuality(value: Int?) { height = value }
+    }
+
     @Test
     fun `policy edits persist through the repository`() = runTest(mainRule.testDispatcher) {
         val policyRepo = FakePolicyRepository()
         val appearanceRepo = FakeAppearanceRepository()
-        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth())
+        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth(), FakeStoragePreferences(), FakeMediaPreferences())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -89,7 +105,7 @@ class SettingsViewModelTest {
     fun `theme preference persists`() = runTest(mainRule.testDispatcher) {
         val policyRepo = FakePolicyRepository()
         val appearanceRepo = FakeAppearanceRepository()
-        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth())
+        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth(), FakeStoragePreferences(), FakeMediaPreferences())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 

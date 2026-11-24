@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_title">Library</string>
+    <string name="library_search">Search downloads</string>
+    <string name="library_reconcile">Refresh files</string>
+    <string name="library_reconcile_result">%1$d item(s) unavailable — kept but not playable.</string>
+    <string name="library_empty_title">Your library is empty</string>
+    <string name="library_empty_body">Completed downloads appear here, ready to play. Add a magnet link or media URL to get started.</string>
+    <string name="library_section_all">All</string>
+    <string name="library_section_video">Video</string>
+    <string name="library_section_audio">Audio</string>
+    <string name="library_section_other">Other</string>
+    <string name="library_sort">Sort: %1$s</string>
+    <string name="library_sort_newest">Newest</string>
+    <string name="library_sort_oldest">Oldest</string>
+    <string name="library_sort_title">Title A–Z</string>
+    <string name="library_sort_title_desc">Title Z–A</string>
+    <string name="library_sort_size">Largest</string>
+    <string name="library_play">Play %1$s</string>
+    <string name="library_delete">Delete</string>
+    <string name="library_unavailable">File missing — reconnect the original storage to play.</string>
+    <string name="library_delete_title">Delete this item?</string>
+    <string name="library_delete_body">The library entry and its file will be removed. This cannot be undone.</string>
+    <string name="library_delete_confirm">Delete</string>
+    <string name="library_delete_dismiss">Cancel</string>
+</resources>

@@ -7,8 +7,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -17,6 +22,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -48,7 +56,7 @@ fun SettingsScreen(
             .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
     ) {
-        Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineMedium)
 
         val policy = state.policy
         if (policy == null) {
@@ -105,6 +113,57 @@ fun SettingsScreen(
                 TextButtonCompat(label = stringResource(R.string.settings_concurrency_default)) {
                     viewModel.setConcurrency(global = 3, torrent = 2, extractor = 1)
                 }
+
+                Text(
+                    text = stringResource(R.string.settings_folder_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val folders = listOf(
+                    null to stringResource(R.string.settings_folder_default),
+                    "Downloads" to stringResource(R.string.settings_folder_downloads),
+                    "Movies" to stringResource(R.string.settings_folder_movies),
+                    "Music" to stringResource(R.string.settings_folder_music),
+                )
+                androidx.compose.foundation.lazy.LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+                ) {
+                    items(folders) { (path, label) ->
+                        FilterChip(
+                            selected = state.downloadFolder == path,
+                            onClick = { viewModel.setDownloadFolder(path) },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+                var customFolder by rememberSaveable(state.downloadFolder) {
+                    mutableStateOf(state.downloadFolder ?: "")
+                }
+                OutlinedTextField(
+                    value = customFolder,
+                    onValueChange = { customFolder = it },
+                    label = { Text(stringResource(R.string.settings_folder_custom)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                TextButtonCompat(label = stringResource(R.string.settings_folder_apply)) {
+                    viewModel.setDownloadFolder(customFolder.trim().ifBlank { null })
+                }
+
+                Text(
+                    text = stringResource(R.string.settings_quality_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+                    items(listOf(null, 360, 480, 720, 1080)) { height ->
+                        FilterChip(
+                            selected = state.defaultQualityHeight == height,
+                            onClick = { viewModel.setDefaultQuality(height) },
+                            label = { Text(if (height == null) stringResource(R.string.settings_quality_auto) else "${height}p") },
+                        )
+                    }
+                }
             }
         }
 
@@ -127,6 +186,11 @@ fun SettingsScreen(
         }
 
         Section(stringResource(R.string.settings_section_providers)) {
+            Text(
+                text = stringResource(R.string.settings_providers_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             if (state.providers.isEmpty()) {
                 Text(
                     text = stringResource(R.string.settings_providers_unavailable),
@@ -164,9 +228,14 @@ fun SettingsScreen(
 @Composable
 private fun Section(title: String, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     val tokens = LocalPdTokens.current
-    Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        content()
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(tokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            content()
+        }
     }
 }
 

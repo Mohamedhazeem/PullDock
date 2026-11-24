@@ -6,6 +6,7 @@ import com.pulldock.domain.download.repository.AppearanceTheme
 import com.pulldock.core.model.DownloadType
 import com.pulldock.domain.download.model.DownloadPolicy
 import com.pulldock.domain.download.repository.NetworkPolicyRepository
+import com.pulldock.domain.download.repository.StoragePreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,6 +27,10 @@ data class SettingsUiState(
     val policy: DownloadPolicy? = null,
     val theme: AppearanceTheme = AppearanceTheme.SYSTEM,
     val savingPolicy: Boolean = false,
+    /** Relative subfolder under app-specific storage; null = app downloads root. */
+    val downloadFolder: String? = null,
+    /** Preferred resolution height; null = ask every time. */
+    val defaultQualityHeight: Int? = null,
     /** Per-provider extractor health (US8); keys follow ProviderId order. */
     val providers: Map<com.pulldock.core.model.ProviderId, com.pulldock.domain.extractor.model.ProviderHealth> = emptyMap(),
 )
@@ -45,6 +50,8 @@ class SettingsViewModel @Inject constructor(
     private val policyRepository: NetworkPolicyRepository,
     private val appearanceRepository: com.pulldock.domain.download.repository.AppearanceRepository,
     private val providerHealth: com.pulldock.domain.extractor.usecase.ObserveProviderHealth,
+    private val storagePreferences: StoragePreferencesRepository,
+    private val mediaPreferences: com.pulldock.domain.download.repository.MediaPreferencesRepository,
 ) : ViewModel() {
 
     private val saving = MutableStateFlow(false)
@@ -53,11 +60,15 @@ class SettingsViewModel @Inject constructor(
         policyRepository.observe(),
         appearanceRepository.observeTheme(),
         saving,
-    ) { policy, theme, savingPolicy ->
+        storagePreferences.observeDownloadFolder(),
+        mediaPreferences.observeDefaultQuality(),
+    ) { policy, theme, savingPolicy, folder, quality ->
         SettingsUiState(
             policy = policy,
             theme = theme,
             savingPolicy = savingPolicy,
+            downloadFolder = folder,
+            defaultQualityHeight = quality,
             providers = providerHealth.all(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
@@ -89,6 +100,16 @@ class SettingsViewModel @Inject constructor(
     /** Persists the appearance preference (wired to MainActivity theme, T015). */
     fun setTheme(preference: AppearanceTheme) {
         viewModelScope.launch { appearanceRepository.setTheme(preference) }
+    }
+
+    /** Persists a validated relative download subfolder (FR-038). */
+    fun setDownloadFolder(relativePath: String?) {
+        viewModelScope.launch { storagePreferences.setDownloadFolder(relativePath) }
+    }
+
+    /** Persists the preferred resolution used for automatic format fallback. */
+    fun setDefaultQuality(height: Int?) {
+        viewModelScope.launch { mediaPreferences.setDefaultQuality(height) }
     }
 
     private fun updatePolicy(transform: (DownloadPolicy) -> DownloadPolicy) {

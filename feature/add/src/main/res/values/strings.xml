@@ -27,4 +27,6 @@
     <string name="add_retry">Try again</string>
     <string name="add_error_runtime">The extraction runtime on this device is incompatible. Provider status shows details in Settings.</string>
     <string name="add_pick_torrent">Choose a .torrent file…</string>
+    <string name="add_source_magnet">Magnet link</string>
+    <string name="add_source_media">Media URL</string>
 </resources>

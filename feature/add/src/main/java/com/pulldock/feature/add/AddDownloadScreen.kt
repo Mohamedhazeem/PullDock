@@ -4,11 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -19,7 +24,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.pulldock.core.designsystem.components.PdButton
@@ -59,7 +68,7 @@ fun AddDownloadScreen(
             .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.xl),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
     ) {
-        Text(text = stringResource(R.string.add_title), style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(R.string.add_title), style = MaterialTheme.typography.headlineMedium)
         Text(
             text = stringResource(R.string.add_explanation),
             style = MaterialTheme.typography.bodyMedium,
@@ -67,6 +76,7 @@ fun AddDownloadScreen(
         )
 
         val inputError = state.inputError
+        val detectedKind = state.sourceKind
         OutlinedTextField(
             value = state.input,
             onValueChange = viewModel::onInputChanged,
@@ -82,6 +92,7 @@ fun AddDownloadScreen(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
+        SourceKindBadge(kind = detectedKind)
 
         PdButton(
             label = stringResource(R.string.add_submit),
@@ -124,6 +135,25 @@ fun AddDownloadScreen(
             onEnqueue = viewModel::enqueueMedia,
             onDismiss = viewModel::dismissResolved,
         )
+    }
+}
+
+/** Readable badge describing what the entry field currently classifies as. */
+@Composable
+private fun SourceKindBadge(kind: SourceKind) {
+    if (kind != SourceKind.MAGNET && kind != SourceKind.MEDIA_URL) return
+    val tokens = LocalPdTokens.current
+    val (icon, label, color) = if (kind == SourceKind.MAGNET) {
+        Triple(Icons.Filled.Link, stringResource(R.string.add_source_magnet), MaterialTheme.colorScheme.primary)
+    } else {
+        Triple(Icons.Filled.CloudDownload, stringResource(R.string.add_source_media), MaterialTheme.colorScheme.primary)
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+    ) {
+        Icon(imageVector = icon, contentDescription = label, tint = color, modifier = Modifier.size(16.dp))
+        Text(label, style = MaterialTheme.typography.bodySmall, color = color)
     }
 }
 

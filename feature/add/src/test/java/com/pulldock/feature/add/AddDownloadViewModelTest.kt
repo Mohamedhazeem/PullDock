@@ -43,6 +43,16 @@ import org.junit.Test
  * provider registry contract without a runtime.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+private class FakeLibraryForDedupe : com.pulldock.domain.download.repository.MediaLibraryRepository {
+    override fun observe(query: com.pulldock.domain.download.repository.LibraryQuery) =
+        kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.pulldock.domain.download.repository.LibraryItem>())
+    override suspend fun get(itemId: String) = null
+    override suspend fun recordFromTask(taskId: String) = null
+    override suspend fun findBySourceHash(hash: String) = null
+    override suspend fun reconcile() = com.pulldock.domain.download.repository.ReconcileReport(0, 0, 0)
+    override suspend fun delete(itemId: String, deleteFile: Boolean) = Unit
+}
+
 class AddDownloadViewModelTest {
 
     @get:Rule
@@ -193,15 +203,26 @@ class AddDownloadViewModelTest {
         override suspend fun close() = Unit
     }
 
+    private class FakeMediaPreferences : com.pulldock.domain.download.repository.MediaPreferencesRepository {
+        var defaultHeight: Int? = null
+        override fun observeDefaultQuality() = MutableStateFlow(defaultHeight)
+        override suspend fun currentDefaultQuality(): Int? = defaultHeight
+        override suspend fun setDefaultQuality(height: Int?) {
+            defaultHeight = height
+        }
+    }
+
     @Test
     fun `valid magnet creates a queued torrent task`() = runTest(mainRule.testDispatcher) {
         val repo = FakeRepository()
         val coordinator = RecordingCoordinator()
         val vm = AddDownloadViewModel(
-            AddTorrent(repo, coordinator),
+            AddTorrent(repo, coordinator, FakeLibraryForDedupe()),
             ResolveMediaUrl(FakeExtractor(incompatible = false)),
             FetchAvailableFormats(FakeExtractor(incompatible = false)),
             EnqueueDownload(repo, coordinator),
+            FakeMediaPreferences(),
+            androidx.lifecycle.SavedStateHandle(),
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
@@ -220,10 +241,12 @@ class AddDownloadViewModelTest {
         val repo = FakeRepository()
         val coordinator = RecordingCoordinator()
         val vm = AddDownloadViewModel(
-            AddTorrent(repo, coordinator),
+            AddTorrent(repo, coordinator, FakeLibraryForDedupe()),
             ResolveMediaUrl(FakeExtractor(incompatible = false)),
             FetchAvailableFormats(FakeExtractor(incompatible = false)),
             EnqueueDownload(repo, coordinator),
+            FakeMediaPreferences(),
+            androidx.lifecycle.SavedStateHandle(),
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
@@ -240,10 +263,12 @@ class AddDownloadViewModelTest {
         val repo = FakeRepository()
         val coordinator = RecordingCoordinator()
         val vm = AddDownloadViewModel(
-            AddTorrent(repo, coordinator),
+            AddTorrent(repo, coordinator, FakeLibraryForDedupe()),
             ResolveMediaUrl(FakeExtractor(incompatible = false)),
             FetchAvailableFormats(FakeExtractor(incompatible = false)),
             EnqueueDownload(repo, coordinator),
+            FakeMediaPreferences(),
+            androidx.lifecycle.SavedStateHandle(),
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
@@ -271,10 +296,12 @@ class AddDownloadViewModelTest {
         val repo = FakeRepository()
         val coordinator = RecordingCoordinator()
         val vm = AddDownloadViewModel(
-            AddTorrent(repo, coordinator),
+            AddTorrent(repo, coordinator, FakeLibraryForDedupe()),
             ResolveMediaUrl(FakeExtractor(incompatible = true)),
             FetchAvailableFormats(FakeExtractor(incompatible = true)),
             EnqueueDownload(repo, coordinator),
+            FakeMediaPreferences(),
+            androidx.lifecycle.SavedStateHandle(),
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
 
@@ -289,5 +316,27 @@ class AddDownloadViewModelTest {
             (failure as DownloadError.ExtractorEngine).reason,
         )
         assertTrue(repo.tasks.isEmpty())
+    }
+
+    @Test
+    fun `magnet opened from another app pre-fills the add field`() = runTest(mainRule.testDispatcher) {
+        val repo = FakeRepository()
+        val coordinator = RecordingCoordinator()
+        val handle = androidx.lifecycle.SavedStateHandle(
+            mapOf("source" to "magnet:?xt=urn:btih:534d07fcd3ffa994e2bf22182ac77cd51621cbd0"),
+        )
+        val vm = AddDownloadViewModel(
+            AddTorrent(repo, coordinator, FakeLibraryForDedupe()),
+            ResolveMediaUrl(FakeExtractor(incompatible = false)),
+            FetchAvailableFormats(FakeExtractor(incompatible = false)),
+            EnqueueDownload(repo, coordinator),
+            FakeMediaPreferences(),
+            handle,
+        )
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        assertEquals("magnet:?xt=urn:btih:534d07fcd3ffa994e2bf22182ac77cd51621cbd0", vm.uiState.value.input)
+        assertEquals(SourceKind.MAGNET, vm.uiState.value.sourceKind)
     }
 }

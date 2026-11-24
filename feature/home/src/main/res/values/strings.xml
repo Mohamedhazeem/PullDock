@@ -5,6 +5,22 @@
     <string name="home_add_description">Add a torrent or authorized media download</string>
     <string name="home_active_label">Active</string>
     <string name="home_queued_label">Queued</string>
+    <string name="home_loading">Loading recent downloads…</string>
+    <string name="home_action_pause">Pause</string>
+    <string name="home_action_resume">Resume</string>
+    <string name="home_action_retry">Retry</string>
+    <string name="home_action_cancel">Cancel</string>
+    <string name="home_action_remove">Remove</string>
+    <string name="home_error_action">That action is not available in the current state.</string>
+    <string name="home_remove_title">Remove this download?</string>
+    <string name="home_remove_body">The task is removed. The downloaded file is kept — deleting it is a separate action.</string>
+    <string name="home_remove_confirm">Remove</string>
+    <string name="home_remove_dismiss">Keep</string>
+    <string name="home_completed_title">Recently completed</string>
+    <string name="home_completed_ready">Ready to play</string>
+    <string name="home_play_item">Play %1$s</string>
+    <string name="home_play">Play</string>
+    <string name="home_item_unavailable">File unavailable</string>
     <string name="home_empty_title">No downloads yet</string>
     <string name="home_empty_body">Use “Add download” to add a magnet link, a .torrent file, or an authorized media URL. Your recent transfers appear here.</string>
 </resources>

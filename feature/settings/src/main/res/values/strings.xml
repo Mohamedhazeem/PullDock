@@ -30,4 +30,15 @@
     <string name="settings_open_legal">Open legal &amp; licenses</string>
     <string name="settings_section_providers">Media providers</string>
     <string name="settings_providers_unavailable">Provider status is unavailable right now.</string>
+    <string name="settings_providers_note">Media extraction requires a bundled runtime that has not been verified on this device yet. These providers are recognized, but resolution and quality selection are unavailable until T080 completes.</string>
+
+    <string name="settings_folder_desc">Choose where completed files are stored (inside PullDock’s own storage).</string>
+    <string name="settings_folder_default">App files</string>
+    <string name="settings_folder_downloads">Downloads</string>
+    <string name="settings_folder_movies">Movies</string>
+    <string name="settings_folder_music">Music</string>
+    <string name="settings_folder_custom">Custom subfolder</string>
+    <string name="settings_folder_apply">Use this folder</string>
+    <string name="settings_quality_desc">Preferred resolution. If unavailable, the closest quality is selected automatically; you can still change it before downloading.</string>
+    <string name="settings_quality_auto">Ask every time</string>
 </resources>

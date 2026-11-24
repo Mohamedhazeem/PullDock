@@ -1,5 +1,6 @@
 package com.pulldock.feature.add
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pulldock.core.model.DownloadError
@@ -7,6 +8,8 @@ import com.pulldock.domain.download.model.StorageDestinationDefaults
 import com.pulldock.domain.download.usecase.AddTorrent
 import com.pulldock.domain.download.usecase.EnqueueDownload
 import com.pulldock.domain.download.usecase.FetchAvailableFormats
+import com.pulldock.domain.download.usecase.FormatFallback
+import com.pulldock.domain.download.repository.MediaPreferencesRepository
 import com.pulldock.domain.download.usecase.ResolveMediaUrl
 import com.pulldock.domain.download.usecase.UseCaseResult
 import com.pulldock.domain.extractor.ExtractorResult
@@ -64,6 +67,8 @@ class AddDownloadViewModel @Inject constructor(
     private val resolveMediaUrl: ResolveMediaUrl,
     private val fetchAvailableFormats: FetchAvailableFormats,
     private val enqueueDownload: EnqueueDownload,
+    private val mediaPreferences: MediaPreferencesRepository,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddDownloadUiState())
@@ -71,6 +76,20 @@ class AddDownloadViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<AddDownloadEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<AddDownloadEvent> = _events.asSharedFlow()
+
+    init {
+        // A magnet/file opened from another app arrives as a navigation argument (FR-001).
+        when (val source = savedStateHandle.get<String>("source")) {
+            null -> Unit
+            else -> if (source.startsWith("magnet:", ignoreCase = true)) {
+                onInputChanged(source)
+            } else if (source.startsWith("content://", ignoreCase = true) || source.startsWith("file://", ignoreCase = true)) {
+                onTorrentFilePicked(source)
+            } else {
+                onInputChanged(source)
+            }
+        }
+    }
 
     /** Updates the entry and re-classifies; errors clear on edit. */
     fun onInputChanged(value: String) {
@@ -170,8 +189,17 @@ class AddDownloadViewModel @Inject constructor(
     /** Loads formats for the resolved descriptor; typed-empty is surfaced, not faked. */
     private suspend fun loadFormats(descriptor: MediaDescriptor) {
         when (val formatsResult = fetchAvailableFormats(descriptor)) {
-            is ExtractorResult.Success ->
-                _uiState.update { it.copy(resolvedDescriptor = descriptor, formats = formatsResult.value, selectedFormat = null) }
+            is ExtractorResult.Success -> {
+                val formats = formatsResult.value
+                val recommended = FormatFallback.select(formats, mediaPreferences.currentDefaultQuality())
+                _uiState.update {
+                    it.copy(
+                        resolvedDescriptor = descriptor,
+                        formats = formats,
+                        selectedFormat = recommended,
+                    )
+                }
+            }
             is ExtractorResult.Failure -> _uiState.update { it.copy(failedError = formatsResult.error) }
         }
     }
