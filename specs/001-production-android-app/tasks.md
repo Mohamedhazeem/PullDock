@@ -150,7 +150,9 @@ recovered.
 **Purpose**: verified extractor runtime and provider registry. Serves **US3**, **US8**.
 **HIGH RISK** — start with the runtime feasibility PoC.
 
-- [ ] T080 Run the extractor runtime feasibility PoC: Chaquopy CPython 3.13 + pinned yt-dlp on arm64-v8a/x86_64, verify resolve/download; record in `research.md` (resolves D2/D3)
+- [X] T080 Run the extractor runtime feasibility PoC: bundled Chaquopy CPython 3.12 + pinned
+      yt-dlp 2026.11.23 on arm64-v8a/x86_64, verify resolve/download; recorded in `research.md` (ADR-0012)
+      *(Build-time integration verified 2026-11-25; on-device provider verification pending device reconnection.)*
 - [X] T081 [P] Add `YtDlpRuntime` bootstrap and teardown in `engines/extractor-ytdlp/src/main/java/com/pulldock/engines/extractor/YtDlpRuntime.kt`
 - [X] T082 [P] Add `FfmpegProcess`/`Ffprobe` with argument-array invocation, bounded output, exit codes in `engines/media-ffmpeg/src/main/java/com/pulldock/engines/ffmpeg/`
 - [X] T083 Add `ExtractorRuntimeInfo` model and `ExtractorRuntimeValidator` in `data/extractor/src/main/java/com/pulldock/data/extractor/RuntimeValidator.kt`

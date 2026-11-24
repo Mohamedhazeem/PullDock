@@ -53,3 +53,6 @@ Verified facts (2026-11-25):
 - The build machine must have matching Python 3.12 for Chaquopy's pip step.
 - Some sites may still fail due to anti-bot challenges; failures surface as typed errors.
 - Worker/process isolation and background execution remain governed by ADR-0005.
+- 2026-11-25 follow-up: `ProviderId.DIRECT` handles other authorized http(s) URLs
+  (audio, images, plain files) through the same pinned runtime; the player has a music
+  mode for audio files. FFmpeg merging is still deferred.

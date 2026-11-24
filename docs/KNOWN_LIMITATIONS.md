@@ -22,8 +22,11 @@ Honest, user-visible constraints. Nothing here is hidden in the UI.
   DRM, paywalls, authentication, or private accounts (FR-020).
 - Provider compatibility is recorded per provider with dated verification results;
   a failing provider degrades alone (FR-062).
-- **Open**: the on-device runtime PoC (T080) — extraction reports
-  `RUNTIME_INCOMPATIBLE` until the bundled combination is verified on arm64-v8a/x86_64.
+- **T080 bundled runtime**: implemented 2026-11-25 (Chaquopy 17.2.0 / Python 3.12 /
+  yt-dlp 2026.11.23, ADR-0012). On-device provider verification still pending device
+  reconnection; anti-bot failures remain possible per provider.
+- Progressive formats only: merge-required video+audio formats are not offered until an
+  FFmpeg binary is pinned and licensed (ADR-0003/ADR-0012).
 
 ## Devices
 

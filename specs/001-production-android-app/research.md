@@ -35,15 +35,21 @@ Verified 2026-11-22. Distinguish verified facts from assumptions.
 
 ### Media extractor
 
-- **Feasible only with a bundled runtime.** The maintained path is Chaquopy CPython 3.13
-  embedded in the app, with yt-dlp pinned at library build time.
-- **Costs:** ~60-80 MB AAR, arm64-v8a + x86_64 only, no in-app yt-dlp update, and (free tier)
-  no TLS fingerprint impersonation. Protected sites may require cookies or the paid variant.
-- **JS runtime:** yt-dlp-ejs requires a JavaScript engine; the Android-compatible choice and
-  its licensing MUST be verified before pinning.
-- **Media processing:** an Android-compatible FFmpeg/FFprobe build is required for merging.
-  The original FFmpegKit was retired; a maintained fork or self-built binaries must be
-  selected and licensed.
+- **Feasible with a bundled runtime.** 2026-11-25: Chaquopy Gradle plugin **17.2.0**
+  (MIT) verified compatible with AGP 9.4.1 / Gradle 9.6 and minSdk 26; Python **3.12.3**
+  pinned (build-machine version; 64-bit-only ABIs match the project policy). yt-dlp
+  **2026.11.23** (Unlicense) is installed by Chaquopy's `pip` block at build time; it is
+  never downloaded or executed from a remote source at app runtime (ADR-0012).
+- **Costs:** the 64-bit APK grew from ~41 MB to ~69 MB; no in-app yt-dlp update, and
+  (free tier) no TLS fingerprint impersonation. Protected sites may require cookies —
+  PullDock does not bypass DRM, paywalls, login walls or private accounts (FR-020).
+- **JS runtime:** yt-dlp-ejs 0.8.0 exists on PyPI but its redistribution license could
+  not be confirmed, so it is deliberately NOT pinned.
+- **Media processing:** no FFmpeg binary is bundled yet, so merge-required formats are
+  filtered out and only progressive formats are offered in v1 (ADR-0012, ADR-0003).
+- **Integrity gap:** Gradle dependency verification metadata is not configured; integrity
+  relies on pinned coordinates over TLS from Maven Central/PyPI. Recorded, not claimed
+  as verified signing.
 
 ### Background execution
 
