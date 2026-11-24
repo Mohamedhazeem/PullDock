@@ -3,6 +3,7 @@ package com.pulldock.core.datastore
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,6 +14,10 @@ import kotlinx.coroutines.flow.map
 /** Immutable snapshot of user-level application settings. */
 data class AppSettings(
     val theme: ThemePreference,
+    /** Relative subfolder under app-specific external storage; null = app downloads root. */
+    val downloadFolder: String?,
+    /** Preferred resolution height (360/480/720/1080); null = let the user choose each time. */
+    val defaultQualityHeight: Int?,
 )
 
 /**
@@ -41,13 +46,33 @@ class SettingsDataStore @Inject constructor(
         }
     }
 
+    /** Persists a validated relative download subfolder (null resets to the app root). */
+    suspend fun setDownloadFolder(relativePath: String?) {
+        dataStore.edit { preferences ->
+            if (relativePath.isNullOrBlank()) preferences.remove(KEY_DOWNLOAD_FOLDER)
+            else preferences[KEY_DOWNLOAD_FOLDER] = relativePath
+        }
+    }
+
+    /** Persists the preferred resolution height (null = ask every time). */
+    suspend fun setDefaultQuality(height: Int?) {
+        dataStore.edit { preferences ->
+            if (height == null) preferences.remove(KEY_DEFAULT_QUALITY)
+            else preferences[KEY_DEFAULT_QUALITY] = height.toLong()
+        }
+    }
+
     private fun toSettings(preferences: Preferences): AppSettings = AppSettings(
         theme = preferences[KEY_THEME]?.let { stored ->
             ThemePreference.entries.firstOrNull { it.name == stored }
         } ?: ThemePreference.SYSTEM,
+        downloadFolder = preferences[KEY_DOWNLOAD_FOLDER],
+        defaultQualityHeight = preferences[KEY_DEFAULT_QUALITY]?.toInt(),
     )
 
     private companion object {
         val KEY_THEME = stringPreferencesKey("appearance.theme")
+        val KEY_DOWNLOAD_FOLDER = stringPreferencesKey("storage.download_folder")
+        val KEY_DEFAULT_QUALITY = longPreferencesKey("media.default_quality_height")
     }
 }

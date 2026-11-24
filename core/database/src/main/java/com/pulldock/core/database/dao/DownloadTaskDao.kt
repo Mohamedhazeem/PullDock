@@ -110,6 +110,37 @@ interface DownloadTaskDao {
     @Query("UPDATE download_task SET engineTaskId = :engineTaskId, updatedAt = :updatedAt WHERE id = :id")
     suspend fun updateEngineTaskId(id: String, engineTaskId: String?, updatedAt: Long): Int
 
+    /** Fills the display name/size once torrent metadata arrives (FR-003). */
+    @Query(
+        """
+        UPDATE download_task
+        SET displayName = :displayName,
+            totalBytes = COALESCE(:totalBytes, totalBytes),
+            updatedAt = :updatedAt
+        WHERE id = :id
+        """,
+    )
+    suspend fun updateMetadata(id: String, displayName: String, totalBytes: Long?, updatedAt: Long): Int
+
+    /** Verified upload rate for torrent telemetry (FR-044 / US4). */
+    @Query("UPDATE download_task SET uploadSpeed = :speed, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateUploadSpeed(id: String, speed: Long?, updatedAt: Long): Int
+
+    /** Publishes output and completes a verified transfer in one guarded write (FR-030/§4.3). */
+    @Query(
+        """
+        UPDATE download_task
+        SET state = 'COMPLETED',
+            stateSequence = stateSequence + 1,
+            outputUri = :outputUri,
+            outputFilename = :filename,
+            completedAt = :completedAt,
+            updatedAt = :completedAt
+        WHERE id = :id AND state = 'VERIFYING'
+        """,
+    )
+    suspend fun completeWithOutput(id: String, outputUri: String, filename: String, completedAt: Long): Int
+
     @Query(
         """
         UPDATE download_task

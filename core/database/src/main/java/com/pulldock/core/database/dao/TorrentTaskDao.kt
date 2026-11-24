@@ -52,8 +52,8 @@ interface TorrentTaskDao {
         perTorrentOverride: Boolean,
     ): Int
 
-    @Query("UPDATE torrent_task SET uploadedBytes = :uploadedBytes, peerCount = :peerCount WHERE taskId = :taskId")
-    suspend fun updateStats(taskId: String, uploadedBytes: Long, peerCount: Int): Int
+    @Query("UPDATE torrent_task SET uploadedBytes = :uploadedBytes, peerCount = :peerCount, seedCount = :seedCount WHERE taskId = :taskId")
+    suspend fun updateStats(taskId: String, uploadedBytes: Long, peerCount: Int, seedCount: Int): Int
 
     @Query("SELECT * FROM torrent_file WHERE taskId = :taskId ORDER BY fileIndex ASC")
     suspend fun getFiles(taskId: String): List<TorrentFileEntity>

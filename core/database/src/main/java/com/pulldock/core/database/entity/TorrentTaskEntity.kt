@@ -30,6 +30,7 @@ data class TorrentTaskEntity(
     /** Newline-joined, percent-encoded tracker URLs (safe for any URI content). */
     @ColumnInfo(name = "trackers") val trackers: String,
     @ColumnInfo(name = "peerCount") val peerCount: Int,
+    @ColumnInfo(name = "seedCount") val seedCount: Int = 0,
     @ColumnInfo(name = "sequentialDownload") val sequentialDownload: Boolean,
     @ColumnInfo(name = "resumeData") val resumeData: ByteArray?,
     @ColumnInfo(name = "resumeDataVersion") val resumeDataVersion: Int,

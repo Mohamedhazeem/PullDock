@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.pulldock.core.database.dao.DownloadTaskDao
 import com.pulldock.core.database.dao.ExtractorTaskDao
+import com.pulldock.core.database.dao.LibraryItemDao
 import com.pulldock.core.database.dao.RecoveryMarkerDao
 import com.pulldock.core.database.dao.TorrentTaskDao
 import dagger.Module
@@ -43,4 +44,7 @@ object RoomModule {
 
     @Provides
     fun provideRecoveryMarkerDao(database: PullDockDatabase): RecoveryMarkerDao = database.recoveryMarkerDao()
+
+    @Provides
+    fun provideLibraryItemDao(database: PullDockDatabase): LibraryItemDao = database.libraryItemDao()
 }

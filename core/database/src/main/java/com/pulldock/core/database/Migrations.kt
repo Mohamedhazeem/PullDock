@@ -1,15 +1,55 @@
 package com.pulldock.core.database
 
 import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Central migration registry (data-model.md §4.4). Every schema version change adds
- * one `Migration` here plus a test in `core/database/src/androidTest` that opens the
- * previous version's schema fixture. v1 is the initial schema, so the list starts
- * empty; it must never be bypassed with `fallbackToDestructiveMigration`.
+ * one `Migration` here plus a test in `core/database/src/androidTest`. Destructive
+ * fallback is never permitted — a failed migration surfaces as a typed failure.
  */
 object Migrations {
 
-    /** All registered migrations, in order. Empty for v1 (initial schema). */
-    val ALL: List<Migration> = emptyList()
+    /** v2 adds the completed-media library table required by FR-042/FR-043. */
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `library_item` (
+                    `id` TEXT NOT NULL PRIMARY KEY,
+                    `fileUri` TEXT NOT NULL,
+                    `type` TEXT NOT NULL,
+                    `title` TEXT NOT NULL,
+                    `sizeBytes` INTEGER,
+                    `durationSeconds` INTEGER,
+                    `source` TEXT,
+                    `completedAt` INTEGER NOT NULL,
+                    `thumbnailUri` TEXT,
+                    `fileAvailable` INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_library_item_fileUri` ON `library_item` (`fileUri`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_library_item_type` ON `library_item` (`type`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_library_item_completedAt` ON `library_item` (`completedAt`)")
+        }
+    }
+
+    /** v3 records the connected seed count alongside peers (US4 telemetry). */
+    private val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `torrent_task` ADD COLUMN `seedCount` INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
+    /** v4 stores the source hash so an already-downloaded file is never fetched twice. */
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `library_item` ADD COLUMN `sourceHash` TEXT")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_library_item_sourceHash` ON `library_item` (`sourceHash`)")
+        }
+    }
+
+    /** All registered migrations, in declaration order. */
+    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }
