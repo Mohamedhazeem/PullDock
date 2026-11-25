@@ -312,13 +312,16 @@ private fun FormatRow(
 }
 
 @Composable
-private fun formatLabel(format: MediaFormat): String =
-    clean(format.resolution)
-        ?: if (clean(format.audioCodec) != null) {
-            stringResource(R.string.add_format_audio_only)
-        } else {
-            stringResource(R.string.add_format_unknown)
-        }
+private fun formatLabel(format: MediaFormat): String {
+    val resolution = clean(format.resolution)
+    val hasAudio = clean(format.audioCodec) != null
+    return when {
+        resolution != null && hasAudio -> "$resolution · ${stringResource(R.string.add_format_audio)}"
+        resolution != null -> resolution
+        hasAudio -> stringResource(R.string.add_format_audio_only)
+        else -> stringResource(R.string.add_format_unknown)
+    }
+}
 
 @Composable
 private fun formatDetail(format: MediaFormat): String = buildString {

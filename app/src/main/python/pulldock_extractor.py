@@ -107,6 +107,10 @@ def probe(url):
             entry = _format_entry(fmt, duration)
             if not entry["id"] or entry["mergeRequired"]:
                 continue
+            # A video format without an audio stream is not a usable v1 download:
+            # no FFmpeg is bundled to merge a separate audio track.
+            if entry["videoCodec"] and not entry["audioCodec"]:
+                continue
             if entry["resolution"] is None:
                 continue
             # Drop storyboard/thumbnail-like micro-formats; real video starts at 144p.
@@ -136,30 +140,60 @@ def probe(url):
         return json.dumps({"error": type(exc).__name__, "message": str(exc)[:200]})
 
 
-def download(url, format_id, output_path):
-    """Download one progressive format; returns the actual published temp path."""
+def _has_audio(path):
     try:
-        template = output_path + ".%(ext)s"
-        opts = _options_common()
-        opts.update({
-            "skip_download": False,
-            "format": str(format_id),
-            "outtmpl": template,
-            "overwrites": True,
-            "noprogress": True,
-            "concurrent_fragment_downloads": 2,
-        })
-        with YoutubeDL(opts) as ydl:
-            ydl.extract_info(url, download=True)
-        candidates = [
-            os.path.join(os.path.dirname(output_path), path)
-            for path in os.listdir(os.path.dirname(output_path))
-            if path.startswith(os.path.basename(output_path) + ".")
-            and not path.endswith(".part")
-        ]
-        if not candidates:
+        with open(path, "rb") as handle:
+            head = handle.read(2_000_000)
+        return any(tag in head for tag in (b"A_OPUS", b"A_VORBIS", b"A_AAC", b"A_MPEG"))
+    except Exception:
+        return False
+
+
+def _download_format(url, format_selector, output_path):
+    template = output_path + ".%(ext)s"
+    opts = _options_common()
+    opts.update({
+        "skip_download": False,
+        "format": str(format_selector),
+        "outtmpl": template,
+        "overwrites": True,
+        "noprogress": True,
+        "concurrent_fragment_downloads": 2,
+    })
+    with YoutubeDL(opts) as ydl:
+        ydl.extract_info(url, download=True)
+    candidates = [
+        os.path.join(os.path.dirname(output_path), path)
+        for path in os.listdir(os.path.dirname(output_path))
+        if path.startswith(os.path.basename(output_path) + ".")
+        and not path.endswith(".part")
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda candidate: os.path.getsize(candidate))
+
+
+def download(url, format_id, output_path, height=0):
+    """Download a format and verify the result actually contains audio."""
+    try:
+        path = _download_format(url, format_id, output_path)
+        if path and not _has_audio(path):
+            # The selected id may have resolved to a video-only variant. Retry with
+            # an audio-bearing progressive format at the same or lower height.
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            fallback = (
+                f"best[acodec!=none][height<={int(height)}]/best[acodec!=none]"
+                if int(height or 0) > 0
+                else "best[acodec!=none]/best"
+            )
+            path = _download_format(url, fallback, output_path)
+        if not path:
             return json.dumps({"error": "NO_OUTPUT"})
-        path = max(candidates, key=lambda candidate: os.path.getsize(candidate))
+        if not _has_audio(path):
+            return json.dumps({"error": "NO_AUDIO"})
         return json.dumps({"path": path, "bytes": os.path.getsize(path)})
     except Exception as exc:
         return json.dumps({"error": type(exc).__name__, "message": str(exc)[:200]})

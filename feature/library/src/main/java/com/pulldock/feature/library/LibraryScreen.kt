@@ -50,7 +50,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.pulldock.core.designsystem.components.PdButton
 import com.pulldock.core.designsystem.components.PdCard
 import com.pulldock.core.designsystem.components.PdConfirmDialog
 import com.pulldock.core.designsystem.components.PdEmptyState
@@ -234,11 +233,10 @@ private fun LibraryItemCard(
         onClick = if (item.fileAvailable) onPlay else null,
         modifier = modifier,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
+                    .size(64.dp)
                     .clip(RoundedCornerShape(tokens.radius.md))
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
@@ -247,41 +245,45 @@ private fun LibraryItemCard(
                     imageVector = pdLibraryIcon(item.fileUri),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(28.dp),
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2,
-                    )
-                    Text(
-                        text = buildString {
-                            item.sizeBytes?.let { append(formatBytes(it)) }
-                            if (item.sizeBytes != null) append(" · ")
-                            append(dateFormatter.format(item.completedAt.atZone(ZoneId.systemDefault())))
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Spacer(Modifier.width(tokens.spacing.md))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                )
+                Text(
+                    text = buildString {
+                        item.sizeBytes?.let { append(formatBytes(it)) }
+                        if (item.sizeBytes != null) append(" · ")
+                        append(dateFormatter.format(item.completedAt.atZone(ZoneId.systemDefault())))
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+                if (!item.fileAvailable) {
+                    PdStatusBadge(
+                        label = stringResource(R.string.library_unavailable),
+                        icon = Icons.Rounded.ErrorOutline,
+                        tone = PdStatusTone.Error,
                     )
                 }
-                OverflowMenu(onDelete = onDelete)
             }
-            if (!item.fileAvailable) {
-                PdStatusBadge(
-                    label = stringResource(R.string.library_unavailable),
-                    icon = Icons.Rounded.ErrorOutline,
-                    tone = PdStatusTone.Error,
-                )
-            }
-            PdButton(
-                label = stringResource(R.string.library_play_short),
+            IconButton(
                 onClick = onPlay,
                 enabled = item.fileAvailable,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PlayArrow,
+                    contentDescription = playLabel,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            OverflowMenu(onDelete = onDelete)
         }
     }
 }
@@ -324,7 +326,7 @@ private fun LibrarySkeletonCard() {
             PdSkeleton(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp),
+                    .height(72.dp),
             )
             PdSkeleton(modifier = Modifier.fillMaxWidth(0.7f))
             PdSkeleton(modifier = Modifier.fillMaxWidth(0.4f))

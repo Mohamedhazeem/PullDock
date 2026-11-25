@@ -93,6 +93,7 @@ class ChaquopyExtractorRuntime @Inject constructor(
         formatId: String,
         outputPath: String,
         onProgress: (Long, Long?) -> Unit,
+        height: Int?,
     ): ExtractorResult<String> {
         val mod = module() ?: return ExtractorResult.Failure(
             DownloadError.ExtractorEngine(DownloadError.ExtractorReason.RUNTIME_INCOMPATIBLE),
@@ -100,7 +101,7 @@ class ChaquopyExtractorRuntime @Inject constructor(
         val poller: Job? = launchPoller(outputPath, onProgress)
         return try {
             val json = JSONObject(withContext(kotlinx.coroutines.Dispatchers.IO) {
-                mod.callAttr("download", url, formatId, outputPath).toString()
+                mod.callAttr("download", url, formatId, outputPath, height ?: 0).toString()
             })
             if (json.has("error")) ExtractorResult.Failure(mapError(json.optString("error", "")))
             else {
@@ -155,6 +156,10 @@ class ChaquopyExtractorRuntime @Inject constructor(
         code.contains("NO_OUTPUT", true) -> DownloadError.ExtractorEngine(
             DownloadError.ExtractorReason.UNSUPPORTED,
             "no output",
+        )
+        code.contains("NO_AUDIO", true) -> DownloadError.ExtractorEngine(
+            DownloadError.ExtractorReason.UNSUPPORTED,
+            "no audio stream",
         )
         else -> DownloadError.ExtractorEngine(DownloadError.ExtractorReason.PROVIDER_CHANGED)
     }

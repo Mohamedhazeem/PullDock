@@ -78,7 +78,7 @@ class CompletionFinalizer @Inject constructor(
             is FileFinalizer.Result.Published -> {
                 val uri = java.io.File(result.path).toURI().toString()
                 val now = System.currentTimeMillis()
-                if (taskDao.completeWithOutput(taskId, uri, java.io.File(result.path).name, now) > 0) {
+                if (taskDao.completeMediaWithOutput(taskId, uri, java.io.File(result.path).name, now) > 0) {
                     library.record(
                         task = TaskMappers.toDomain(entity).copy(
                             state = DownloadState.COMPLETED,

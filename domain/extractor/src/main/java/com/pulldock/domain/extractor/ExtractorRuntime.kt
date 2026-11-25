@@ -29,6 +29,7 @@ interface ExtractorRuntime {
         formatId: String,
         outputPath: String,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
+        height: Int? = null,
     ): ExtractorResult<String>
 
     fun runtimeInfo(): ExtractorRuntimeInfo

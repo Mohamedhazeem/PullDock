@@ -144,6 +144,20 @@ interface DownloadTaskDao {
     @Query(
         """
         UPDATE download_task
+        SET state = 'COMPLETED',
+            stateSequence = stateSequence + 1,
+            outputUri = :outputUri,
+            outputFilename = :filename,
+            completedAt = :completedAt,
+            updatedAt = :completedAt
+        WHERE id = :id AND state = 'RUNNING'
+        """,
+    )
+    suspend fun completeMediaWithOutput(id: String, outputUri: String, filename: String, completedAt: Long): Int
+
+    @Query(
+        """
+        UPDATE download_task
         SET limitsDownloadRate = :downloadRate, limitsUploadRate = :uploadRate,
             limitsMaxConnections = :maxConnections, updatedAt = :updatedAt
         WHERE id = :id

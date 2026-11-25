@@ -112,6 +112,7 @@ class MediaExtractorImpl @Inject constructor(
                 onProgress = { bytes, total ->
                     events.tryEmit(ExtractorEvent.Progress(taskId, bytes, total, 0L))
                 },
+                height = format.resolution?.removeSuffix("p")?.toIntOrNull(),
             )
         ) {
             is ExtractorResult.Success -> {
