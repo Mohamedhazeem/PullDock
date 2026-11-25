@@ -19,13 +19,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -50,12 +48,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.pulldock.core.designsystem.components.PdButton
 import com.pulldock.core.designsystem.components.PdCard
 import com.pulldock.core.designsystem.components.PdConfirmDialog
 import com.pulldock.core.designsystem.components.PdEmptyState
@@ -63,8 +58,6 @@ import com.pulldock.core.designsystem.components.PdFilterChips
 import com.pulldock.core.designsystem.components.PdProgress
 import com.pulldock.core.designsystem.components.PdScaffold
 import com.pulldock.core.designsystem.components.PdSkeleton
-import com.pulldock.core.designsystem.components.PdStatData
-import com.pulldock.core.designsystem.components.PdStatGrid
 import com.pulldock.core.designsystem.components.PdStatusBadge
 import com.pulldock.core.designsystem.components.pdStatusIcon
 import com.pulldock.core.designsystem.components.pdStatusLabel
@@ -79,7 +72,7 @@ import com.pulldock.domain.download.model.DownloadTask
 import com.pulldock.domain.download.repository.QueueFilter
 import com.pulldock.domain.torrent.model.TorrentTaskDetails
 
-/** Unified transfer screen: calm overview, filters, and per-task controls. */
+/** Unified transfer screen: a compact filter and the live queue. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -93,6 +86,7 @@ fun HomeScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val actionMessage = state.actionError?.let { stringResource(R.string.home_error_action) }
     val filterOptions = QueueFilter.entries.map { filterLabel(it) }
+    val selectedFilterLabel = filterLabel(state.filter)
 
     LaunchedEffect(state.actionError) {
         actionMessage?.let {
@@ -122,18 +116,12 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .padding(horizontal = tokens.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
         ) {
-            item {
-                HomeHero(
-                    tasks = state.tasks,
-                    onAddDownload = onAddDownload,
-                )
-            }
             item {
                 PdFilterChips(
                     options = filterOptions,
-                    selected = filterLabel(state.filter),
+                    selected = selectedFilterLabel,
                     onSelect = { selected ->
                         val index = filterOptions.indexOf(selected)
                         viewModel.setFilter(
@@ -186,58 +174,6 @@ fun HomeScreen(
             onConfirm = viewModel::confirmDelete,
             onDismiss = viewModel::dismissDelete,
         )
-    }
-}
-
-@Composable
-private fun HomeHero(
-    tasks: List<DownloadTask>,
-    onAddDownload: () -> Unit,
-) {
-    val tokens = LocalPdTokens.current
-    val active = tasks.count { it.state in ACTIVE_STATES }
-    val queued = tasks.count { it.state == DownloadState.QUEUED || it.state == DownloadState.RETRY_WAIT }
-    val completed = tasks.count { it.state == DownloadState.COMPLETED }
-
-    PdCard {
-        Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.md)) {
-            Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
-                Text(
-                    text = stringResource(R.string.home_hero_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = stringResource(R.string.home_hero_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            PdStatGrid(
-                stats = listOf(
-                    PdStatData(
-                        label = stringResource(R.string.home_active_label),
-                        value = active.toString(),
-                        icon = Icons.Rounded.CloudDownload,
-                    ),
-                    PdStatData(
-                        label = stringResource(R.string.home_queued_label),
-                        value = queued.toString(),
-                        icon = Icons.Rounded.Schedule,
-                    ),
-                    PdStatData(
-                        label = stringResource(R.string.home_completed_label),
-                        value = completed.toString(),
-                        icon = Icons.Rounded.CheckCircle,
-                    ),
-                ),
-            )
-            PdButton(
-                label = stringResource(R.string.home_add),
-                onClick = onAddDownload,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
     }
 }
 
@@ -446,11 +382,3 @@ private fun filterLabel(filter: QueueFilter): String = when (filter) {
     QueueFilter.COMPLETED -> stringResource(R.string.home_filter_completed)
     QueueFilter.FAILED -> stringResource(R.string.home_filter_failed)
 }
-
-private val ACTIVE_STATES = setOf(
-    DownloadState.STARTING,
-    DownloadState.RUNNING,
-    DownloadState.PAUSING,
-    DownloadState.VERIFYING,
-    DownloadState.POST_PROCESSING,
-)
