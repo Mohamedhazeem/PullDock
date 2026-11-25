@@ -136,11 +136,12 @@ class CompletionFinalizer @Inject constructor(
                 }
             }
         } ?: return null
+        val image = bitmap ?: return null
         val directory = File(context.cacheDir, "thumbnails").apply { mkdirs() }
         val output = File(directory, "$taskId.jpg")
         return runCatching {
             FileOutputStream(output).use { stream ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+                image.compress(Bitmap.CompressFormat.JPEG, 85, stream)
             }
             output.toURI().toString()
         }.getOrNull()

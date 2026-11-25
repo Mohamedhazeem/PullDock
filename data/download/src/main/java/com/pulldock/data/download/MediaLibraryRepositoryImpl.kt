@@ -45,7 +45,7 @@ class MediaLibraryRepositoryImpl @Inject constructor(
     override suspend fun get(itemId: String): LibraryItem? = dao.get(itemId)?.let(::toDomain)
 
     /** Records a finalized task output; called by the completion flow. */
-    suspend fun record(task: DownloadTask, fileUri: String) {
+    suspend fun record(task: DownloadTask, fileUri: String, thumbnailUri: String? = null) {
         val existing = dao.findByUri(fileUri)
         dao.upsert(
             LibraryItemEntity(
@@ -57,7 +57,7 @@ class MediaLibraryRepositoryImpl @Inject constructor(
                 durationSeconds = null,
                 source = task.source.takeIf { it.length <= MAX_SOURCE_LENGTH }?.let(::sanitizeSource),
                 completedAt = (task.completedAt ?: Instant.now()).toEpochMilli(),
-                thumbnailUri = null,
+                thumbnailUri = thumbnailUri,
                 fileAvailable = true,
                 sourceHash = task.sourceHash,
             ),
