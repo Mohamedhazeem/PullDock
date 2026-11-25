@@ -317,6 +317,7 @@ private fun formatLabel(format: MediaFormat): String {
     val resolution = clean(format.resolution)
     val kind = formatKind(format)
     return when {
+        resolution != null && resolution == "Unknown" -> "${stringResource(R.string.add_format_default)} · $kind"
         resolution != null -> "$resolution · $kind"
         kind == stringResource(R.string.add_format_audio_only) -> kind
         else -> stringResource(R.string.add_format_unknown)

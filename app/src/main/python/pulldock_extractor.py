@@ -50,6 +50,15 @@ def _format_entry(fmt, duration=0):
     if resolution and resolution != "Audio" and vcodec is None and acodec is None:
         vcodec = "unknown"
         acodec = "unknown"
+    # Instagram/Facebook expose a default muxed format without resolution metadata.
+    # Keep it as a selectable "Unknown" option instead of dropping it.
+    if resolution is None and vcodec is None and acodec is None:
+        note = str(fmt.get("format_note") or "").lower()
+        is_audio = "audio" in note or str(fmt.get("format_id") or "").startswith("hls-audio")
+        if not is_audio:
+            resolution = "Unknown"
+            vcodec = "unknown"
+            acodec = "unknown"
     return {
         "id": _clean(fmt.get("format_id")) or "",
         "resolution": resolution,
