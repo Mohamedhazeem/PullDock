@@ -1,28 +1,35 @@
 package com.pulldock.feature.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.BatterySaver
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Gavel
+import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Shield
-import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -30,6 +37,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,24 +53,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pulldock.core.designsystem.components.PdCard
 import com.pulldock.core.designsystem.components.PdLoadingState
 import com.pulldock.core.designsystem.components.PdScaffold
-import com.pulldock.core.designsystem.components.PdSectionHeader
 import com.pulldock.core.designsystem.components.PdSettingRow
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.domain.download.repository.AppearanceTheme
 import com.pulldock.domain.extractor.model.ProviderHealthState
 
-/**
- * Settings: grouped, readable controls for network, battery, downloads, appearance,
- * provider health, privacy, and legal.
- */
+/** Settings: short labels and icons; long explanations live in Legal. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -94,59 +97,67 @@ fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
             ) {
                 item {
-                    Section(title = stringResource(R.string.settings_section_network), icon = Icons.Rounded.Wifi) {
-                        PolicySwitch(
-                            label = stringResource(R.string.settings_wifi_only),
-                            description = stringResource(R.string.settings_wifi_only_desc),
-                            checked = policy.wifiOnly,
-                            onChecked = viewModel::setWifiOnly,
-                        )
-                        PolicySwitch(
-                            label = stringResource(R.string.settings_metered),
-                            description = stringResource(R.string.settings_metered_desc),
-                            checked = policy.meteredAllowed,
-                            onChecked = viewModel::setMeteredAllowed,
-                        )
-                    }
-                }
-                item {
-                    Section(title = stringResource(R.string.settings_section_battery), icon = Icons.Rounded.BatterySaver) {
-                        val thresholdLabel = if (policy.batteryThresholdPercent == 0) {
-                            stringResource(R.string.settings_battery_disabled)
-                        } else {
-                            stringResource(R.string.settings_battery_value, policy.batteryThresholdPercent)
-                        }
-                        Text(
-                            text = thresholdLabel,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.semantics { stateDescription = thresholdLabel },
-                        )
-                        Slider(
-                            value = policy.batteryThresholdPercent.toFloat(),
-                            onValueChange = { viewModel.setBatteryThreshold(it.toInt()) },
-                            valueRange = 0f..50f,
-                            steps = 9,
-                        )
-                    }
-                }
-                item {
                     Section(title = stringResource(R.string.settings_section_downloads), icon = Icons.Rounded.Download) {
-                        Text(
-                            text = stringResource(
-                                R.string.settings_concurrency_value,
-                                policy.maxConcurrent,
-                                policy.torrentMaxConcurrent,
-                                policy.extractorMaxConcurrent,
-                            ),
-                            style = MaterialTheme.typography.bodyMedium,
+                        PolicyStepper(
+                            label = stringResource(R.string.settings_concurrency_total),
+                            value = policy.maxConcurrent,
+                            onMinus = {
+                                viewModel.setConcurrency(
+                                    global = (policy.maxConcurrent - 1).coerceAtLeast(1),
+                                    torrent = policy.torrentMaxConcurrent,
+                                    extractor = policy.extractorMaxConcurrent,
+                                )
+                            },
+                            onPlus = {
+                                viewModel.setConcurrency(
+                                    global = (policy.maxConcurrent + 1).coerceAtMost(10),
+                                    torrent = policy.torrentMaxConcurrent,
+                                    extractor = policy.extractorMaxConcurrent,
+                                )
+                            },
+                        )
+                        PolicyStepper(
+                            label = stringResource(R.string.settings_concurrency_torrents),
+                            value = policy.torrentMaxConcurrent,
+                            onMinus = {
+                                viewModel.setConcurrency(
+                                    global = policy.maxConcurrent,
+                                    torrent = (policy.torrentMaxConcurrent - 1).coerceAtLeast(1),
+                                    extractor = policy.extractorMaxConcurrent,
+                                )
+                            },
+                            onPlus = {
+                                viewModel.setConcurrency(
+                                    global = policy.maxConcurrent,
+                                    torrent = (policy.torrentMaxConcurrent + 1).coerceAtMost(10),
+                                    extractor = policy.extractorMaxConcurrent,
+                                )
+                            },
+                        )
+                        PolicyStepper(
+                            label = stringResource(R.string.settings_concurrency_media),
+                            value = policy.extractorMaxConcurrent,
+                            onMinus = {
+                                viewModel.setConcurrency(
+                                    global = policy.maxConcurrent,
+                                    torrent = policy.torrentMaxConcurrent,
+                                    extractor = (policy.extractorMaxConcurrent - 1).coerceAtLeast(1),
+                                )
+                            },
+                            onPlus = {
+                                viewModel.setConcurrency(
+                                    global = policy.maxConcurrent,
+                                    torrent = policy.torrentMaxConcurrent,
+                                    extractor = (policy.extractorMaxConcurrent + 1).coerceAtMost(10),
+                                )
+                            },
                         )
                         TextButtonCompat(label = stringResource(R.string.settings_concurrency_default)) {
                             viewModel.setConcurrency(global = 3, torrent = 2, extractor = 1)
                         }
                         Text(
-                            text = stringResource(R.string.settings_folder_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = stringResource(R.string.settings_folder_label),
+                            style = MaterialTheme.typography.titleSmall,
                         )
                         val folders = listOf(
                             null to stringResource(R.string.settings_folder_default),
@@ -178,9 +189,8 @@ fun SettingsScreen(
                             viewModel.setDownloadFolder(customFolder.trim().ifBlank { null })
                         }
                         Text(
-                            text = stringResource(R.string.settings_quality_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = stringResource(R.string.settings_quality_label),
+                            style = MaterialTheme.typography.titleSmall,
                         )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
                             items(listOf(null, 360, 480, 720, 1080)) { height ->
@@ -199,6 +209,40 @@ fun SettingsScreen(
                                 )
                             }
                         }
+                    }
+                }
+                item {
+                    Section(title = stringResource(R.string.settings_section_network), icon = Icons.Rounded.NetworkCheck) {
+                        PolicySwitch(
+                            label = stringResource(R.string.settings_wifi_only),
+                            icon = Icons.Rounded.Wifi,
+                            checked = policy.wifiOnly,
+                            onChecked = viewModel::setWifiOnly,
+                        )
+                        PolicySwitch(
+                            label = stringResource(R.string.settings_metered),
+                            icon = Icons.Rounded.Speed,
+                            checked = policy.meteredAllowed,
+                            onChecked = viewModel::setMeteredAllowed,
+                        )
+                    }
+                }
+                item {
+                    Section(title = stringResource(R.string.settings_section_battery), icon = Icons.Rounded.BatterySaver) {
+                        Text(
+                            text = if (policy.batteryThresholdPercent == 0) {
+                                stringResource(R.string.settings_battery_disabled)
+                            } else {
+                                stringResource(R.string.settings_battery_value, policy.batteryThresholdPercent)
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Slider(
+                            value = policy.batteryThresholdPercent.toFloat(),
+                            onValueChange = { viewModel.setBatteryThreshold(it.toInt()) },
+                            valueRange = 0f..50f,
+                            steps = 9,
+                        )
                     }
                 }
                 item {
@@ -289,7 +333,29 @@ private fun Section(
     val tokens = LocalPdTokens.current
     PdCard {
         Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-            PdSectionHeader(title = title)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(tokens.radius.sm))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+                Spacer(Modifier.width(tokens.spacing.sm))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
             content()
         }
     }
@@ -298,16 +364,58 @@ private fun Section(
 @Composable
 private fun PolicySwitch(
     label: String,
-    description: String,
+    icon: ImageVector,
     checked: Boolean,
     onChecked: (Boolean) -> Unit,
 ) {
     PdSettingRow(
         title = label,
-        description = description,
-        icon = Icons.Rounded.Tune,
+        icon = icon,
         trailing = {
             Switch(checked = checked, onCheckedChange = onChecked)
+        },
+    )
+}
+
+@Composable
+private fun PolicyStepper(
+    label: String,
+    value: Int,
+    onMinus: () -> Unit,
+    onPlus: () -> Unit,
+) {
+    PdSettingRow(
+        title = label,
+        trailing = {
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 2.dp),
+                ) {
+                    FilledTonalIconButton(onClick = onMinus, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            imageVector = Icons.Rounded.Remove,
+                            contentDescription = stringResource(R.string.settings_decrease),
+                        )
+                    }
+                    Text(
+                        text = value.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.size(36.dp),
+                    )
+                    FilledTonalIconButton(onClick = onPlus, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = stringResource(R.string.settings_increase),
+                        )
+                    }
+                }
+            }
         },
     )
 }

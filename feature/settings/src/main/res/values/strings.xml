@@ -1,54 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Settings</string>
-    <string name="settings_subtitle">Make PullDock behave the way you want.</string>
-    <string name="settings_loading_title">Loading settings</string>
-    <string name="settings_loading_body">Reading your saved preferences.</string>
+    <string name="settings_subtitle">Make it yours.</string>
+    <string name="settings_loading_title">Loading…</string>
 
     <string name="settings_section_network">Network</string>
-    <string name="settings_wifi_only">Wi-Fi only downloads</string>
-    <string name="settings_wifi_only_desc">New downloads wait until a non-metered network is available.</string>
-    <string name="settings_metered">Allow metered networks</string>
-    <string name="settings_metered_desc">Permit transfers on cellular or other cost-sensitive networks when Wi-Fi-only is off.</string>
+    <string name="settings_wifi_only">Wi-Fi only</string>
+    <string name="settings_wifi_only_desc">Wait for Wi-Fi before transfers.</string>
+    <string name="settings_metered">Allow metered</string>
+    <string name="settings_metered_desc">Permit transfers on metered networks.</string>
 
     <string name="settings_section_battery">Battery</string>
-    <string name="settings_battery_disabled">Battery threshold: disabled</string>
-    <string name="settings_battery_value">Pause active downloads below %1$d%% battery</string>
+    <string name="settings_battery_disabled">Off</string>
+    <string name="settings_battery_value">Stop below %1$d%%</string>
 
     <string name="settings_section_downloads">Downloads</string>
-    <string name="settings_concurrency_value">Up to %1$d simultaneous downloads (torrents %2$d, media %3$d)</string>
-    <string name="settings_concurrency_default">Restore default limits</string>
+    <string name="settings_concurrency_value">%1$d total · %2$d torrents · %3$d media</string>
+    <string name="settings_concurrency_total">Total</string>
+    <string name="settings_concurrency_torrents">Torrents</string>
+    <string name="settings_concurrency_media">Media</string>
+    <string name="settings_decrease">Decrease</string>
+    <string name="settings_increase">Increase</string>
+    <string name="settings_concurrency_default">Reset</string>
+    <string name="settings_folder_label">Folder</string>
+    <string name="settings_folder_desc">Where completed files are stored.</string>
+    <string name="settings_folder_default">Default</string>
+    <string name="settings_folder_downloads">Downloads</string>
+    <string name="settings_folder_movies">Movies</string>
+    <string name="settings_folder_music">Music</string>
+    <string name="settings_folder_custom">Custom</string>
+    <string name="settings_folder_apply">Apply</string>
+    <string name="settings_quality_label">Quality</string>
+    <string name="settings_quality_desc">Preferred resolution for media downloads.</string>
+    <string name="settings_quality_auto">Auto</string>
 
     <string name="settings_section_appearance">Appearance</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
 
+    <string name="settings_section_providers">Providers</string>
+    <string name="settings_providers_note">Runtime not verified.</string>
+    <string name="settings_providers_unavailable">None detected</string>
+    <string name="settings_provider_current">Current</string>
+    <string name="settings_provider_update_recommended">Update</string>
+    <string name="settings_provider_update_required">Update required</string>
+    <string name="settings_provider_platform_change">Provider change</string>
+    <string name="settings_provider_unavailable">Unavailable</string>
+    <string name="settings_provider_unsupported">Unsupported</string>
+    <string name="settings_provider_auth_required">Sign-in required</string>
+    <string name="settings_provider_unknown">Unknown</string>
+    <string name="settings_provider_runtime">Incompatible</string>
+
     <string name="settings_section_privacy">Privacy</string>
-    <string name="settings_privacy_body">PullDock has no accounts, no analytics, and no upload path. Downloads stay on this device. Torrent transfers expose your IP address to peers — explained before first use.</string>
+    <string name="settings_privacy_body">No accounts. No analytics.</string>
 
     <string name="settings_section_legal">Legal</string>
-    <string name="settings_open_legal">Open legal &amp; licenses</string>
-    <string name="settings_section_providers">Media providers</string>
-    <string name="settings_providers_unavailable">Provider status is unavailable right now.</string>
-    <string name="settings_providers_note">Media extraction requires a bundled runtime that has not been verified on this device yet. These providers are recognized, but resolution and quality selection are unavailable until T080 completes.</string>
-    <string name="settings_provider_current">Current</string>
-    <string name="settings_provider_update_recommended">Update recommended</string>
-    <string name="settings_provider_update_required">Update required</string>
-    <string name="settings_provider_platform_change">Provider change suspected</string>
-    <string name="settings_provider_unavailable">Temporarily unavailable</string>
-    <string name="settings_provider_unsupported">Unsupported</string>
-    <string name="settings_provider_auth_required">Authorization required</string>
-    <string name="settings_provider_unknown">Status unknown</string>
-    <string name="settings_provider_runtime">Runtime incompatible</string>
-
-    <string name="settings_folder_desc">Choose where completed files are stored (inside PullDock’s own storage).</string>
-    <string name="settings_folder_default">App files</string>
-    <string name="settings_folder_downloads">Downloads</string>
-    <string name="settings_folder_movies">Movies</string>
-    <string name="settings_folder_music">Music</string>
-    <string name="settings_folder_custom">Custom subfolder</string>
-    <string name="settings_folder_apply">Use this folder</string>
-    <string name="settings_quality_desc">Preferred resolution. If unavailable, the closest quality is selected automatically; you can still change it before downloading.</string>
-    <string name="settings_quality_auto">Ask every time</string>
+    <string name="settings_open_legal">Legal &amp; licenses</string>
 </resources>
