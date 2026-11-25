@@ -2,6 +2,16 @@
 <resources>
     <string name="onboarding_title">Welcome to PullDock</string>
     <string name="onboarding_loading">Preparing consent information…</string>
+    <string name="onboarding_step">Step %1$d of %2$d</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_step1_title">A calmer way to download</string>
+    <string name="onboarding_step1_body">PullDock brings torrents and authorized media into one quiet, predictable queue.</string>
+    <string name="onboarding_step2_title">Private by default</string>
+    <string name="onboarding_step2_body">Your files stay on this device. Here is what happens on the network, and what you are responsible for.</string>
+    <string name="onboarding_step3_title">Only the access it needs</string>
+    <string name="onboarding_step3_body">PullDock asks for the minimum permissions required to run transfers and show progress.</string>
+    <string name="onboarding_consent_summary">By continuing, you acknowledge that torrent transfers expose your IP address to peers, that you will only download content you have the right to download, and that PullDock is local-first with no accounts or analytics.</string>
 
     <string name="onboarding_section_capabilities_title">What PullDock does</string>
     <string name="onboarding_section_capabilities_body">PullDock downloads BitTorrent transfers and authorized media from supported providers, manages both in one queue, and plays finished media in-app. It does not search for or index content.</string>
