@@ -1,9 +1,10 @@
 package com.pulldock.core.designsystem.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.FilterChip
@@ -12,11 +13,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 
-/** Single-select chip row used for queue and library filters. */
+/** Centered, wrapping single-select chip row used for queue and library filters. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PdFilterChips(
     options: List<String>,
@@ -25,11 +28,12 @@ fun PdFilterChips(
     modifier: Modifier = Modifier,
 ) {
     val tokens = LocalPdTokens.current
-    LazyRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+    FlowRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        items(options) { option ->
+        options.forEach { option ->
             FilterChip(
                 selected = option == selected,
                 onClick = { onSelect(option) },
