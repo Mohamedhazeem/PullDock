@@ -22,6 +22,7 @@ import com.pulldock.domain.extractor.model.ProviderHealth
 import com.pulldock.domain.extractor.model.ProviderHealthState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -46,6 +47,10 @@ class MediaExtractorImpl @Inject constructor(
 
     private val events = MutableSharedFlow<ExtractorEvent>(extraBufferCapacity = 128)
 
+    // The first probe already returns formats. Reusing them avoids a second slow
+    // yt-dlp network extraction just to populate the format sheet.
+    private val formatCache = ConcurrentHashMap<String, List<MediaFormat>>()
+
     override suspend fun resolve(url: String): ExtractorResult<MediaDescriptor> {
         val provider = providerFor(url) ?: return ExtractorResult.Failure(
             DownloadError.Input(DownloadError.InputReason.UNSUPPORTED_PROVIDER),
@@ -53,6 +58,7 @@ class MediaExtractorImpl @Inject constructor(
         return when (val result = runtime.info(url, provider.id)) {
             is ExtractorResult.Success -> {
                 val info = result.value
+                formatCache[info.sourceUrl] = info.formats
                 ExtractorResult.Success(
                     MediaDescriptor(
                         sourceUrl = info.sourceUrl,
@@ -69,10 +75,18 @@ class MediaExtractorImpl @Inject constructor(
     }
 
     override suspend fun availableFormats(descriptor: MediaDescriptor): ExtractorResult<List<MediaFormat>> {
+        formatCache[descriptor.sourceUrl]?.let { cached ->
+            return if (cached.isEmpty()) {
+                ExtractorResult.Failure(DownloadError.ExtractorEngine(DownloadError.ExtractorReason.NO_FORMATS))
+            } else {
+                ExtractorResult.Success(cached)
+            }
+        }
         val provider = providers.firstOrNull { it.id == descriptor.providerId }
             ?: return ExtractorResult.Failure(DownloadError.Input(DownloadError.InputReason.UNSUPPORTED_PROVIDER))
         return when (val result = runtime.info(descriptor.sourceUrl, provider.id)) {
             is ExtractorResult.Success -> {
+                formatCache[descriptor.sourceUrl] = result.value.formats
                 if (result.value.formats.isEmpty()) {
                     ExtractorResult.Failure(
                         DownloadError.ExtractorEngine(DownloadError.ExtractorReason.NO_FORMATS),

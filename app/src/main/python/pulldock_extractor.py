@@ -23,7 +23,7 @@ def _clean(value):
     return text
 
 
-def _format_entry(fmt):
+def _format_entry(fmt, duration=0):
     width = int(fmt.get("width") or 0)
     height = int(fmt.get("height") or 0)
     vcodec = _clean(fmt.get("vcodec"))
@@ -38,6 +38,11 @@ def _format_entry(fmt):
         resolution = "Audio"
 
     size = fmt.get("filesize") or fmt.get("filesize_approx") or 0
+    if not size:
+        # tbr is kilobits/second; estimate bytes for the known duration.
+        tbr = float(fmt.get("tbr") or 0)
+        if tbr > 0 and duration > 0:
+            size = int(tbr * 1000.0 / 8.0 * duration)
     return {
         "id": _clean(fmt.get("format_id")) or "",
         "resolution": resolution,
@@ -81,12 +86,14 @@ def probe(url):
         if not info:
             return json.dumps({"error": "NO_INFO"})
 
-        # Deduplicate by the user-visible shape. Keep the largest file for each shape.
+        duration = int(info.get("duration") or 0)
+        # One best entry per user-visible resolution. Different codecs/containers at
+        # the same resolution are not useful choices in a compact format sheet.
         unique = {}
         for fmt in info.get("formats") or []:
             if not fmt.get("url"):
                 continue
-            entry = _format_entry(fmt)
+            entry = _format_entry(fmt, duration)
             if not entry["id"] or entry["mergeRequired"]:
                 continue
             if entry["resolution"] is None:
@@ -95,21 +102,16 @@ def probe(url):
             if entry["resolution"].endswith("p") and entry["resolution"][:-1].isdigit():
                 if int(entry["resolution"][:-1]) < 120:
                     continue
-            key = (
-                entry["resolution"],
-                entry["container"],
-                entry["videoCodec"],
-                entry["audioCodec"],
-            )
+            key = entry["resolution"]
             current = unique.get(key)
-            if current is None or (entry["estimatedBytes"] or 0) > (current["estimatedBytes"] or 0):
+            if current is None or _format_score(entry) > _format_score(current):
                 unique[key] = entry
 
         formats = sorted(unique.values(), key=_sort_key)
 
         # Fall back to the root format when the site exposes no format list.
         if not formats and info.get("url"):
-            entry = _format_entry(info)
+            entry = _format_entry(info, duration)
             if entry["id"] and not entry["mergeRequired"] and entry["resolution"] is not None:
                 formats.append(entry)
 

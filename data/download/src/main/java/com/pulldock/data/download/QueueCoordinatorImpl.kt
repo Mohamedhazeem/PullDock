@@ -432,7 +432,23 @@ class QueueCoordinatorImpl @Inject constructor(
                     val path = result.value
                     engineToTask[path] = task.id
                     repository.updateEngineTaskId(task.id, path)
-                    completionFinalizer.finalizeMedia(task.id, path)
+                    val finalized = completionFinalizer.finalizeMedia(task.id, path)
+                    if (finalized == null) {
+                        repository.getTask(task.id)?.let { current ->
+                            if (current.state != DownloadState.FAILED) {
+                                val error = DownloadError.Storage(
+                                    DownloadError.StorageReason.FINALIZE_FAILED,
+                                    "output unavailable",
+                                )
+                                repository.updateState(task.id, DownloadState.FAILED, error)
+                                retryCoordinator.onFailure(
+                                    current.copy(state = DownloadState.FAILED),
+                                    error,
+                                    policyRepository.current(),
+                                )
+                            }
+                        }
+                    }
                 }
                 is ExtractorResult.Failure -> {
                     repository.getTask(task.id)?.let { failed ->
