@@ -77,6 +77,17 @@ def _sort_key(entry):
     return (1 if is_audio else 0, -height, -(entry.get("estimatedBytes") or 0))
 
 
+def _format_score(entry):
+    size = entry.get("estimatedBytes") or 0
+    return (
+        1 if size > 0 else 0,
+        1 if entry.get("container") == "mp4" else 0,
+        1 if entry.get("videoCodec") else 0,
+        1 if entry.get("audioCodec") else 0,
+        size,
+    )
+
+
 def probe(url):
     """Return metadata + clean, deduplicated progressive formats as JSON."""
     try:
