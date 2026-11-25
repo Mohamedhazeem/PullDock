@@ -16,6 +16,7 @@
     <string name="add_download_selected">Download</string>
     <string name="add_recommended">Best</string>
     <string name="add_format_audio_only">Audio only</string>
+    <string name="add_format_unknown">Unknown</string>
     <string name="add_format_merge">merge</string>
     <string name="add_no_formats_title">No formats</string>
     <string name="add_no_formats_body">Nothing available.</string>

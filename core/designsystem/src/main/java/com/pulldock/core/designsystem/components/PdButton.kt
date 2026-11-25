@@ -1,5 +1,6 @@
 package com.pulldock.core.designsystem.components
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -8,11 +9,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 
 /**
  * Primary PullDock button with explicit loading/disabled states (FR-068). While
- * [loading], the button is disabled and shows progress instead of inviting a second
- * submit — no misleading dead-time between tap and response.
+ * [loading], the button is disabled and shows only progress; the label is replaced so
+ * the user never sees an actionable label and a spinner at the same time.
  */
 @Composable
 fun PdButton(
@@ -24,15 +28,17 @@ fun PdButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.semantics { contentDescription = label },
         enabled = enabled && !loading,
     ) {
-        Text(label)
         if (loading) {
             CircularProgressIndicator(
-                modifier = Modifier,
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
                 color = MaterialTheme.colorScheme.onPrimary,
             )
+        } else {
+            Text(label)
         }
     }
 }

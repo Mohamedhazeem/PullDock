@@ -313,19 +313,27 @@ private fun FormatRow(
 
 @Composable
 private fun formatLabel(format: MediaFormat): String =
-    format.resolution ?: stringResource(R.string.add_format_audio_only)
+    clean(format.resolution)
+        ?: if (clean(format.audioCodec) != null) {
+            stringResource(R.string.add_format_audio_only)
+        } else {
+            stringResource(R.string.add_format_unknown)
+        }
 
 @Composable
 private fun formatDetail(format: MediaFormat): String = buildString {
-    append(format.container.uppercase())
-    format.videoCodec?.let { append(" · ").append(it) }
-    format.audioCodec?.let { append(" · ").append(it) }
+    append(clean(format.container)?.uppercase() ?: "MP4")
+    clean(format.videoCodec)?.let { append(" · ").append(it) }
+    clean(format.audioCodec)?.let { append(" · ").append(it) }
     format.estimatedBytes?.let { append(" · ").append(formatBytes(it)) }
     if (format.mergeRequired) {
         append(" · ")
         append(stringResource(R.string.add_format_merge))
     }
 }
+
+private fun clean(value: String?): String? =
+    value?.takeIf { it.isNotBlank() && it != "null" }
 
 private fun formatBytes(bytes: Long): String {
     val mb = bytes / (1024.0 * 1024.0)

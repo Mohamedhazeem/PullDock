@@ -6,7 +6,6 @@ code happens at runtime: yt-dlp is bundled at build time by Chaquopy (ADR-0012).
 
 import json
 import os
-import traceback
 
 from yt_dlp import YoutubeDL
 
@@ -15,31 +14,39 @@ def _safe_title(value):
     return (value or "media").strip()[:160]
 
 
+def _clean(value):
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text or text.lower() == "null":
+        return None
+    return text
+
+
 def _format_entry(fmt):
-    width = fmt.get("width") or 0
-    height = fmt.get("height") or 0
+    width = int(fmt.get("width") or 0)
+    height = int(fmt.get("height") or 0)
+    vcodec = _clean(fmt.get("vcodec"))
+    acodec = _clean(fmt.get("acodec"))
+
     resolution = None
     if height > 0:
         resolution = f"{height}p"
     elif width > 0:
         resolution = f"{width}x{height}"
-    else:
-        note = fmt.get("format_note") or ""
-        if "audio only" in note.lower():
-            resolution = None
-    vcodec = fmt.get("vcodec") or "none"
-    acodec = fmt.get("acodec") or "none"
+    elif vcodec is None and acodec is not None:
+        resolution = "Audio"
+
     size = fmt.get("filesize") or fmt.get("filesize_approx") or 0
     return {
-        "id": str(fmt.get("format_id") or ""),
+        "id": _clean(fmt.get("format_id")) or "",
         "resolution": resolution,
-        "container": fmt.get("ext") or "mp4",
-        "videoCodec": None if vcodec == "none" else vcodec,
-        "audioCodec": None if acodec == "none" else acodec,
+        "container": _clean(fmt.get("ext")) or "mp4",
+        "videoCodec": vcodec,
+        "audioCodec": acodec,
         "estimatedBytes": int(size) if size and int(size) > 0 else None,
         # Progressive formats only in v1: no FFmpeg binary is bundled yet.
-        "mergeRequired": vcodec != "none" and acodec == "none",
-        "protocol": fmt.get("protocol") or "",
+        "mergeRequired": vcodec is not None and acodec is None,
     }
 
 
@@ -55,25 +62,56 @@ def _options_common():
     }
 
 
+def _sort_key(entry):
+    resolution = entry.get("resolution") or ""
+    height = 0
+    if resolution.endswith("p") and resolution[:-1].isdigit():
+        height = int(resolution[:-1])
+    is_audio = height == 0
+    return (1 if is_audio else 0, -height, -(entry.get("estimatedBytes") or 0))
+
+
 def probe(url):
-    """Return metadata + selectable progressive formats as a JSON string."""
+    """Return metadata + clean, deduplicated progressive formats as JSON."""
     try:
         opts = _options_common()
         with YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
         if not info:
             return json.dumps({"error": "NO_INFO"})
-        formats = []
+
+        # Deduplicate by the user-visible shape. Keep the largest file for each shape.
+        unique = {}
         for fmt in info.get("formats") or []:
             if not fmt.get("url"):
                 continue
             entry = _format_entry(fmt)
-            if entry["mergeRequired"] or not entry["id"]:
+            if not entry["id"] or entry["mergeRequired"]:
                 continue
-            formats.append(entry)
+            if entry["resolution"] is None:
+                continue
+            # Drop storyboard/thumbnail-like micro-formats; real video starts at 144p.
+            if entry["resolution"].endswith("p") and entry["resolution"][:-1].isdigit():
+                if int(entry["resolution"][:-1]) < 120:
+                    continue
+            key = (
+                entry["resolution"],
+                entry["container"],
+                entry["videoCodec"],
+                entry["audioCodec"],
+            )
+            current = unique.get(key)
+            if current is None or (entry["estimatedBytes"] or 0) > (current["estimatedBytes"] or 0):
+                unique[key] = entry
+
+        formats = sorted(unique.values(), key=_sort_key)
+
         # Fall back to the root format when the site exposes no format list.
         if not formats and info.get("url"):
-            formats.append(_format_entry(info))
+            entry = _format_entry(info)
+            if entry["id"] and not entry["mergeRequired"] and entry["resolution"] is not None:
+                formats.append(entry)
+
         return json.dumps({
             "title": _safe_title(info.get("title")),
             "durationSeconds": int(info.get("duration") or 0) or None,

@@ -42,6 +42,9 @@ class ChaquopyExtractorRuntime @Inject constructor(
         null
     }
 
+    private fun JSONObject.stringOrNull(key: String): String? =
+        optString(key).takeIf { it.isNotBlank() && it != "null" }
+
     override suspend fun info(url: String, providerId: ProviderId): ExtractorResult<ExtractorRuntime.MediaInfo> {
         val mod = module() ?: return ExtractorResult.Failure(
             DownloadError.ExtractorEngine(DownloadError.ExtractorReason.RUNTIME_INCOMPATIBLE),
@@ -56,12 +59,14 @@ class ChaquopyExtractorRuntime @Inject constructor(
             if (array != null) {
                 for (i in 0 until array.length()) {
                     val f = array.getJSONObject(i)
+                    val id = f.stringOrNull("id")
+                    if (id == null) continue
                     formats += MediaFormat(
-                        id = f.optString("id"),
-                        resolution = f.optString("resolution").ifBlank { null },
-                        container = f.optString("container").ifBlank { "mp4" },
-                        videoCodec = f.optString("videoCodec").ifBlank { null },
-                        audioCodec = f.optString("audioCodec").ifBlank { null },
+                        id = id,
+                        resolution = f.stringOrNull("resolution"),
+                        container = f.stringOrNull("container") ?: "mp4",
+                        videoCodec = f.stringOrNull("videoCodec"),
+                        audioCodec = f.stringOrNull("audioCodec"),
                         estimatedBytes = f.optLong("estimatedBytes", 0L).takeIf { it > 0 },
                         mergeRequired = f.optBoolean("mergeRequired", false),
                         processingEstimateSeconds = null,
