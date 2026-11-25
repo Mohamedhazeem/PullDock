@@ -94,8 +94,10 @@ Design and ADR-0008 for the module-boundary rules; the summary below is the oper
 - `:core:model` — pure-Kotlin shared primitives. `DownloadState` names are persisted in
   the database and are a durable contract; `DownloadError` codes follow
   `<CATEGORY>_<REASON>` and are likewise persisted.
-- `:core:designsystem` — the design system (theme, tokens, shared components). Screens
-  must not hardcode colors, spacing, or radii.
+- `:core:designsystem` — the design system (warm-paper Material 3 theme, serif/sans
+  typography, tokens, and shared `Pd*` components). Screens must not hardcode colors,
+  spacing, radii, or motion durations. `feature/queue` remains intentionally unused;
+  Home is the only queue surface.
 - `:core:database` — Room. Schema exports land under `core/database/schemas/`; every
   schema change needs a tested migration.
 - `:core:datastore` — preferences DataStore. `DataStoreModule` provides the single
@@ -321,6 +323,16 @@ when the first Android module is created and record the final choice here.
   one-class-per-file when grouping tiny related declarations adds clarity.
 - Keep files small enough to read in one pass. Split when a file mixes responsibilities.
 - Place tests in the matching `src/test` and `src/androidTest` source sets.
+
+### 11.4 UI presentation conventions
+
+- Use the warm-paper palette and `PdTokens`; do not hardcode colors, spacing, radii,
+  or motion durations in feature code.
+- Display/headline text uses the platform serif; UI/body text uses the platform sans.
+- Use the rounded Material icon family consistently.
+- Use `PdScaffold`/`PdTopAppBar` for screen chrome and `PdCard` for grouped content.
+- Keep motion short and purposeful via `PdTokens.motion`; no new animation library.
+- Preserve user-visible UI state with `rememberSaveable` across configuration changes.
 
 ---
 
