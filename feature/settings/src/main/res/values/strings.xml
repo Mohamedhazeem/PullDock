@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Make PullDock behave the way you want.</string>
     <string name="settings_loading_title">Loading settings</string>
     <string name="settings_loading_body">Reading your saved preferences.</string>
 
@@ -31,6 +32,15 @@
     <string name="settings_section_providers">Media providers</string>
     <string name="settings_providers_unavailable">Provider status is unavailable right now.</string>
     <string name="settings_providers_note">Media extraction requires a bundled runtime that has not been verified on this device yet. These providers are recognized, but resolution and quality selection are unavailable until T080 completes.</string>
+    <string name="settings_provider_current">Current</string>
+    <string name="settings_provider_update_recommended">Update recommended</string>
+    <string name="settings_provider_update_required">Update required</string>
+    <string name="settings_provider_platform_change">Provider change suspected</string>
+    <string name="settings_provider_unavailable">Temporarily unavailable</string>
+    <string name="settings_provider_unsupported">Unsupported</string>
+    <string name="settings_provider_auth_required">Authorization required</string>
+    <string name="settings_provider_unknown">Status unknown</string>
+    <string name="settings_provider_runtime">Runtime incompatible</string>
 
     <string name="settings_folder_desc">Choose where completed files are stored (inside PullDock’s own storage).</string>
     <string name="settings_folder_default">App files</string>

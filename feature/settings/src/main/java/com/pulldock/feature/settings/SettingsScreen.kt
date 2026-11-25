@@ -1,17 +1,29 @@
 package com.pulldock.feature.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BatterySaver
+import androidx.compose.material.icons.rounded.Cloud
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Gavel
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
@@ -20,27 +32,38 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.pulldock.core.designsystem.components.PdEmptyState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pulldock.core.designsystem.components.PdCard
+import com.pulldock.core.designsystem.components.PdLoadingState
+import com.pulldock.core.designsystem.components.PdScaffold
+import com.pulldock.core.designsystem.components.PdSectionHeader
+import com.pulldock.core.designsystem.components.PdSettingRow
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.domain.download.repository.AppearanceTheme
+import com.pulldock.domain.extractor.model.ProviderHealthState
 
 /**
- * Settings screen (T047, US7). Groups present: downloads (concurrency), network
- * (Wi-Fi-only/metered), battery threshold, appearance, privacy (informational),
- * legal (navigation). Provider status and extractor update groups arrive with
- * Slice 4 / the lifecycle group — no dead controls are shipped for them here.
+ * Settings: grouped, readable controls for network, battery, downloads, appearance,
+ * provider health, privacy, and legal.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onOpenLegal: () -> Unit,
@@ -48,212 +71,270 @@ fun SettingsScreen(
 ) {
     val tokens = LocalPdTokens.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
-    ) {
-
+    PdScaffold(
+        title = stringResource(R.string.settings_title),
+        subtitle = stringResource(R.string.settings_subtitle),
+        scrollBehavior = scrollBehavior,
+    ) { innerPadding ->
         val policy = state.policy
         if (policy == null) {
-            PdEmptyState(
-                title = stringResource(R.string.settings_loading_title),
-                message = stringResource(R.string.settings_loading_body),
-                modifier = Modifier.fillMaxWidth(),
+            PdLoadingState(
+                label = stringResource(R.string.settings_loading_title),
+                modifier = Modifier.padding(innerPadding),
             )
         } else {
-            Section(stringResource(R.string.settings_section_network)) {
-                PolicySwitch(
-                    label = stringResource(R.string.settings_wifi_only),
-                    description = stringResource(R.string.settings_wifi_only_desc),
-                    checked = policy.wifiOnly,
-                    onChecked = viewModel::setWifiOnly,
-                )
-                PolicySwitch(
-                    label = stringResource(R.string.settings_metered),
-                    description = stringResource(R.string.settings_metered_desc),
-                    checked = policy.meteredAllowed,
-                    onChecked = viewModel::setMeteredAllowed,
-                )
-            }
-
-            Section(stringResource(R.string.settings_section_battery)) {
-                val thresholdLabel = if (policy.batteryThresholdPercent == 0) {
-                    stringResource(R.string.settings_battery_disabled)
-                } else {
-                    stringResource(R.string.settings_battery_value, policy.batteryThresholdPercent)
-                }
-                Text(
-                    text = thresholdLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.semantics { stateDescription = thresholdLabel },
-                )
-                Slider(
-                    value = policy.batteryThresholdPercent.toFloat(),
-                    onValueChange = { viewModel.setBatteryThreshold(it.toInt()) },
-                    valueRange = 0f..50f,
-                    steps = 9,
-                )
-            }
-
-            Section(stringResource(R.string.settings_section_downloads)) {
-                Text(
-                    text = stringResource(
-                        R.string.settings_concurrency_value,
-                        policy.maxConcurrent,
-                        policy.torrentMaxConcurrent,
-                        policy.extractorMaxConcurrent,
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                TextButtonCompat(label = stringResource(R.string.settings_concurrency_default)) {
-                    viewModel.setConcurrency(global = 3, torrent = 2, extractor = 1)
-                }
-
-                Text(
-                    text = stringResource(R.string.settings_folder_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                val folders = listOf(
-                    null to stringResource(R.string.settings_folder_default),
-                    "Downloads" to stringResource(R.string.settings_folder_downloads),
-                    "Movies" to stringResource(R.string.settings_folder_movies),
-                    "Music" to stringResource(R.string.settings_folder_music),
-                )
-                androidx.compose.foundation.lazy.LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
-                ) {
-                    items(folders) { (path, label) ->
-                        FilterChip(
-                            selected = state.downloadFolder == path,
-                            onClick = { viewModel.setDownloadFolder(path) },
-                            label = { Text(label) },
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .padding(horizontal = tokens.spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+            ) {
+                item {
+                    Section(title = stringResource(R.string.settings_section_network), icon = Icons.Rounded.Wifi) {
+                        PolicySwitch(
+                            label = stringResource(R.string.settings_wifi_only),
+                            description = stringResource(R.string.settings_wifi_only_desc),
+                            checked = policy.wifiOnly,
+                            onChecked = viewModel::setWifiOnly,
+                        )
+                        PolicySwitch(
+                            label = stringResource(R.string.settings_metered),
+                            description = stringResource(R.string.settings_metered_desc),
+                            checked = policy.meteredAllowed,
+                            onChecked = viewModel::setMeteredAllowed,
                         )
                     }
                 }
-                var customFolder by rememberSaveable(state.downloadFolder) {
-                    mutableStateOf(state.downloadFolder ?: "")
-                }
-                OutlinedTextField(
-                    value = customFolder,
-                    onValueChange = { customFolder = it },
-                    label = { Text(stringResource(R.string.settings_folder_custom)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                TextButtonCompat(label = stringResource(R.string.settings_folder_apply)) {
-                    viewModel.setDownloadFolder(customFolder.trim().ifBlank { null })
-                }
-
-                Text(
-                    text = stringResource(R.string.settings_quality_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                    items(listOf(null, 360, 480, 720, 1080)) { height ->
-                        FilterChip(
-                            selected = state.defaultQualityHeight == height,
-                            onClick = { viewModel.setDefaultQuality(height) },
-                            label = { Text(if (height == null) stringResource(R.string.settings_quality_auto) else "${height}p") },
-                        )
-                    }
-                }
-            }
-        }
-
-        Section(stringResource(R.string.settings_section_appearance)) {
-            val options = listOf(
-                AppearanceTheme.SYSTEM to stringResource(R.string.settings_theme_system),
-                AppearanceTheme.LIGHT to stringResource(R.string.settings_theme_light),
-                AppearanceTheme.DARK to stringResource(R.string.settings_theme_dark),
-            )
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                options.forEachIndexed { index, (theme, label) ->
-                    SegmentedButton(
-                        selected = state.theme == theme,
-                        onClick = { viewModel.setTheme(theme) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
-                        label = { Text(label) },
-                    )
-                }
-            }
-        }
-
-        Section(stringResource(R.string.settings_section_providers)) {
-            Text(
-                text = stringResource(R.string.settings_providers_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (state.providers.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.settings_providers_unavailable),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                state.providers.forEach { (id, health) ->
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(text = id.name.lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyMedium)
+                item {
+                    Section(title = stringResource(R.string.settings_section_battery), icon = Icons.Rounded.BatterySaver) {
+                        val thresholdLabel = if (policy.batteryThresholdPercent == 0) {
+                            stringResource(R.string.settings_battery_disabled)
+                        } else {
+                            stringResource(R.string.settings_battery_value, policy.batteryThresholdPercent)
+                        }
                         Text(
-                            text = health.state.name.lowercase().replace('_', ' '),
+                            text = thresholdLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.semantics { stateDescription = thresholdLabel },
+                        )
+                        Slider(
+                            value = policy.batteryThresholdPercent.toFloat(),
+                            onValueChange = { viewModel.setBatteryThreshold(it.toInt()) },
+                            valueRange = 0f..50f,
+                            steps = 9,
+                        )
+                    }
+                }
+                item {
+                    Section(title = stringResource(R.string.settings_section_downloads), icon = Icons.Rounded.Download) {
+                        Text(
+                            text = stringResource(
+                                R.string.settings_concurrency_value,
+                                policy.maxConcurrent,
+                                policy.torrentMaxConcurrent,
+                                policy.extractorMaxConcurrent,
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        TextButtonCompat(label = stringResource(R.string.settings_concurrency_default)) {
+                            viewModel.setConcurrency(global = 3, torrent = 2, extractor = 1)
+                        }
+                        Text(
+                            text = stringResource(R.string.settings_folder_desc),
                             style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        val folders = listOf(
+                            null to stringResource(R.string.settings_folder_default),
+                            "Downloads" to stringResource(R.string.settings_folder_downloads),
+                            "Movies" to stringResource(R.string.settings_folder_movies),
+                            "Music" to stringResource(R.string.settings_folder_music),
+                        )
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+                            items(folders) { (path, label) ->
+                                androidx.compose.material3.FilterChip(
+                                    selected = state.downloadFolder == path,
+                                    onClick = { viewModel.setDownloadFolder(path) },
+                                    label = { Text(label) },
+                                )
+                            }
+                        }
+                        var customFolder by rememberSaveable(state.downloadFolder) {
+                            mutableStateOf(state.downloadFolder ?: "")
+                        }
+                        OutlinedTextField(
+                            value = customFolder,
+                            onValueChange = { customFolder = it },
+                            label = { Text(stringResource(R.string.settings_folder_custom)) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(tokens.radius.md),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        TextButtonCompat(label = stringResource(R.string.settings_folder_apply)) {
+                            viewModel.setDownloadFolder(customFolder.trim().ifBlank { null })
+                        }
+                        Text(
+                            text = stringResource(R.string.settings_quality_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+                            items(listOf(null, 360, 480, 720, 1080)) { height ->
+                                androidx.compose.material3.FilterChip(
+                                    selected = state.defaultQualityHeight == height,
+                                    onClick = { viewModel.setDefaultQuality(height) },
+                                    label = {
+                                        Text(
+                                            if (height == null) {
+                                                stringResource(R.string.settings_quality_auto)
+                                            } else {
+                                                "${height}p"
+                                            },
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+                item {
+                    Section(title = stringResource(R.string.settings_section_appearance), icon = Icons.Rounded.Palette) {
+                        val options = listOf(
+                            AppearanceTheme.SYSTEM to stringResource(R.string.settings_theme_system),
+                            AppearanceTheme.LIGHT to stringResource(R.string.settings_theme_light),
+                            AppearanceTheme.DARK to stringResource(R.string.settings_theme_dark),
+                        )
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            options.forEachIndexed { index, (theme, label) ->
+                                SegmentedButton(
+                                    selected = state.theme == theme,
+                                    onClick = { viewModel.setTheme(theme) },
+                                    shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                                    label = { Text(label) },
+                                )
+                            }
+                        }
+                    }
+                }
+                item {
+                    Section(title = stringResource(R.string.settings_section_providers), icon = Icons.Rounded.Cloud) {
+                        Text(
+                            text = stringResource(R.string.settings_providers_note),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (state.providers.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.settings_providers_unavailable),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        } else {
+                            state.providers.forEach { (id, health) ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .clip(RoundedCornerShape(50))
+                                            .background(providerColor(health.state)),
+                                    )
+                                    Text(
+                                        text = id.name.lowercase().replaceFirstChar { it.uppercase() },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    Text(
+                                        text = providerLabel(health.state),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                item {
+                    Section(title = stringResource(R.string.settings_section_privacy), icon = Icons.Rounded.Shield) {
+                        Text(
+                            text = stringResource(R.string.settings_privacy_body),
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
+                item {
+                    Section(title = stringResource(R.string.settings_section_legal), icon = Icons.Rounded.Gavel) {
+                        TextButtonCompat(label = stringResource(R.string.settings_open_legal), onClick = onOpenLegal)
+                    }
+                }
             }
-        }
-
-        Section(stringResource(R.string.settings_section_privacy)) {
-            Text(
-                text = stringResource(R.string.settings_privacy_body),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        Section(stringResource(R.string.settings_section_legal)) {
-            TextButtonCompat(label = stringResource(R.string.settings_open_legal), onClick = onOpenLegal)
         }
     }
 }
 
 @Composable
-private fun Section(title: String, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+private fun Section(
+    title: String,
+    icon: ImageVector,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
     val tokens = LocalPdTokens.current
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(tokens.spacing.md),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+    PdCard {
+        Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+            PdSectionHeader(title = title)
             content()
         }
     }
 }
 
 @Composable
-private fun PolicySwitch(label: String, description: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(checked = checked, onCheckedChange = onChecked)
-    }
+private fun PolicySwitch(
+    label: String,
+    description: String,
+    checked: Boolean,
+    onChecked: (Boolean) -> Unit,
+) {
+    PdSettingRow(
+        title = label,
+        description = description,
+        icon = Icons.Rounded.Tune,
+        trailing = {
+            Switch(checked = checked, onCheckedChange = onChecked)
+        },
+    )
 }
 
 @Composable
 private fun TextButtonCompat(label: String, onClick: () -> Unit) {
-    androidx.compose.material3.TextButton(onClick = onClick) { Text(label) }
+    TextButton(onClick = onClick) { Text(label) }
+}
+
+@Composable
+private fun providerLabel(state: ProviderHealthState): String = when (state) {
+    ProviderHealthState.CURRENT -> stringResource(R.string.settings_provider_current)
+    ProviderHealthState.UPDATE_RECOMMENDED -> stringResource(R.string.settings_provider_update_recommended)
+    ProviderHealthState.UPDATE_REQUIRED -> stringResource(R.string.settings_provider_update_required)
+    ProviderHealthState.PLATFORM_CHANGE_SUSPECTED -> stringResource(R.string.settings_provider_platform_change)
+    ProviderHealthState.PROVIDER_TEMPORARILY_UNAVAILABLE -> stringResource(R.string.settings_provider_unavailable)
+    ProviderHealthState.PROVIDER_UNSUPPORTED -> stringResource(R.string.settings_provider_unsupported)
+    ProviderHealthState.AUTHORIZATION_REQUIRED -> stringResource(R.string.settings_provider_auth_required)
+    ProviderHealthState.VERSION_CHECK_UNAVAILABLE -> stringResource(R.string.settings_provider_unknown)
+    ProviderHealthState.RUNTIME_INCOMPATIBLE -> stringResource(R.string.settings_provider_runtime)
+}
+
+private fun providerColor(state: ProviderHealthState): androidx.compose.ui.graphics.Color = when (state) {
+    ProviderHealthState.CURRENT -> androidx.compose.ui.graphics.Color(0xFF226C3B)
+    ProviderHealthState.UPDATE_RECOMMENDED, ProviderHealthState.VERSION_CHECK_UNAVAILABLE ->
+        androidx.compose.ui.graphics.Color(0xFF8C5300)
+    ProviderHealthState.UPDATE_REQUIRED, ProviderHealthState.RUNTIME_INCOMPATIBLE,
+    ProviderHealthState.PROVIDER_UNSUPPORTED -> androidx.compose.ui.graphics.Color(0xFFB3261E)
+    else -> androidx.compose.ui.graphics.Color(0xFF625C54)
 }
