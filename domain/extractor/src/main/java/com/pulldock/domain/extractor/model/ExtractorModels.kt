@@ -17,6 +17,9 @@ data class MediaFormat(
     /** Separate video/audio streams that must be merged (FR-016). */
     val mergeRequired: Boolean,
     val processingEstimateSeconds: Long?,
+    val language: String? = null,
+    /** Higher is the provider's original/default track; -1 marks translated audio. */
+    val languagePreference: Int? = null,
 )
 
 /**

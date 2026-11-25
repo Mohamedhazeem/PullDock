@@ -71,6 +71,8 @@ class ChaquopyExtractorRuntime @Inject constructor(
                         estimatedBytes = f.optLong("estimatedBytes", 0L).takeIf { it > 0 },
                         mergeRequired = f.optBoolean("mergeRequired", false),
                         processingEstimateSeconds = null,
+                        language = f.stringOrNull("language"),
+                        languagePreference = if (f.isNull("languagePreference")) null else f.optInt("languagePreference"),
                     )
                 }
             }

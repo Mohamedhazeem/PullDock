@@ -134,8 +134,15 @@ class MediaExtractorImpl @Inject constructor(
 
         val audioFormat = if (needsMux) {
             val preferredAudio = if (targetContainer == "webm") "opus" else "mp4a"
-            formats.firstOrNull { it.videoCodec == null && it.audioCodec?.contains(preferredAudio, true) == true }
-                ?: formats.firstOrNull { it.videoCodec == null && it.audioCodec != null }
+            val candidates = formats.filter { it.videoCodec == null && it.audioCodec != null }
+            val preferred = candidates.filter { it.audioCodec?.contains(preferredAudio, true) == true }
+            (preferred.ifEmpty { candidates }).maxWithOrNull(
+                compareBy(
+                    { it.languagePreference ?: Int.MIN_VALUE },
+                    { it.language?.lowercase()?.startsWith("en") == true },
+                    { it.estimatedBytes ?: 0L },
+                ),
+            )
         } else {
             null
         }
@@ -188,7 +195,13 @@ class MediaExtractorImpl @Inject constructor(
     }
 
     override fun observeEvents(taskId: String?): Flow<ExtractorEvent> = events
-    override fun cancel(taskId: String) = Unit
+    override fun cancel(taskId: String) {
+        // Remove partial temp files for this task/source. The extractor temp name is
+        // providerId-sourceHash, so callers pass the source hash for removal.
+        File(context.cacheDir, "partial").listFiles()
+            ?.filter { it.name.contains(taskId) }
+            ?.forEach { runCatching { it.delete() } }
+    }
     override fun runtimeInfo(): ExtractorRuntimeInfo = runtime.runtimeInfo()
 
     override fun providerHealth(providerId: ProviderId): ProviderHealth {

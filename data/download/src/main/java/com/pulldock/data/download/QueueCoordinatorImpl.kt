@@ -156,7 +156,7 @@ class QueueCoordinatorImpl @Inject constructor(
         if (engineId != null) {
             when (task.type) {
                 DownloadType.TORRENT -> torrentEngine.remove(engineId)
-                DownloadType.EXTRACTOR -> extractor.cancel(engineId)
+                DownloadType.EXTRACTOR -> extractor.cancel(task.source.hashCode().toString())
             }
         }
         repository.updateState(id, DownloadState.REMOVING)

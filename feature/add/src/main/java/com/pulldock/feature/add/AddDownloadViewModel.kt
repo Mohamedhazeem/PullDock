@@ -91,10 +91,18 @@ class AddDownloadViewModel @Inject constructor(
         }
     }
 
-    /** Updates the entry and re-classifies; errors clear on edit. */
+    /** Updates the entry and re-classifies; errors and stale resolved formats clear on edit. */
     fun onInputChanged(value: String) {
         _uiState.update {
-            it.copy(input = value, sourceKind = classify(value), inputError = null, failedError = null)
+            it.copy(
+                input = value,
+                sourceKind = classify(value),
+                inputError = null,
+                failedError = null,
+                resolvedDescriptor = null,
+                formats = emptyList(),
+                selectedFormat = null,
+            )
         }
     }
 
@@ -173,11 +181,22 @@ class AddDownloadViewModel @Inject constructor(
     }
 
     private fun submitMedia(url: String) {
-        _uiState.update { it.copy(submitting = true, inputError = null, failedError = null) }
+        _uiState.update {
+            it.copy(
+                submitting = true,
+                inputError = null,
+                failedError = null,
+                resolvedDescriptor = null,
+                formats = emptyList(),
+                selectedFormat = null,
+            )
+        }
         viewModelScope.launch {
             try {
                 when (val result = resolveMediaUrl(url)) {
-                    is ExtractorResult.Success -> loadFormats(result.value)
+                    is ExtractorResult.Success -> {
+                        if (_uiState.value.input.trim() == url) loadFormats(result.value)
+                    }
                     is ExtractorResult.Failure -> _uiState.update { it.copy(failedError = result.error) }
                 }
             } finally {

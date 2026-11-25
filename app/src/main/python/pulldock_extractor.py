@@ -52,7 +52,8 @@ def _format_entry(fmt, duration=0):
         "videoCodec": vcodec,
         "audioCodec": acodec,
         "estimatedBytes": int(size) if size and int(size) > 0 else None,
-        # Progressive formats only in v1: no FFmpeg binary is bundled yet.
+        "language": _clean(fmt.get("language")),
+        "languagePreference": fmt.get("language_preference"),
         "mergeRequired": vcodec is not None and acodec is None,
     }
 
@@ -81,11 +82,17 @@ def _sort_key(entry):
 
 def _format_score(entry):
     size = entry.get("estimatedBytes") or 0
+    video = entry.get("videoCodec") or ""
+    audio = entry.get("audioCodec") or ""
     return (
         1 if size > 0 else 0,
+        1 if (entry.get("languagePreference") or -1) > 0 else 0,
+        1 if (entry.get("language") or "").lower().startswith("en") else 0,
+        1 if "avc1" in video else 0,
+        1 if "mp4a" in audio else 0,
         1 if entry.get("container") == "mp4" else 0,
-        1 if entry.get("videoCodec") else 0,
-        1 if entry.get("audioCodec") else 0,
+        1 if video else 0,
+        1 if audio else 0,
         size,
     )
 
