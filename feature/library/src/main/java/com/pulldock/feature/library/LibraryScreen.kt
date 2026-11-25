@@ -1,5 +1,6 @@
 package com.pulldock.feature.library
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,10 +45,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pulldock.core.designsystem.components.PdCard
@@ -65,6 +69,7 @@ import com.pulldock.core.model.formatBytes
 import com.pulldock.domain.download.repository.LibraryItem
 import com.pulldock.domain.download.repository.LibrarySection
 import com.pulldock.domain.download.repository.LibrarySort
+import java.io.File
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -228,7 +233,9 @@ private fun LibraryItemCard(
     modifier: Modifier = Modifier,
 ) {
     val tokens = LocalPdTokens.current
+    val context = LocalContext.current
     val playLabel = stringResource(R.string.library_play, item.title)
+    val shareLabel = stringResource(R.string.library_share)
     PdCard(
         onClick = if (item.fileAvailable) onPlay else null,
         modifier = modifier,
@@ -278,6 +285,16 @@ private fun LibraryItemCard(
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
+            IconButton(
+                onClick = { shareFile(context, item) },
+                enabled = item.fileAvailable,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Share,
+                    contentDescription = shareLabel,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Rounded.Delete,
@@ -302,6 +319,20 @@ private fun LibrarySkeletonCard() {
             PdSkeleton(modifier = Modifier.fillMaxWidth(0.7f))
             PdSkeleton(modifier = Modifier.fillMaxWidth(0.4f))
         }
+    }
+}
+
+private fun shareFile(context: android.content.Context, item: LibraryItem) {
+    val file = File(item.fileUri.removePrefix("file://"))
+    if (!file.isFile) return
+    runCatching {
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = context.contentResolver.getType(uri) ?: "application/octet-stream"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, context.getString(R.string.library_share_title)))
     }
 }
 
