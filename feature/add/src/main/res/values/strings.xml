@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="add_title">Add download</string>
+    <string name="add_subtitle">Paste a link or choose a torrent file.</string>
+    <string name="add_choose_format">Choose the format you want to download.</string>
+    <string name="add_recommended">Recommended</string>
+    <string name="add_pick_torrent_hint">Open the system file picker</string>
     <string name="add_explanation">Paste a magnet link or an authorized media URL. Torrent files are added with the system file picker from the torrent review step.</string>
     <string name="add_input_label">Magnet link or media URL</string>
     <string name="add_input_hint">Detects magnet links and supported media URLs</string>

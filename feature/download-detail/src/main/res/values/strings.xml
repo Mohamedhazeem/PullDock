@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="detail_loading">Loading download…</string>
+    <string name="detail_title">Download details</string>
+    <string name="detail_actions_title">Actions</string>
+    <string name="detail_stat_size">Size</string>
+    <string name="detail_stat_speed">Speed</string>
+    <string name="detail_stat_eta">ETA</string>
+    <string name="detail_stat_peers">Peers</string>
     <string name="detail_missing_title">Download not found</string>
     <string name="detail_missing_body">This task was removed or never existed.</string>
     <string name="detail_action_failed_title">Action unavailable</string>
@@ -18,6 +24,8 @@
     <string name="detail_action_cancel">Cancel</string>
     <string name="detail_action_remove">Remove</string>
     <string name="detail_files_section">Files</string>
+    <string name="detail_select_all">Select all</string>
+    <string name="detail_clear_selection">Clear</string>
     <string name="detail_apply_selection">Apply selection</string>
     <string name="detail_seeding_section">Seeding</string>
     <string name="detail_seed_after_completion">Seed after completion</string>
