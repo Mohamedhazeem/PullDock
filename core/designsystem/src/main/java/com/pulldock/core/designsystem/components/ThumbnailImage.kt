@@ -46,7 +46,7 @@ fun ThumbnailImage(
             Image(
                 bitmap = image,
                 contentDescription = contentDescription,
-                contentScale = ContentScale.CROP,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize(),
             )
         } else {
