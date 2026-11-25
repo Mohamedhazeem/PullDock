@@ -235,7 +235,11 @@ private fun FormatSelectionSheet(
                 Text(descriptor.title, style = MaterialTheme.typography.headlineSmall)
                 Text(
                     text = stringResource(R.string.add_choose_format),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = stringResource(R.string.add_format_hint),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -312,11 +316,21 @@ private fun FormatRow(
 @Composable
 private fun formatLabel(format: MediaFormat): String {
     val resolution = clean(format.resolution)
+    val kind = formatKind(format)
+    return when {
+        resolution != null -> "$resolution · $kind"
+        kind == stringResource(R.string.add_format_audio_only) -> kind
+        else -> stringResource(R.string.add_format_unknown)
+    }
+}
+
+@Composable
+private fun formatKind(format: MediaFormat): String {
+    val hasVideo = clean(format.videoCodec) != null
     val hasAudio = clean(format.audioCodec) != null
     return when {
-        resolution != null && format.mergeRequired -> "$resolution · ${stringResource(R.string.add_format_video_audio)}"
-        resolution != null && hasAudio -> "$resolution · ${stringResource(R.string.add_format_audio)}"
-        resolution != null -> resolution
+        hasVideo && hasAudio -> stringResource(R.string.add_format_video_audio)
+        format.mergeRequired -> stringResource(R.string.add_format_video_audio)
         hasAudio -> stringResource(R.string.add_format_audio_only)
         else -> stringResource(R.string.add_format_unknown)
     }
@@ -325,12 +339,30 @@ private fun formatLabel(format: MediaFormat): String {
 @Composable
 private fun formatDetail(format: MediaFormat): String = buildString {
     append(clean(format.container)?.uppercase() ?: "MP4")
-    clean(format.videoCodec)?.let { append(" · ").append(it) }
-    clean(format.audioCodec)?.let { append(" · ").append(it) }
-    format.estimatedBytes?.let { append(" · ≈").append(formatBytes(it)) }
     if (format.mergeRequired) {
-        append(" · ")
-        append(stringResource(R.string.add_format_merge))
+        codecLabel(format.videoCodec)?.let { append(" · ").append(it) }
+        append(" · ").append(stringResource(R.string.add_format_merge))
+    } else {
+        codecLabel(format.videoCodec)?.let { append(" · ").append(it) }
+        codecLabel(format.audioCodec)?.let { append(" · ").append(it) }
+    }
+    clean(format.language)?.let { append(" · ").append(it.uppercase()) }
+    format.estimatedBytes?.let { append(" · ≈").append(formatBytes(it)) }
+}
+
+@Composable
+private fun codecLabel(codec: String?): String? {
+    val value = clean(codec) ?: return null
+    return when {
+        value.contains("avc1", true) -> "H.264"
+        value.contains("vp9", true) -> "VP9"
+        value.contains("vp8", true) -> "VP8"
+        value.contains("av01", true) -> "AV1"
+        value.contains("mp4a", true) -> "AAC"
+        value.contains("opus", true) -> "Opus"
+        value.contains("vorbis", true) -> "Vorbis"
+        value.equals("unknown", true) -> null
+        else -> value
     }
 }
 

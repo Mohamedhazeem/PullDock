@@ -45,6 +45,11 @@ def _format_entry(fmt, duration=0):
         tbr = float(fmt.get("tbr") or 0)
         if tbr > 0 and duration > 0:
             size = int(tbr * 1000.0 / 8.0 * duration)
+    # Some providers (notably X) hide codec metadata on progressive HTTP formats.
+    # The file is muxed; mark it usable and let the download-time audio check verify it.
+    if resolution and resolution != "Audio" and vcodec is None and acodec is None:
+        vcodec = "unknown"
+        acodec = "unknown"
     return {
         "id": _clean(fmt.get("format_id")) or "",
         "resolution": resolution,
@@ -86,13 +91,12 @@ def _format_score(entry):
     audio = entry.get("audioCodec") or ""
     return (
         1 if size > 0 else 0,
+        1 if video and audio and not entry.get("mergeRequired") else 0,
         1 if (entry.get("languagePreference") or -1) > 0 else 0,
         1 if (entry.get("language") or "").lower().startswith("en") else 0,
         1 if "avc1" in video else 0,
         1 if "mp4a" in audio else 0,
         1 if entry.get("container") == "mp4" else 0,
-        1 if video else 0,
-        1 if audio else 0,
         size,
     )
 

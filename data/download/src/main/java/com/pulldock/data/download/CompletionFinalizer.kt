@@ -1,6 +1,9 @@
 package com.pulldock.data.download
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import com.pulldock.core.database.dao.DownloadTaskDao
 import com.pulldock.core.database.dao.TorrentTaskDao
 import com.pulldock.core.database.entity.DownloadTaskEntity
@@ -10,6 +13,7 @@ import com.pulldock.core.storage.FilenameSanitizer
 import com.pulldock.domain.download.repository.StoragePreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.io.FileOutputStream
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -44,6 +48,7 @@ class CompletionFinalizer @Inject constructor(
             is FileFinalizer.Result.Published -> {
                 val uri = File(result.path).toURI().toString()
                 val now = System.currentTimeMillis()
+                val thumbnail = thumbnailFor(result.path, taskId)
                 if (taskDao.completeWithOutput(taskId, uri, File(result.path).name, now) > 0) {
                     library.record(
                         task = TaskMappers.toDomain(entity).copy(
@@ -52,6 +57,7 @@ class CompletionFinalizer @Inject constructor(
                             completedAt = Instant.ofEpochMilli(now),
                         ),
                         fileUri = uri,
+                        thumbnailUri = thumbnail,
                     )
                     uri
                 } else {
@@ -79,6 +85,7 @@ class CompletionFinalizer @Inject constructor(
                 val uri = java.io.File(result.path).toURI().toString()
                 val now = System.currentTimeMillis()
                 val actualSize = java.io.File(result.path).length()
+                val thumbnail = thumbnailFor(result.path, taskId)
                 taskDao.updateMetadata(taskId, entity.displayName, actualSize, now)
                 if (taskDao.completeMediaWithOutput(taskId, uri, java.io.File(result.path).name, now) > 0) {
                     library.record(
@@ -88,6 +95,7 @@ class CompletionFinalizer @Inject constructor(
                             completedAt = Instant.ofEpochMilli(now),
                         ),
                         fileUri = uri,
+                        thumbnailUri = thumbnail,
                     )
                     uri
                 } else null
@@ -105,6 +113,37 @@ class CompletionFinalizer @Inject constructor(
             updatedAt = System.currentTimeMillis(),
         )
         return null
+    }
+
+    private fun thumbnailFor(path: String, taskId: String): String? {
+        val file = File(path)
+        if (!file.isFile || file.length() <= 0L) return null
+        val imageSuffix = file.extension.lowercase()
+        val bitmap: Bitmap? = when {
+            imageSuffix in setOf("jpg", "jpeg", "png", "webp") ->
+                runCatching { BitmapFactory.decodeFile(file.absolutePath) }.getOrNull()
+            else -> {
+                val retriever = MediaMetadataRetriever()
+                try {
+                    retriever.setDataSource(file.absolutePath)
+                    runCatching { retriever.frameAtTime }.getOrNull()
+                        ?: runCatching { retriever.embeddedPicture }.getOrNull()
+                            ?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+                } catch (_: Throwable) {
+                    null
+                } finally {
+                    runCatching { retriever.release() }
+                }
+            }
+        } ?: return null
+        val directory = File(context.cacheDir, "thumbnails").apply { mkdirs() }
+        val output = File(directory, "$taskId.jpg")
+        return runCatching {
+            FileOutputStream(output).use { stream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+            }
+            output.toURI().toString()
+        }.getOrNull()
     }
 
     private suspend fun findOutput(taskId: String, root: File): File? {

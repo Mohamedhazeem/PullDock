@@ -58,6 +58,7 @@ import com.pulldock.core.designsystem.components.PdSearchField
 import com.pulldock.core.designsystem.components.PdSkeleton
 import com.pulldock.core.designsystem.components.PdStatusBadge
 import com.pulldock.core.designsystem.components.PdStatusTone
+import com.pulldock.core.designsystem.components.ThumbnailImage
 import com.pulldock.core.designsystem.components.pdLibraryIcon
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.core.model.formatBytes
@@ -233,20 +234,15 @@ private fun LibraryItemCard(
         modifier = modifier,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
+            ThumbnailImage(
+                uri = item.thumbnailUri,
+                fallback = pdLibraryIcon(item.fileUri),
+                contentDescription = item.title,
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(tokens.radius.md))
                     .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = pdLibraryIcon(item.fileUri),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(28.dp),
-                )
-            }
+            )
             Spacer(Modifier.width(tokens.spacing.md))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
