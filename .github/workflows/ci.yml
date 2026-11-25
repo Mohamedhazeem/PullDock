@@ -22,6 +22,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Chaquopy pins Python 3.12 for the bundled extractor (ADR-0012), so the build
+      # machine must provide that exact version. GitHub runners do not ship it.
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
@@ -40,6 +47,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      # Chaquopy pins Python 3.12 for the bundled extractor (ADR-0012), so the build
+      # machine must provide that exact version. GitHub runners do not ship it.
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -60,6 +74,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Chaquopy pins Python 3.12 for the bundled extractor (ADR-0012), so the build
+      # machine must provide that exact version. GitHub runners do not ship it.
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
@@ -79,6 +100,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      # Chaquopy pins Python 3.12 for the bundled extractor (ADR-0012), so the build
+      # machine must provide that exact version. GitHub runners do not ship it.
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
