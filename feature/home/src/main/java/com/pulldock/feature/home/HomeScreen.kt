@@ -158,6 +158,7 @@ fun HomeScreen(
                         onResume = { viewModel.resume(task.id) },
                         onRetry = { viewModel.retry(task.id) },
                         onDelete = { viewModel.requestDelete(task.id) },
+                        onRemoveCompleted = { viewModel.removeCompleted(task.id) },
                         modifier = Modifier.animateItem(),
                     )
                 }
@@ -186,6 +187,7 @@ private fun TransferCard(
     onResume: () -> Unit,
     onRetry: () -> Unit,
     onDelete: () -> Unit,
+    onRemoveCompleted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val tokens = LocalPdTokens.current
@@ -195,41 +197,38 @@ private fun TransferCard(
         else formatBytes(task.progress.downloadedBytes)
     } ?: formatBytes(task.progress.downloadedBytes)
 
-    PdCard(
-        onClick = onOpen,
-        modifier = modifier,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(tokens.radius.md))
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = pdTypeIcon(task.type),
-                        contentDescription = pdTypeLabel(task.type),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(22.dp),
-                    )
+    Box(modifier) {
+        PdCard(onClick = onOpen) {
+            Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(tokens.radius.md))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = pdTypeIcon(task.type),
+                            contentDescription = pdTypeLabel(task.type),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(tokens.spacing.md))
+                    Column(modifier = Modifier.weight(1f).padding(end = 48.dp)) {
+                        Text(
+                            text = task.displayName,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = "${pdTypeLabel(task.type)} · $stateLabel",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                Spacer(Modifier.width(tokens.spacing.md))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = task.displayName,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                    )
-                    Text(
-                        text = "${pdTypeLabel(task.type)} · $stateLabel",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                OverflowMenu(onDelete = onDelete)
-            }
 
             PdStatusBadge(
                 label = stateLabel,
@@ -286,6 +285,20 @@ private fun TransferCard(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 else -> Unit
+            }
+        }
+        }
+        Box(modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp)) {
+            if (task.state == DownloadState.COMPLETED) {
+                IconButton(onClick = onRemoveCompleted) {
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = stringResource(R.string.home_remove_now),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            } else {
+                OverflowMenu(onDelete = onDelete)
             }
         }
     }

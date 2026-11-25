@@ -88,6 +88,7 @@ class HomeViewModel @Inject constructor(
         extras.update { it.copy(pendingDelete = null) }
         viewModelScope.launch { removeUc(id, true) }
     }
+    fun removeCompleted(id: String) = launchAction { removeUc(id, false) }
     fun consumeActionError() = extras.update { it.copy(actionError = null) }
 
     private fun launchAction(action: suspend () -> UseCaseResult<Unit>) {
