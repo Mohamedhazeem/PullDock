@@ -78,6 +78,8 @@ class CompletionFinalizer @Inject constructor(
             is FileFinalizer.Result.Published -> {
                 val uri = java.io.File(result.path).toURI().toString()
                 val now = System.currentTimeMillis()
+                val actualSize = java.io.File(result.path).length()
+                taskDao.updateMetadata(taskId, entity.displayName, actualSize, now)
                 if (taskDao.completeMediaWithOutput(taskId, uri, java.io.File(result.path).name, now) > 0) {
                     library.record(
                         task = TaskMappers.toDomain(entity).copy(

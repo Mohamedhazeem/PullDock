@@ -328,7 +328,7 @@ private fun formatDetail(format: MediaFormat): String = buildString {
     append(clean(format.container)?.uppercase() ?: "MP4")
     clean(format.videoCodec)?.let { append(" · ").append(it) }
     clean(format.audioCodec)?.let { append(" · ").append(it) }
-    format.estimatedBytes?.let { append(" · ").append(formatBytes(it)) }
+    format.estimatedBytes?.let { append(" · ≈").append(formatBytes(it)) }
     if (format.mergeRequired) {
         append(" · ")
         append(stringResource(R.string.add_format_merge))
