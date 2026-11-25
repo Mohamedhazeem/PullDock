@@ -103,10 +103,29 @@ class MediaExtractorImpl @Inject constructor(
         val taskId = "${descriptor.providerId.name}-${descriptor.sourceUrl.hashCode()}"
         val tempDir = File(context.cacheDir, "partial").apply { mkdirs() }
         val needsMux = format.videoCodec != null && format.audioCodec == null
+        val formats = if (needsMux) {
+            formatCache[descriptor.sourceUrl] ?: when (val resolved = availableFormats(descriptor)) {
+                is ExtractorResult.Success -> resolved.value
+                is ExtractorResult.Failure -> return resolved
+            }
+        } else {
+            emptyList()
+        }
+        // MediaMuxer is most reliable with H.264/AAC in MP4. Prefer an H.264
+        // video-only format at or below the selected resolution when one exists.
+        val muxVideo = if (needsMux) {
+            val selectedHeight = format.resolution?.removeSuffix("p")?.toIntOrNull() ?: Int.MAX_VALUE
+            formats.firstOrNull { candidate ->
+                candidate.videoCodec?.contains("avc1", true) == true &&
+                    (candidate.resolution?.removeSuffix("p")?.toIntOrNull() ?: 0) <= selectedHeight
+            } ?: formats.firstOrNull { it.videoCodec?.contains("avc1", true) == true } ?: format
+        } else {
+            format
+        }
         val targetContainer = when {
             !needsMux -> format.container
-            format.videoCodec?.startsWith("vp8", true) == true ||
-                format.videoCodec?.startsWith("vp9", true) == true -> "webm"
+            muxVideo.videoCodec?.startsWith("vp8", true) == true ||
+                muxVideo.videoCodec?.startsWith("vp9", true) == true -> "webm"
             else -> "mp4"
         }
         val extension = if (needsMux) ".$targetContainer" else ".mp4"
@@ -114,10 +133,6 @@ class MediaExtractorImpl @Inject constructor(
         events.tryEmit(ExtractorEvent.Processing(taskId, ProcessingStatus.RUNNING))
 
         val audioFormat = if (needsMux) {
-            val formats = formatCache[descriptor.sourceUrl] ?: when (val resolved = availableFormats(descriptor)) {
-                is ExtractorResult.Success -> resolved.value
-                is ExtractorResult.Failure -> return resolved
-            }
             val preferredAudio = if (targetContainer == "webm") "opus" else "mp4a"
             formats.firstOrNull { it.videoCodec == null && it.audioCodec?.contains(preferredAudio, true) == true }
                 ?: formats.firstOrNull { it.videoCodec == null && it.audioCodec != null }
@@ -136,16 +151,16 @@ class MediaExtractorImpl @Inject constructor(
         val result = if (needsMux && audioFormat != null) {
             runtime.downloadMuxed(
                 url = descriptor.sourceUrl,
-                videoFormatId = format.id,
+                videoFormatId = muxVideo.id,
                 audioFormatId = audioFormat.id,
-                videoCodec = format.videoCodec,
+                videoCodec = muxVideo.videoCodec,
                 audioCodec = audioFormat.audioCodec,
                 container = targetContainer,
                 outputPath = tempPath,
                 onProgress = { bytes, total ->
                     events.tryEmit(ExtractorEvent.Progress(taskId, bytes, total, 0L))
                 },
-                height = format.resolution?.removeSuffix("p")?.toIntOrNull(),
+                height = muxVideo.resolution?.removeSuffix("p")?.toIntOrNull(),
             )
         } else {
             runtime.download(

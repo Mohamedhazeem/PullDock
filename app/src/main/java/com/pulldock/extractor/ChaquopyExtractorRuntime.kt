@@ -201,6 +201,7 @@ class ChaquopyExtractorRuntime @Inject constructor(
                 videoMime.contains("avc", true) ||
                 videoMime.contains("av01", true) ||
                 audioMime.contains("mp4a", true)
+            android.util.Log.e("PullDockMux", "mux container=$container video=$videoMime audio=$audioMime")
             muxer = android.media.MediaMuxer(
                 outputPath,
                 if (mp4) android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
