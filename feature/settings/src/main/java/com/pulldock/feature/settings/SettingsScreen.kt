@@ -77,7 +77,6 @@ fun SettingsScreen(
 
     PdScaffold(
         title = stringResource(R.string.settings_title),
-        subtitle = stringResource(R.string.settings_subtitle),
         scrollBehavior = scrollBehavior,
     ) { innerPadding ->
         val policy = state.policy

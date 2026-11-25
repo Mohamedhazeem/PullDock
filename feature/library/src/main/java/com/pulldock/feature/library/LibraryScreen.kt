@@ -91,7 +91,6 @@ fun LibraryScreen(
 
     PdScaffold(
         title = stringResource(R.string.library_title),
-        subtitle = stringResource(R.string.library_subtitle),
         snackbarHostState = snackbar,
         scrollBehavior = scrollBehavior,
         actions = {

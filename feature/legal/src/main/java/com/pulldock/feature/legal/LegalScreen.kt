@@ -45,7 +45,6 @@ fun LegalScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     PdScaffold(
         title = stringResource(R.string.legal_title),
-        subtitle = stringResource(R.string.legal_subtitle),
         onBack = onBack,
         scrollBehavior = scrollBehavior,
         modifier = modifier,

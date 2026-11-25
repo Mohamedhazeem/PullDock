@@ -74,7 +74,6 @@ fun AddDownloadScreen(
 
     PdScaffold(
         title = stringResource(R.string.add_title),
-        subtitle = stringResource(R.string.add_subtitle),
         onBack = onDismiss,
     ) { innerPadding ->
         Box(

@@ -75,11 +75,6 @@ fun OnboardingScreen(
 
     PdScaffold(
         title = stringResource(R.string.onboarding_title),
-        subtitle = stringResource(
-            R.string.onboarding_step,
-            pagerState.currentPage + 1,
-            3,
-        ),
     ) { innerPadding ->
         if (consent == null) {
             PdLoadingState(

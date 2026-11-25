@@ -97,7 +97,6 @@ fun HomeScreen(
 
     PdScaffold(
         title = stringResource(R.string.home_title),
-        subtitle = stringResource(R.string.home_subtitle),
         snackbarHostState = snackbar,
         scrollBehavior = scrollBehavior,
         floatingActionButton = {
