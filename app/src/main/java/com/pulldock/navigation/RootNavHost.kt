@@ -1,5 +1,10 @@
 package com.pulldock.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,10 +40,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * Root navigation graph (T049, plan.md §Navigation architecture). The consent gate
- * (US1) decides the start destination: download actions are unreachable until the
- * current legal version is acknowledged (US1 scenario 2). A version bump re-prompts
- * on the next launch.
+ * Root navigation graph. The consent gate decides the start destination; download
+ * actions are unreachable until the current legal version is acknowledged.
  */
 @Composable
 fun RootNavHost(
@@ -58,16 +61,17 @@ fun RootNavHost(
     }
 
     // A magnet/file opened from a browser or share sheet navigates straight to Add.
-    // Consent comes first (US1); the source is consumed exactly once.
+    // Consent comes first; the source is consumed exactly once.
     LaunchedEffect(pendingSource, resolved?.isAcknowledged) {
         val source = pendingSource
-        if (source != null && resolved?.isAcknowledged == true) {
+        if (source != null && resolved.isAcknowledged) {
             navController.navigate(Routes.addSource(source))
             onPendingSourceConsumed()
         }
     }
 
-    MainScaffold(navController = navController, useRail = useRail) { contentModifier ->        NavHost(
+    MainScaffold(navController = navController, useRail = useRail) { contentModifier ->
+        NavHost(
             navController = navController,
             startDestination = if (resolved.isAcknowledged) {
                 PullDockDestination.Primary.HOME.route
@@ -75,6 +79,14 @@ fun RootNavHost(
                 Routes.ONBOARDING
             },
             modifier = modifier.then(contentModifier),
+            enterTransition = {
+                fadeIn(tween(180)) + slideInHorizontally(tween(240)) { it / 12 }
+            },
+            exitTransition = { fadeOut(tween(120)) },
+            popEnterTransition = { fadeIn(tween(180)) },
+            popExitTransition = {
+                fadeOut(tween(120)) + slideOutHorizontally(tween(240)) { it / 12 }
+            },
         ) {
             composable(Routes.ONBOARDING) {
                 OnboardingScreen(
@@ -92,22 +104,31 @@ fun RootNavHost(
                 )
             }
             composable(PullDockDestination.Primary.LIBRARY.route) {
-                LibraryScreen(onPlay = { itemId -> navController.navigate(Routes.player(itemId)) })
+                LibraryScreen(
+                    onPlay = { itemId -> navController.navigate(Routes.player(itemId)) },
+                    onAddDownload = { navController.navigate(Routes.ADD) },
+                )
             }
             composable(PullDockDestination.Primary.SETTINGS.route) {
                 SettingsScreen(onOpenLegal = { navController.navigate(Routes.LEGAL) })
             }
             composable(Routes.ADD) {
-                AddDownloadScreen(onClose = navController::navigateUp)
+                AddDownloadScreen(
+                    onClose = navController::navigateUp,
+                    onDismiss = navController::navigateUp,
+                )
             }
             composable(
                 route = Routes.ADD_WITH_SOURCE,
                 arguments = listOf(navArgument("source") { type = NavType.StringType }),
             ) {
-                AddDownloadScreen(onClose = navController::navigateUp)
+                AddDownloadScreen(
+                    onClose = navController::navigateUp,
+                    onDismiss = navController::navigateUp,
+                )
             }
             composable(Routes.LEGAL) {
-                LegalScreen()
+                LegalScreen(onBack = navController::navigateUp)
             }
             composable(
                 route = Routes.DOWNLOAD_DETAIL,
@@ -125,7 +146,7 @@ fun RootNavHost(
     }
 }
 
-/** Route constants and builders; route strings are deep-link stable (plan.md). */
+/** Route constants and builders; route strings are deep-link stable. */
 object Routes {
     const val ONBOARDING = "onboarding"
     const val ADD = "add"
@@ -138,10 +159,11 @@ object Routes {
         "add?source=${android.net.Uri.encode(source)}"
 
     fun download(taskId: String): String = "download/$taskId"
+
     fun player(itemId: String): String = "player/$itemId"
 }
 
-/** Root-level consent observation for the navigation gate (US1). */
+/** Root-level consent observation for the navigation gate. */
 @HiltViewModel
 class RootViewModel @Inject constructor(observeConsent: ObserveConsent) : ViewModel() {
     val consent: StateFlow<ConsentState?> = observeConsent()

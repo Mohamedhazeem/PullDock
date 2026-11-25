@@ -3,21 +3,19 @@ package com.pulldock.navigation
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.LibraryMusic
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,15 +25,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.pulldock.R
 
 /**
- * Main application scaffold with adaptive navigation (T052, FR-066): bottom bar on
- * compact widths, navigation rail on medium/expanded widths. The shell owns navigation
- * chrome only — destination content is contributed by feature screens.
+ * Main application scaffold with adaptive navigation: bottom bar on compact widths,
+ * navigation rail on medium/expanded widths. The shell owns navigation chrome only.
  */
 @Composable
 fun MainScaffold(
@@ -49,8 +47,9 @@ fun MainScaffold(
 
     if (useRail) {
         Row(modifier = Modifier.fillMaxSize()) {
-            // material3 1.4.0: rail content is ColumnScope; items are ColumnScope extensions.
-            NavigationRail {
+            NavigationRail(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ) {
                 navItems.forEach { destination ->
                     val selected = currentRoute == destination.route
                     val label = stringResource(destination.titleRes)
@@ -59,12 +58,18 @@ fun MainScaffold(
                         onClick = { navController.navigateToPrimary(destination) },
                         icon = {
                             Icon(
-                                imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
-                                contentDescription = null, // the visible label suffices for TalkBack
+                                imageVector = destination.icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
                             )
                         },
                         label = { Text(label) },
                         alwaysShowLabel = true,
+                        colors = NavigationRailItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                        ),
                         modifier = Modifier.semantics { contentDescription = label },
                     )
                 }
@@ -74,9 +79,12 @@ fun MainScaffold(
     } else {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
+            containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
-                // material3 1.4.0: bar content is RowScope; items are RowScope extensions.
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 2.dp,
+                ) {
                     navItems.forEach { destination ->
                         val selected = currentRoute == destination.route
                         val label = stringResource(destination.titleRes)
@@ -85,12 +93,18 @@ fun MainScaffold(
                             onClick = { navController.navigateToPrimary(destination) },
                             icon = {
                                 Icon(
-                                    imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
+                                    imageVector = destination.icon,
                                     contentDescription = null,
+                                    modifier = Modifier.size(24.dp),
                                 )
                             },
                             label = { Text(label) },
                             alwaysShowLabel = true,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            ),
                             modifier = Modifier.semantics { contentDescription = label },
                         )
                     }
@@ -115,23 +129,16 @@ private fun NavHostController.navigateToPrimary(destination: PullDockDestination
     }
 }
 
-private val PullDockDestination.Primary.selectedIcon: ImageVector
+private val PullDockDestination.Primary.icon: ImageVector
     get() = when (this) {
-        PullDockDestination.Primary.HOME -> Icons.Filled.Home
-        PullDockDestination.Primary.LIBRARY -> Icons.Filled.LibraryMusic
-        PullDockDestination.Primary.SETTINGS -> Icons.Filled.Settings
-    }
-
-private val PullDockDestination.Primary.unselectedIcon: ImageVector
-    get() = when (this) {
-        PullDockDestination.Primary.HOME -> Icons.Outlined.Home
-        PullDockDestination.Primary.LIBRARY -> Icons.Outlined.LibraryMusic
-        PullDockDestination.Primary.SETTINGS -> Icons.Outlined.Settings
+        PullDockDestination.Primary.HOME -> Icons.Rounded.Home
+        PullDockDestination.Primary.LIBRARY -> Icons.Rounded.LibraryMusic
+        PullDockDestination.Primary.SETTINGS -> Icons.Rounded.Settings
     }
 
 /**
- * Honest empty state for destinations whose screens arrive in later slices (Library
- * until Slice 6). Title plus explanation; no dead actions.
+ * Honest empty state for destinations whose screens arrive in later slices. Title plus
+ * explanation; no dead actions.
  */
 @Composable
 internal fun ShellEmptyState(title: String, message: String) {
