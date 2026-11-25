@@ -1,69 +1,134 @@
 # PullDock
 
-PullDock is a native Android application (Kotlin + Jetpack Compose) for managing
-authorized media downloads and BitTorrent transfers.
+**PullDock is a native Android app for managing authorized media downloads and BitTorrent transfers in one queue.**
 
-This repository uses Spec Kit for spec-driven development. Read
-[AGENTS.md](AGENTS.md) before making changes, and read
-[.specify/memory/constitution.md](.specify/memory/constitution.md) for the engineering
-constitution.
+It combines a clean Material 3 interface with a modular Kotlin architecture, durable download state, media extraction, torrent transfers, a library, and playback.
+
+> PullDock is for content you own or have permission to download. Respect copyright, provider terms, and applicable law.
+
+## Features
+
+- **One queue for media and torrents** — Home shows every transfer with progress, speed, ETA, pause/resume, retry, and removal.
+- **Multiple input types** — Add an HTTP(S) media URL, magnet link, `.torrent` file, or share a link from another app.
+- **Media extraction** — Resolve public media pages through yt-dlp, choose a format, and download.
+- **Video with audio** — Video-only streams are paired with the original-language audio track and merged on-device with Android `MediaMuxer`.
+- **BitTorrent transfers** — libtorrent4j-backed engine with file selection and transfer limits.
+- **Durable state** — Room stores tasks and recovery data; DataStore stores preferences. Downloads are designed to survive process death and device restarts.
+- **Foreground execution** — A dataSync foreground service keeps active transfers alive while respecting Android background limits.
+- **Library** — Search, filter, sort, play, and delete completed media. Missing files are marked unavailable instead of silently disappearing.
+- **Playback** — AndroidX Media3 player with a dedicated player screen.
+- **Settings** — Light/dark/system theme, download folder, network policy, consent, and legal information.
+- **Accessible adaptive UI** — Material 3, warm-paper design tokens, large-font support, TalkBack semantics, RTL, and adaptive layouts.
+- **CI** — Debug build, unit tests, Android lint, 64-bit ABI packaging check, and secret scanning.
 
 ## Tech stack
 
-- Kotlin, Jetpack Compose, Material 3
-- Clean Architecture (presentation / domain / data / platform / native engines)
-- Hilt for dependency injection
-- Room for durable structured data, DataStore for preferences
-- AndroidX Media3 for media playback
-- Kotlin Coroutines + Flow
-- libtorrent4j (pinned 2.1.0-39) for torrent transfers
-- Gradle 9.6 + AGP 9.4 + version catalog
+| Area | Technology |
+| --- | --- |
+| Language | Kotlin |
+| UI | Jetpack Compose, Material 3 |
+| Architecture | Clean Architecture: presentation → domain ← data, plus platform and native engines |
+| DI | Hilt |
+| Persistence | Room, DataStore |
+| Async | Kotlin Coroutines, Flow |
+| Playback | AndroidX Media3 |
+| Media extraction | yt-dlp via Chaquopy |
+| Torrents | libtorrent4j 2.1.0-39 |
+| Build | Gradle 9.6, Android Gradle Plugin 9.4, version catalog |
+| Spec workflow | Spec Kit |
 
-## Build
+## Project layout
 
-```bash
-./gradlew assembleDebug        # all 25 modules
-./gradlew :app:assembleRelease # R8 + resource shrinking (unsigned)
+```text
+app/                 # Application, navigation shell, manifest, Hilt root, execution layer
+core/                # Shared models, dispatchers, design system, Room, DataStore, storage, network
+domain/              # Pure Kotlin contracts, models, use cases, state machine
+data/                # Repository implementations, queue coordinator, engine adapters
+engines/             # Torrent, extractor, and media engine integration
+feature/             # Onboarding, Home, Add, Queue, Download Detail, Library, Player, Settings, Legal
+specs/               # Spec Kit feature specifications, plans, tasks, ADRs
+docs/                # Security, limitations, extractor lifecycle, licenses
+scripts/ci/          # ABI and secret-scan helpers
 ```
 
-Tests:
+See [AGENTS.md](AGENTS.md) for the full module map and engineering rules, and [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for current constraints.
 
-```bash
-./gradlew :app:testDebugUnitTest :core:common:test :core:model:test \
-  :domain:download:test :domain:torrent:test :domain:extractor:test \
-  :data:download:testDebugUnitTest :data:torrent:testDebugUnitTest \
-  :data:extractor:testDebugUnitTest \
-  :feature:queue:testDebugUnitTest :feature:add:testDebugUnitTest \
-  :feature:onboarding:testDebugUnitTest :feature:settings:testDebugUnitTest
+## Requirements
+
+- Android Studio with a recent Android SDK Platform
+- JDK 17 or newer
+- Android SDK Build Tools and Platform Tools
+- A device or emulator running Android 8.0+ (API 26+)
+
+Create a `local.properties` file if Android Studio does not create one:
+
+```properties
+sdk.dir=/path/to/Android/sdk
 ```
 
-CI (`.github/workflows/ci.yml`) runs the build, unit tests, lint, a 64-bit-only ABI
-packaging check, and a secret scan on every push/PR.
-
-## Structure
-
-- `app/` — composition root: navigation shell, execution layer (UIDT jobs, dataSync
-  service, boot receiver, notifications), Hilt graph
-- `core/` — platform infrastructure: common (dispatchers), model (shared primitives),
-  designsystem (theme/tokens), database (Room), datastore, storage, network
-- `domain/` — pure Kotlin: download/torrent/extractor contracts, models, state machine
-- `data/` — repository implementations, queue coordinator/scheduler, engine adapters
-- `engines/` — native/runtime integration: torrent-libtorrent, extractor-ytdlp,
-  media-ffmpeg
-- `feature/` — screen modules: onboarding, home, add, queue, download-detail, library,
-  player, settings, legal
-- `docs/` — security threat model, extractor lifecycle/update strategy, licenses,
-  known limitations
-- `specs/` — per-feature spec, plan, tasks, research, contracts, ADRs
-
-See [AGENTS.md](AGENTS.md) for the full module map, dependency rules, and engineering
-rules; [docs/KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) for honest current
-constraints (device-verification steps pending).
-
-## Spec Kit workflow
+## Build and run
 
 ```bash
-/speckit-specify  ->  /speckit-plan  ->  /speckit-tasks  ->  /speckit-implement
+# Debug build
+./gradlew :app:assembleDebug
+
+# Install the arm64 debug APK on a connected device
+adb install -r app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
+
+# Release build (unsigned)
+./gradlew :app:assembleRelease
 ```
 
-Feature documents live in `specs/<NNN-short-name>/`.
+## Test and lint
+
+```bash
+# Unit tests
+./gradlew :app:testDebugUnitTest
+
+# Android lint
+./gradlew :app:lintDebug
+
+# Module tests
+./gradlew :core:common:test :core:model:test
+./gradlew :domain:download:test :domain:torrent:test :domain:extractor:test
+./gradlew :data:download:testDebugUnitTest :data:torrent:testDebugUnitTest
+./gradlew :data:extractor:testDebugUnitTest
+```
+
+Instrumentation tests require a connected device or emulator:
+
+```bash
+./gradlew :app:connectedDebugAndroidTest
+```
+
+## Architecture rules
+
+- The domain layer is pure Kotlin: no Android, Room, Compose, or engine types.
+- Features never access Room, native engines, or storage directly.
+- State flows down; events flow up.
+- Every schema change needs a tested migration.
+- Native engines are isolated behind typed interfaces.
+- No secrets, credentials, or signing keys are committed.
+- All external input is untrusted: validate URLs, filenames, and paths.
+
+## Current status
+
+PullDock is an active open-source project. The app scaffold, media/torrent cores, library, player, and completion flow are implemented. Some device-verification and hardening work remains, including background-execution behavior and connected tests. See the issue tracker and `docs/KNOWN_LIMITATIONS.md` for details.
+
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+
+## Security
+
+Please do not open a public issue for a security vulnerability. Use GitHub’s private vulnerability reporting for the repository, or contact the maintainer directly.
+
+## License
+
+Released under the [MIT License](LICENSE).
+
+Third-party dependencies retain their own licenses. See [docs/THIRD_PARTY_LICENSES.md](docs/THIRD_PARTY_LICENSES.md) and the dependency assessment in `docs/`.
+
+## Maintainer
+
+Mohamed Hazeem — [@Mohamedhazeem](https://github.com/Mohamedhazeem)
