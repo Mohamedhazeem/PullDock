@@ -5,7 +5,11 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.media.AudioManager
 import android.net.Uri
-import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -19,37 +23,43 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.ScreenRotation
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -58,7 +68,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -70,15 +79,16 @@ import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.pulldock.core.designsystem.components.PdErrorState
 import com.pulldock.feature.player.R
 import kotlinx.coroutines.delay
 
 /**
- * Immersive player (MX-style): edge-to-edge video, tap-to-toggle chrome, centre play,
- * seek bar with time, ±10s, speed/volume/brightness gestures, screen lock, rotation,
- * fullscreen and PiP. Position is persisted throttled (FR-044/US5).
+ * Immersive player: edge-to-edge video, tap-to-toggle chrome, centre play, seek bar,
+ * ±10s, speed/volume/brightness gestures, screen lock, rotation, fullscreen and PiP.
+ * Playback position and play/pause state survive configuration changes.
  */
 @Composable
 fun PlayerScreen(
@@ -90,34 +100,45 @@ fun PlayerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val player = remember {
         ExoPlayer.Builder(context)
-            .setLoadControl(DefaultLoadControl.Builder().setBufferDurationsMs(10_000, 50_000, 1_500, 5_000).build())
+            .setLoadControl(
+                DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(10_000, 50_000, 1_500, 5_000)
+                    .build(),
+            )
             .build()
     }
     val uri = state.item?.fileUri?.let(::normalizeMediaUri)
     val resumeAt = state.resumePositionMs
 
-    var controlsVisible by remember { mutableStateOf(true) }
-    var locked by remember { mutableStateOf(false) }
-    var speedMenuOpen by remember { mutableStateOf(false) }
-    var trackMenuOpen by remember { mutableStateOf(false) }
-    var playing by remember { mutableStateOf(false) }
-    var position by remember { mutableStateOf(0L) }
-    var duration by remember { mutableStateOf(0L) }
-    var buffered by remember { mutableFloatStateOf(0f) }
-    var dragging by remember { mutableStateOf(false) }
+    var controlsVisible by rememberSaveable { mutableStateOf(true) }
+    var locked by rememberSaveable { mutableStateOf(false) }
+    var speedMenuOpen by rememberSaveable { mutableStateOf(false) }
+    var trackMenuOpen by rememberSaveable { mutableStateOf(false) }
+    var playing by rememberSaveable { mutableStateOf(false) }
+    var position by rememberSaveable { mutableLongStateOf(resumeAt) }
+    var duration by rememberSaveable { mutableLongStateOf(0L) }
+    var buffered by rememberSaveable { mutableFloatStateOf(0f) }
+    var dragging by rememberSaveable { mutableStateOf(false) }
     var playbackError by remember { mutableStateOf<String?>(null) }
-    var landscape by remember { mutableStateOf(false) }
+    var landscape by rememberSaveable { mutableStateOf(false) }
+    var seekFeedback by remember { mutableStateOf<String?>(null) }
+    var savedPositionMs by rememberSaveable { mutableLongStateOf(resumeAt) }
+    var savedPlayWhenReady by rememberSaveable { mutableStateOf(true) }
 
     DisposableEffect(uri) {
         if (uri != null) {
             playbackError = null
             player.setMediaItem(MediaItem.fromUri(Uri.parse(uri)))
-            if (resumeAt > 0L) player.seekTo(resumeAt)
+            player.playWhenReady = savedPlayWhenReady
+            player.seekTo(savedPositionMs)
             player.prepare()
-            player.playWhenReady = true
         }
         onDispose {
-            if (uri != null) viewModel.savePosition(player.currentPosition)
+            if (uri != null) {
+                savedPositionMs = player.currentPosition
+                savedPlayWhenReady = player.playWhenReady
+                viewModel.savePosition(player.currentPosition)
+            }
             player.stop()
         }
     }
@@ -129,25 +150,60 @@ fun PlayerScreen(
             override fun onPlayerError(error: PlaybackException) {
                 playbackError = error.message ?: "Playback failed"
             }
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                savedPlayWhenReady = playWhenReady
+            }
+
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int,
+            ) {
+                savedPositionMs = newPosition.positionMs
+            }
         }
         player.addListener(listener)
         onDispose { player.removeListener(listener) }
     }
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) player.pause()
+            if (event == Lifecycle.Event.ON_STOP) {
+                savedPositionMs = player.currentPosition
+                savedPlayWhenReady = player.playWhenReady
+                player.pause()
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    DisposableEffect(Unit) {
+        onDispose { setOrientation(context, false) }
     }
     LaunchedEffect(uri) {
         while (true) {
             playing = player.isPlaying
             duration = player.duration.takeIf { it != C.TIME_UNSET } ?: 0L
-            if (!dragging) position = player.currentPosition
+            if (!dragging) {
+                position = player.currentPosition
+                savedPositionMs = player.currentPosition
+            }
             buffered = player.bufferedPercentage / 100f
+            savedPlayWhenReady = player.playWhenReady
             if (player.isPlaying) viewModel.savePosition(player.currentPosition)
             delay(500)
+        }
+    }
+    LaunchedEffect(playing, controlsVisible) {
+        if (playing && controlsVisible) {
+            delay(3_000)
+            controlsVisible = false
+        }
+    }
+    LaunchedEffect(seekFeedback) {
+        if (seekFeedback != null) {
+            delay(700)
+            seekFeedback = null
         }
     }
 
@@ -171,7 +227,6 @@ fun PlayerScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         if (isAudio) {
-            // Music mode: no video surface; artwork placeholder + track title.
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
@@ -180,7 +235,7 @@ fun PlayerScreen(
                 Box(
                     modifier = Modifier
                         .size(220.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -210,14 +265,13 @@ fun PlayerScreen(
                     PlayerView(ctx).apply {
                         this.player = player
                         useController = false
-                        resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                     }
                 },
                 modifier = Modifier.fillMaxSize(),
             )
         }
 
-        // Tap toggles chrome; double-tap seeks ±10s; vertical drag adjusts brightness/volume.
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -227,7 +281,10 @@ fun PlayerScreen(
                         onDoubleTap = { offset ->
                             if (!locked) {
                                 val delta = if (offset.x < size.width / 2) -10_000L else 10_000L
-                                player.seekTo((player.currentPosition + delta).coerceIn(0L, duration.takeIf { it > 0 } ?: Long.MAX_VALUE))
+                                val next = (player.currentPosition + delta)
+                                    .coerceIn(0L, duration.takeIf { it > 0 } ?: Long.MAX_VALUE)
+                                player.seekTo(next)
+                                seekFeedback = if (delta < 0) "−10s" else "+10s"
                             }
                         },
                     )
@@ -244,17 +301,29 @@ fun PlayerScreen(
                 },
         )
 
-        if (!locked && controlsVisible) {
-            // Top chrome
+        AnimatedVisibility(
+            visible = !locked && controlsVisible,
+            enter = fadeIn() + slideInVertically { it / 3 },
+            exit = fadeOut() + slideOutVertically { it / 3 },
+            modifier = Modifier.align(Alignment.TopStart),
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.45f))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Black.copy(alpha = 0.72f), Color.Transparent),
+                        ),
+                    )
                     .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.player_back), tint = Color.White)
+                    Icon(
+                        Icons.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.player_back),
+                        tint = Color.White,
+                    )
                 }
                 Text(
                     text = item.title,
@@ -264,33 +333,84 @@ fun PlayerScreen(
                     modifier = Modifier.weight(1f),
                 )
             }
+        }
 
-            // Centre play/pause
-            if (!playing && playbackError == null) {
-                IconButton(
-                    onClick = { player.playWhenReady = true },
-                    modifier = Modifier.align(Alignment.Center).size(72.dp),
-                ) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = stringResource(R.string.player_play), tint = Color.White, modifier = Modifier.size(64.dp))
-                }
+        AnimatedVisibility(
+            visible = !locked && controlsVisible && !playing && playbackError == null,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.Center),
+        ) {
+            IconButton(
+                onClick = { player.playWhenReady = true },
+                modifier = Modifier
+                    .size(76.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.92f)),
+            ) {
+                Icon(
+                    Icons.Filled.PlayArrow,
+                    contentDescription = stringResource(R.string.player_play),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(52.dp),
+                )
             }
+        }
 
-            // Bottom chrome
+        AnimatedVisibility(
+            visible = seekFeedback != null,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.Center),
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.Black.copy(alpha = 0.72f))
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+            ) {
+                Text(seekFeedback.orEmpty(), color = Color.White, fontWeight = FontWeight.Medium)
+            }
+        }
+
+        AnimatedVisibility(
+            visible = !locked && controlsVisible,
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
             Column(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.55f))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.78f)),
+                        ),
+                    )
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             ) {
+                LinearProgressIndicator(
+                    progress = { buffered.coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color.White.copy(alpha = 0.45f),
+                    trackColor = Color.White.copy(alpha = 0.16f),
+                )
                 Slider(
                     value = if (duration > 0) position.coerceAtMost(duration).toFloat() else 0f,
-                    onValueChange = { dragging = true; position = it.toLong() },
+                    onValueChange = {
+                        dragging = true
+                        position = it.toLong()
+                    },
                     onValueChangeFinished = {
                         player.seekTo(position)
                         dragging = false
                     },
                     valueRange = 0f..(duration.takeIf { it > 0 } ?: 1).toFloat(),
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color.White,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = Color.White.copy(alpha = 0.22f),
+                    ),
                 )
                 Text(
                     text = "${formatTime(position)} / ${formatTime(duration)}",
@@ -310,21 +430,36 @@ fun PlayerScreen(
                         if (player.isPlaying) player.pause() else player.playWhenReady = true
                     }
                     PlayerIcon(Icons.Filled.Forward10, stringResource(R.string.player_forward)) {
-                        player.seekTo((player.currentPosition + 10_000L).coerceAtMost(duration.takeIf { it > 0 } ?: Long.MAX_VALUE))
+                        player.seekTo(
+                            (player.currentPosition + 10_000L)
+                                .coerceAtMost(duration.takeIf { it > 0 } ?: Long.MAX_VALUE),
+                        )
                     }
-                    TextButtonOverlay(stringResource(R.string.player_speed, player.playbackParameters.speed)) { speedMenuOpen = true }
-                    PlayerIcon(Icons.Filled.VolumeUp, stringResource(R.string.player_volume)) { /* volume via side gesture */ }
-                    val groups = player.currentTracks.groups.filter { g ->
-                        (g.type == C.TRACK_TYPE_AUDIO || g.type == C.TRACK_TYPE_TEXT) && g.length > 1
+                    TextButtonOverlay(
+                        stringResource(R.string.player_speed, player.playbackParameters.speed),
+                    ) { speedMenuOpen = true }
+                    PlayerIcon(Icons.Filled.VolumeUp, stringResource(R.string.player_volume)) {
+                        // Volume is adjusted with the vertical side gesture.
+                    }
+                    val groups = player.currentTracks.groups.filter { group ->
+                        (group.type == C.TRACK_TYPE_AUDIO || group.type == C.TRACK_TYPE_TEXT) &&
+                            group.length > 1
                     }
                     if (groups.isNotEmpty()) {
-                        TextButtonOverlay(stringResource(R.string.player_tracks)) { trackMenuOpen = true }
+                        TextButtonOverlay(stringResource(R.string.player_tracks)) {
+                            trackMenuOpen = true
+                        }
                     }
-                    PlayerIcon(if (landscape) Icons.Filled.Fullscreen else Icons.Filled.ScreenRotation, stringResource(R.string.player_rotate)) {
+                    PlayerIcon(
+                        if (landscape) Icons.Filled.Fullscreen else Icons.Filled.ScreenRotation,
+                        stringResource(R.string.player_rotate),
+                    ) {
                         landscape = !landscape
                         setOrientation(context, landscape)
                     }
-                    PlayerIcon(Icons.Filled.Lock, stringResource(R.string.player_lock)) { locked = true }
+                    PlayerIcon(Icons.Filled.Lock, stringResource(R.string.player_lock)) {
+                        locked = true
+                    }
                 }
             }
         }
@@ -332,9 +467,18 @@ fun PlayerScreen(
         if (locked) {
             IconButton(
                 onClick = { locked = false },
-                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.55f)),
             ) {
-                Icon(Icons.Filled.LockOpen, contentDescription = stringResource(R.string.player_unlock), tint = Color.White)
+                Icon(
+                    Icons.Filled.LockOpen,
+                    contentDescription = stringResource(R.string.player_unlock),
+                    tint = Color.White,
+                )
             }
         }
 
@@ -361,22 +505,30 @@ fun PlayerScreen(
             listOf(0.75f, 1f, 1.25f, 1.5f, 2f).forEach { speed ->
                 DropdownMenuItem(
                     text = { Text("${speed}x") },
-                    onClick = { player.setPlaybackSpeed(speed); speedMenuOpen = false },
+                    onClick = {
+                        player.setPlaybackSpeed(speed)
+                        speedMenuOpen = false
+                    },
                 )
             }
         }
         DropdownMenu(expanded = trackMenuOpen, onDismissRequest = { trackMenuOpen = false }) {
-            player.currentTracks.groups.filter { g ->
-                (g.type == C.TRACK_TYPE_AUDIO || g.type == C.TRACK_TYPE_TEXT) && g.length > 1
+            player.currentTracks.groups.filter { group ->
+                (group.type == C.TRACK_TYPE_AUDIO || group.type == C.TRACK_TYPE_TEXT) &&
+                    group.length > 1
             }.forEach { group ->
                 (0 until group.length).forEach { index ->
                     val format = group.mediaTrackGroup.getFormat(index)
                     DropdownMenuItem(
-                        text = { Text(format.language ?: format.label ?: "Track ${index + 1}") },
+                        text = {
+                            Text(format.language ?: format.label ?: "Track ${index + 1}")
+                        },
                         onClick = {
                             player.setTrackSelectionParameters(
                                 player.trackSelectionParameters.buildUpon()
-                                    .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, index))
+                                    .setOverrideForType(
+                                        TrackSelectionOverride(group.mediaTrackGroup, index),
+                                    )
                                     .build(),
                             )
                             trackMenuOpen = false
@@ -389,7 +541,11 @@ fun PlayerScreen(
 }
 
 @Composable
-private fun PlayerIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+private fun PlayerIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+) {
     IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) {
         Icon(icon, contentDescription = label, tint = Color.White)
     }
