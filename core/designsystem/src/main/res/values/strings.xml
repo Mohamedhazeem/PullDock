@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pd_back">Back</string>
+    <string name="pd_clear">Clear</string>
+    <string name="pd_brand_name">PullDock</string>
+
+    <string name="pd_type_torrent">Torrent</string>
+    <string name="pd_type_media">Media</string>
+
+    <string name="pd_status_created">Created</string>
+    <string name="pd_status_validating">Validating</string>
+    <string name="pd_status_resolving">Resolving</string>
+    <string name="pd_status_fetching_metadata">Fetching metadata</string>
+    <string name="pd_status_awaiting_file">Choose files</string>
+    <string name="pd_status_awaiting_format">Choose format</string>
+    <string name="pd_status_queued">Queued</string>
+    <string name="pd_status_starting">Starting</string>
+    <string name="pd_status_running">Downloading</string>
+    <string name="pd_status_pausing">Pausing</string>
+    <string name="pd_status_paused">Paused</string>
+    <string name="pd_status_retry_wait">Retry scheduled</string>
+    <string name="pd_status_verifying">Verifying</string>
+    <string name="pd_status_processing">Processing</string>
+    <string name="pd_status_completed">Completed</string>
+    <string name="pd_status_failed">Failed</string>
+    <string name="pd_status_cancelled">Cancelled</string>
+    <string name="pd_status_removing">Removing</string>
+    <string name="pd_status_needs_permission">Permission needed</string>
+    <string name="pd_status_needs_action">Action needed</string>
+    <string name="pd_status_blocked">Blocked</string>
+</resources>
