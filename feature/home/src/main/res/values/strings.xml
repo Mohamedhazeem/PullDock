@@ -7,6 +7,10 @@
     <string name="home_queued_label">Queued</string>
     <string name="home_loading">Loading recent downloads…</string>
     <string name="home_subtitle">Manage transfers here. Completed media is in your Library.</string>
+    <string name="home_hero_title">Your transfers</string>
+    <string name="home_hero_body">One calm queue for torrents and authorized media.</string>
+    <string name="home_completed_label">Completed</string>
+    <string name="home_more_actions">More actions</string>
     <string name="home_action_pause">Pause</string>
     <string name="home_action_resume">Resume</string>
     <string name="home_action_retry">Retry</string>
