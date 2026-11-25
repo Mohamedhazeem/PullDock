@@ -30,8 +30,8 @@ fun PdFilterChips(
     val tokens = LocalPdTokens.current
     FlowRow(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         options.forEach { option ->
             FilterChip(

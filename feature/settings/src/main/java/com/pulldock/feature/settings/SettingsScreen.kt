@@ -1,5 +1,7 @@
 package com.pulldock.feature.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.BatterySaver
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.Palette
@@ -32,7 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -44,16 +47,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -174,19 +173,29 @@ fun SettingsScreen(
                                 )
                             }
                         }
-                        var customFolder by rememberSaveable(state.downloadFolder) {
-                            mutableStateOf(state.downloadFolder ?: "")
+                        val folderPicker = rememberLauncherForActivityResult(
+                            ActivityResultContracts.OpenDocumentTree(),
+                        ) { uri ->
+                            uri?.lastPathSegment
+                                ?.substringAfterLast(':')
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let(viewModel::setDownloadFolder)
                         }
-                        OutlinedTextField(
-                            value = customFolder,
-                            onValueChange = { customFolder = it },
-                            label = { Text(stringResource(R.string.settings_folder_custom)) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(tokens.radius.md),
+                        OutlinedButton(
+                            onClick = { folderPicker.launch(null) },
                             modifier = Modifier.fillMaxWidth(),
-                        )
-                        TextButtonCompat(label = stringResource(R.string.settings_folder_apply)) {
-                            viewModel.setDownloadFolder(customFolder.trim().ifBlank { null })
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.FolderOpen,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(tokens.spacing.sm))
+                            Text(
+                                text = state.downloadFolder
+                                    ?: stringResource(R.string.settings_folder_choose),
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                         Text(
                             text = stringResource(R.string.settings_quality_label),
@@ -402,12 +411,15 @@ private fun PolicyStepper(
                             contentDescription = stringResource(R.string.settings_decrease),
                         )
                     }
-                    Text(
-                        text = value.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
+                    Box(
                         modifier = Modifier.size(36.dp),
-                    )
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = value.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
                     FilledTonalIconButton(onClick = onPlus, modifier = Modifier.size(40.dp)) {
                         Icon(
                             imageVector = Icons.Rounded.Add,
