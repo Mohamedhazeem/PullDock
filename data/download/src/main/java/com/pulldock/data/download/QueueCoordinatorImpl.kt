@@ -306,15 +306,7 @@ class QueueCoordinatorImpl @Inject constructor(
                     state = event.state,
                     error = null,
                 )
-                is ExtractorEvent.Error -> onEngineEvent(
-                    taskId = taskId,
-                    sequence = eventSequence.incrementAndGet(),
-                    progressBytes = null,
-                    totalBytes = null,
-                    speed = null,
-                    state = DownloadState.FAILED,
-                    error = event.error,
-                )
+                is ExtractorEvent.Error -> Unit // the download result is authoritative; a late error event must not fail a completed transfer
                 is ExtractorEvent.Processing -> Unit // completion is handled by the download result
             }
         }

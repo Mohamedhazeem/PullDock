@@ -18,7 +18,9 @@ def _clean(value):
     if value is None:
         return None
     text = str(value).strip()
-    if not text or text.lower() == "null":
+    # yt-dlp uses the literal string "none" for an absent codec. Treating it as a
+    # real codec made video-only formats look audio-bearing in the format sheet.
+    if not text or text.lower() in ("null", "none"):
         return None
     return text
 
@@ -141,12 +143,40 @@ def probe(url):
 
 
 def _has_audio(path):
+    """Detect an audio track without relying on ffprobe.
+
+    WebM/Matroska stores codec ids near the start. MP4 may put the `moov` box at the
+    end, so inspect both ends (and the whole file when it is small enough).
+    """
+    audio_tags = (b"A_OPUS", b"A_VORBIS", b"A_AAC", b"A_MPEG", b"mp4a", b"ac-3", b"ec-3")
     try:
+        size = os.path.getsize(path)
+        chunks = []
         with open(path, "rb") as handle:
-            head = handle.read(2_000_000)
-        return any(tag in head for tag in (b"A_OPUS", b"A_VORBIS", b"A_AAC", b"A_MPEG"))
+            chunks.append(handle.read(8_000_000))
+            if size > 8_000_000:
+                handle.seek(max(0, size - 16_000_000))
+                chunks.append(handle.read())
+            if size <= 32_000_000:
+                handle.seek(0)
+                chunks.append(handle.read())
+        return any(tag in chunk for chunk in chunks for tag in audio_tags)
     except Exception:
         return False
+
+
+def _clear_outputs(output_path):
+    directory = os.path.dirname(output_path)
+    base = os.path.basename(output_path) + "."
+    try:
+        for name in os.listdir(directory):
+            if name.startswith(base) and not name.endswith(".part"):
+                try:
+                    os.remove(os.path.join(directory, name))
+                except OSError:
+                    pass
+    except OSError:
+        pass
 
 
 def _download_format(url, format_selector, output_path):
@@ -176,18 +206,23 @@ def _download_format(url, format_selector, output_path):
 def download(url, format_id, output_path, height=0):
     """Download a format and verify the result actually contains audio."""
     try:
+        # A repeated download of the same URL must never pick a stale video-only
+        # file from a previous attempt. Start from a clean temp path.
+        _clear_outputs(output_path)
         path = _download_format(url, format_id, output_path)
         if path and not _has_audio(path):
             # The selected id may have resolved to a video-only variant. Retry with
-            # an audio-bearing progressive format at the same or lower height.
+            # a muxed audio+video format at the same or lower height.
             try:
                 os.remove(path)
             except OSError:
                 pass
+            _clear_outputs(output_path)
             fallback = (
-                f"best[acodec!=none][height<={int(height)}]/best[acodec!=none]"
+                f"best[vcodec!=none][acodec!=none][height<={int(height)}]/"
+                "best[vcodec!=none][acodec!=none]/best[acodec!=none]"
                 if int(height or 0) > 0
-                else "best[acodec!=none]/best"
+                else "best[vcodec!=none][acodec!=none]/best[acodec!=none]"
             )
             path = _download_format(url, fallback, output_path)
         if not path:
