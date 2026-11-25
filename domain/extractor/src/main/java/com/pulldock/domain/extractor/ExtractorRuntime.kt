@@ -32,5 +32,21 @@ interface ExtractorRuntime {
         height: Int? = null,
     ): ExtractorResult<String>
 
+    /**
+     * Downloads a video-only format plus a separate audio format and muxes them into
+     * [outputPath]. Used when the provider exposes no progressive muxed stream.
+     */
+    suspend fun downloadMuxed(
+        url: String,
+        videoFormatId: String,
+        audioFormatId: String,
+        videoCodec: String?,
+        audioCodec: String?,
+        container: String,
+        outputPath: String,
+        onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
+        height: Int? = null,
+    ): ExtractorResult<String>
+
     fun runtimeInfo(): ExtractorRuntimeInfo
 }

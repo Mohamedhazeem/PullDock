@@ -107,12 +107,10 @@ def probe(url):
             if not fmt.get("url"):
                 continue
             entry = _format_entry(fmt, duration)
-            if not entry["id"] or entry["mergeRequired"]:
+            if not entry["id"]:
                 continue
-            # A video format without an audio stream is not a usable v1 download:
-            # no FFmpeg is bundled to merge a separate audio track.
-            if entry["videoCodec"] and not entry["audioCodec"]:
-                continue
+            # Video-only formats are valid choices: the Kotlin layer downloads a
+            # separate audio stream and muxes them with Android MediaMuxer.
             if entry["resolution"] is None:
                 continue
             # Drop storyboard/thumbnail-like micro-formats; real video starts at 144p.
@@ -201,6 +199,27 @@ def _download_format(url, format_selector, output_path):
     if not candidates:
         return None
     return max(candidates, key=lambda candidate: os.path.getsize(candidate))
+
+
+def download_muxed(url, video_format_id, audio_format_id, video_path, audio_path, height=0):
+    """Download separate video and audio streams for MediaMuxer."""
+    try:
+        _clear_outputs(video_path)
+        _clear_outputs(audio_path)
+        video = _download_format(url, video_format_id, video_path)
+        if not video:
+            return json.dumps({"error": "NO_VIDEO"})
+        audio = _download_format(url, audio_format_id, audio_path)
+        if not audio:
+            return json.dumps({"error": "NO_AUDIO"})
+        return json.dumps({
+            "video": video,
+            "audio": audio,
+            "videoBytes": os.path.getsize(video),
+            "audioBytes": os.path.getsize(audio),
+        })
+    except Exception as exc:
+        return json.dumps({"error": type(exc).__name__, "message": str(exc)[:200]})
 
 
 def download(url, format_id, output_path, height=0):

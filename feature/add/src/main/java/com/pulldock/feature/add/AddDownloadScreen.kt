@@ -316,6 +316,7 @@ private fun formatLabel(format: MediaFormat): String {
     val resolution = clean(format.resolution)
     val hasAudio = clean(format.audioCodec) != null
     return when {
+        resolution != null && format.mergeRequired -> "$resolution · ${stringResource(R.string.add_format_video_audio)}"
         resolution != null && hasAudio -> "$resolution · ${stringResource(R.string.add_format_audio)}"
         resolution != null -> resolution
         hasAudio -> stringResource(R.string.add_format_audio_only)

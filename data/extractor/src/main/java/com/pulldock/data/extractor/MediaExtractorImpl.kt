@@ -102,10 +102,53 @@ class MediaExtractorImpl @Inject constructor(
     override suspend fun download(descriptor: MediaDescriptor, format: MediaFormat): ExtractorResult<String> {
         val taskId = "${descriptor.providerId.name}-${descriptor.sourceUrl.hashCode()}"
         val tempDir = File(context.cacheDir, "partial").apply { mkdirs() }
-        val tempPath = File(tempDir, taskId).absolutePath
+        val needsMux = format.videoCodec != null && format.audioCodec == null
+        val targetContainer = when {
+            !needsMux -> format.container
+            format.videoCodec?.startsWith("vp8", true) == true ||
+                format.videoCodec?.startsWith("vp9", true) == true -> "webm"
+            else -> "mp4"
+        }
+        val extension = if (needsMux) ".$targetContainer" else ".mp4"
+        val tempPath = File(tempDir, taskId + extension).absolutePath
         events.tryEmit(ExtractorEvent.Processing(taskId, ProcessingStatus.RUNNING))
-        return when (
-            val result = runtime.download(
+
+        val audioFormat = if (needsMux) {
+            val formats = formatCache[descriptor.sourceUrl] ?: when (val resolved = availableFormats(descriptor)) {
+                is ExtractorResult.Success -> resolved.value
+                is ExtractorResult.Failure -> return resolved
+            }
+            val preferredAudio = if (targetContainer == "webm") "opus" else "mp4a"
+            formats.firstOrNull { it.videoCodec == null && it.audioCodec?.contains(preferredAudio, true) == true }
+                ?: formats.firstOrNull { it.videoCodec == null && it.audioCodec != null }
+        } else {
+            null
+        }
+        if (needsMux && audioFormat == null) {
+            val error = DownloadError.ExtractorEngine(
+                DownloadError.ExtractorReason.UNSUPPORTED,
+                "no audio stream",
+            )
+            events.tryEmit(ExtractorEvent.Error(taskId, error))
+            return ExtractorResult.Failure(error)
+        }
+
+        val result = if (needsMux && audioFormat != null) {
+            runtime.downloadMuxed(
+                url = descriptor.sourceUrl,
+                videoFormatId = format.id,
+                audioFormatId = audioFormat.id,
+                videoCodec = format.videoCodec,
+                audioCodec = audioFormat.audioCodec,
+                container = targetContainer,
+                outputPath = tempPath,
+                onProgress = { bytes, total ->
+                    events.tryEmit(ExtractorEvent.Progress(taskId, bytes, total, 0L))
+                },
+                height = format.resolution?.removeSuffix("p")?.toIntOrNull(),
+            )
+        } else {
+            runtime.download(
                 url = descriptor.sourceUrl,
                 formatId = format.id,
                 outputPath = tempPath,
@@ -114,7 +157,9 @@ class MediaExtractorImpl @Inject constructor(
                 },
                 height = format.resolution?.removeSuffix("p")?.toIntOrNull(),
             )
-        ) {
+        }
+
+        return when (result) {
             is ExtractorResult.Success -> {
                 events.tryEmit(ExtractorEvent.Processing(taskId, ProcessingStatus.DONE))
                 // Return the temp path as an opaque handle; finalization owns publication.

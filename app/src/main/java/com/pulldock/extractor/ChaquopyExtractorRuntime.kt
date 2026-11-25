@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.nio.ByteBuffer
 import kotlin.coroutines.coroutineContext
 import org.json.JSONObject
 
@@ -121,14 +122,157 @@ class ChaquopyExtractorRuntime @Inject constructor(
         }
     }
 
-    private suspend fun launchPoller(outputPath: String, onProgress: (Long, Long?) -> Unit): Job? {
+    override suspend fun downloadMuxed(
+        url: String,
+        videoFormatId: String,
+        audioFormatId: String,
+        videoCodec: String?,
+        audioCodec: String?,
+        container: String,
+        outputPath: String,
+        onProgress: (Long, Long?) -> Unit,
+        height: Int?,
+    ): ExtractorResult<String> {
+        val mod = module() ?: return ExtractorResult.Failure(
+            DownloadError.ExtractorEngine(DownloadError.ExtractorReason.RUNTIME_INCOMPATIBLE),
+        )
+        val output = File(outputPath).absoluteFile
+        val videoPath = File(output.parentFile, output.name + ".video").absolutePath
+        val audioPath = File(output.parentFile, output.name + ".audio").absolutePath
+        val poller = launchPoller(listOf(videoPath, audioPath), onProgress)
+        return try {
+            val json = JSONObject(withContext(kotlinx.coroutines.Dispatchers.IO) {
+                mod.callAttr(
+                    "download_muxed",
+                    url,
+                    videoFormatId,
+                    audioFormatId,
+                    videoPath,
+                    audioPath,
+                    height ?: 0,
+                ).toString()
+            })
+            if (json.has("error")) {
+                ExtractorResult.Failure(mapError(json.optString("error", "")))
+            } else {
+                val video = json.optString("video")
+                val audio = json.optString("audio")
+                if (video.isBlank() || audio.isBlank()) {
+                    ExtractorResult.Failure(
+                        DownloadError.ExtractorEngine(DownloadError.ExtractorReason.UNSUPPORTED, "no muxed output"),
+                    )
+                } else {
+                    mux(video, audio, outputPath, videoCodec, audioCodec, container)
+                }
+            }
+        } catch (t: Throwable) {
+            ExtractorResult.Failure(mapThrowable(t))
+        } finally {
+            poller?.cancel()
+        }
+    }
+
+    private fun mux(
+        videoPath: String,
+        audioPath: String,
+        outputPath: String,
+        videoCodec: String?,
+        audioCodec: String?,
+        container: String,
+    ): ExtractorResult<String> {
+        val videoExtractor = android.media.MediaExtractor()
+        val audioExtractor = android.media.MediaExtractor()
+        var muxer: android.media.MediaMuxer? = null
+        try {
+            videoExtractor.setDataSource(videoPath)
+            audioExtractor.setDataSource(audioPath)
+            val videoTrack = firstTrack(videoExtractor, "video/")
+            val audioTrack = firstTrack(audioExtractor, "audio/")
+            if (videoTrack < 0 || audioTrack < 0) {
+                return ExtractorResult.Failure(
+                    DownloadError.ExtractorEngine(DownloadError.ExtractorReason.UNSUPPORTED, "missing stream"),
+                )
+            }
+            val videoFormat = videoExtractor.getTrackFormat(videoTrack)
+            val audioFormat = audioExtractor.getTrackFormat(audioTrack)
+            val videoMime = videoFormat.getString(android.media.MediaFormat.KEY_MIME) ?: ""
+            val audioMime = audioFormat.getString(android.media.MediaFormat.KEY_MIME) ?: ""
+            val mp4 = container.equals("mp4", true) ||
+                videoMime.contains("avc", true) ||
+                videoMime.contains("av01", true) ||
+                audioMime.contains("mp4a", true)
+            muxer = android.media.MediaMuxer(
+                outputPath,
+                if (mp4) android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
+                else android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM,
+            )
+            val videoDestination = muxer.addTrack(videoFormat)
+            val audioDestination = muxer.addTrack(audioFormat)
+            muxer.start()
+            copyTrack(videoExtractor, videoTrack, videoDestination, muxer)
+            copyTrack(audioExtractor, audioTrack, audioDestination, muxer)
+            muxer.stop()
+            return ExtractorResult.Success(outputPath)
+        } catch (t: Throwable) {
+            android.util.Log.e("PullDockMux", "mux failed", t)
+            return ExtractorResult.Failure(mapThrowable(t))
+        } finally {
+            runCatching { muxer?.release() }
+            runCatching { videoExtractor.release() }
+            runCatching { audioExtractor.release() }
+        }
+    }
+
+    private fun firstTrack(extractor: android.media.MediaExtractor, mimePrefix: String): Int {
+        for (index in 0 until extractor.trackCount) {
+            val mime = extractor.getTrackFormat(index).getString(android.media.MediaFormat.KEY_MIME) ?: ""
+            if (mime.startsWith(mimePrefix)) return index
+        }
+        return -1
+    }
+
+    private fun copyTrack(
+        extractor: android.media.MediaExtractor,
+        trackIndex: Int,
+        destinationTrack: Int,
+        muxer: android.media.MediaMuxer,
+    ) {
+        val format = extractor.getTrackFormat(trackIndex)
+        val maxInput = if (format.containsKey(android.media.MediaFormat.KEY_MAX_INPUT_SIZE)) {
+            format.getInteger(android.media.MediaFormat.KEY_MAX_INPUT_SIZE)
+        } else {
+            1_000_000
+        }
+        val buffer = ByteBuffer.allocate(maxInput.coerceAtLeast(1_000_000))
+        val info = android.media.MediaCodec.BufferInfo()
+        extractor.selectTrack(trackIndex)
+        while (true) {
+            val size = extractor.readSampleData(buffer, 0)
+            if (size < 0) break
+            info.offset = 0
+            info.size = size
+            info.presentationTimeUs = extractor.sampleTime
+            info.flags = extractor.sampleFlags
+            buffer.position(0)
+            buffer.limit(size)
+            muxer.writeSampleData(destinationTrack, buffer, info)
+            extractor.advance()
+        }
+    }
+
+    private suspend fun launchPoller(outputPath: String, onProgress: (Long, Long?) -> Unit): Job? =
+        launchPoller(listOf(outputPath), onProgress)
+
+    private suspend fun launchPoller(paths: List<String>, onProgress: (Long, Long?) -> Unit): Job? {
         val scope = coroutineContext[Job] ?: return null
+        val names = paths.map { File(it).name }
+        val dir = paths.firstNotNullOfOrNull { File(it).parentFile } ?: return null
         return kotlinx.coroutines.CoroutineScope(scope).launch {
-            val prefix = File(outputPath).name
-            val dir = File(outputPath).parentFile ?: return@launch
             while (isActive) {
                 delay(300)
-                val bytes = dir.listFiles()?.filter { it.name.startsWith(prefix + ".") }?.sumOf { it.length() } ?: 0L
+                val bytes = dir.listFiles()
+                    ?.filter { file -> names.any { file.name.startsWith(it + ".") } }
+                    ?.sumOf { it.length() } ?: 0L
                 onProgress(bytes, null)
             }
         }
@@ -142,7 +286,7 @@ class ChaquopyExtractorRuntime @Inject constructor(
         channel = "stable",
         verificationStatus = if (module() != null) RuntimeVerificationStatus.VERIFIED else RuntimeVerificationStatus.UNAVAILABLE,
         knownLimitations = listOf(
-            "Progressive formats only; merge-required formats need a bundled FFmpeg (ADR-0012).",
+            "Video-only formats are merged with a separate audio stream using Android MediaMuxer.",
             "Provider anti-bot challenges may fail with typed provider errors.",
         ),
         checkedAt = Instant.now(),
