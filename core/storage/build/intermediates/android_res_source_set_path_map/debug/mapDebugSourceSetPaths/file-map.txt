@@ -1,9 +1,0 @@
-com.pulldock.core.storage-pngs-0 /home/hazeem/My Projects/PullDock/core/storage/build/generated/res/pngs/debug
-com.pulldock.core.storage-updated_navigation_xml-1 /home/hazeem/My Projects/PullDock/core/storage/build/generated/updated_navigation_xml/debug
-com.pulldock.core.storage-mergeDebugResources-2 /home/hazeem/My Projects/PullDock/core/storage/build/intermediates/incremental/debug/mergeDebugResources/merged.dir
-com.pulldock.core.storage-mergeDebugResources-3 /home/hazeem/My Projects/PullDock/core/storage/build/intermediates/incremental/debug/mergeDebugResources/stripped.dir
-com.pulldock.core.storage-debug-4 /home/hazeem/My Projects/PullDock/core/storage/build/intermediates/merged_res/debug/mergeDebugResources
-com.pulldock.core.storage-debug-5 /home/hazeem/My Projects/PullDock/core/storage/build/intermediates/packaged_res/debug/packageDebugResources
-com.pulldock.core.storage-debug-6 /home/hazeem/My Projects/PullDock/core/storage/src/debug/res
-com.pulldock.core.storage-main-7 /home/hazeem/My Projects/PullDock/core/storage/src/main/res
-gradleHome-0 /home/hazeem/.gradle
