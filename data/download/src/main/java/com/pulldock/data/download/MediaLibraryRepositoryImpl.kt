@@ -91,6 +91,8 @@ class MediaLibraryRepositoryImpl @Inject constructor(
         val item = dao.get(itemId) ?: return
         if (deleteFile) runCatching { deleteUri(item.fileUri) }
         dao.delete(itemId)
+        // The library row uses the download task id; remove the Home transfer too.
+        runCatching { downloadRepository.removeTask(itemId, deleteFile) }
     }
 
     private fun exists(uriString: String): Boolean = try {
