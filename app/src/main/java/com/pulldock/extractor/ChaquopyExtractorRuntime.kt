@@ -103,7 +103,16 @@ class ChaquopyExtractorRuntime @Inject constructor(
                 mod.callAttr("download", url, formatId, outputPath).toString()
             })
             if (json.has("error")) ExtractorResult.Failure(mapError(json.optString("error", "")))
-            else ExtractorResult.Success(json.optString("path"))
+            else {
+                val path = json.optString("path")
+                if (path.isBlank()) {
+                    ExtractorResult.Failure(
+                        DownloadError.ExtractorEngine(DownloadError.ExtractorReason.UNSUPPORTED, "no output"),
+                    )
+                } else {
+                    ExtractorResult.Success(path)
+                }
+            }
         } catch (t: Throwable) {
             ExtractorResult.Failure(mapThrowable(t))
         } finally {
@@ -143,6 +152,10 @@ class ChaquopyExtractorRuntime @Inject constructor(
         code.contains("Network", true) || code.contains("Timeout", true) || code.contains("HTTP", true) ->
             DownloadError.Network(com.pulldock.core.model.DownloadError.NetworkReason.OFFLINE)
         code.contains("Format", true) -> DownloadError.ExtractorEngine(DownloadError.ExtractorReason.NO_FORMATS)
+        code.contains("NO_OUTPUT", true) -> DownloadError.ExtractorEngine(
+            DownloadError.ExtractorReason.UNSUPPORTED,
+            "no output",
+        )
         else -> DownloadError.ExtractorEngine(DownloadError.ExtractorReason.PROVIDER_CHANGED)
     }
 

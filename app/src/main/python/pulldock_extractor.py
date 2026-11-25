@@ -57,8 +57,9 @@ def _options_common():
         "noplaylist": True,
         "skip_download": True,
         "no_color": True,
-        "retries": 2,
-        "socket_timeout": 20,
+        "retries": 3,
+        "socket_timeout": 30,
+        "fragment_retries": 3,
     }
 
 
@@ -138,12 +139,14 @@ def download(url, format_id, output_path):
         with YoutubeDL(opts) as ydl:
             ydl.extract_info(url, download=True)
         candidates = [
-            path for path in os.listdir(os.path.dirname(output_path))
+            os.path.join(os.path.dirname(output_path), path)
+            for path in os.listdir(os.path.dirname(output_path))
             if path.startswith(os.path.basename(output_path) + ".")
+            and not path.endswith(".part")
         ]
         if not candidates:
             return json.dumps({"error": "NO_OUTPUT"})
-        path = os.path.join(os.path.dirname(output_path), candidates[0])
+        path = max(candidates, key=lambda candidate: os.path.getsize(candidate))
         return json.dumps({"path": path, "bytes": os.path.getsize(path)})
     except Exception as exc:
         return json.dumps({"error": type(exc).__name__, "message": str(exc)[:200]})

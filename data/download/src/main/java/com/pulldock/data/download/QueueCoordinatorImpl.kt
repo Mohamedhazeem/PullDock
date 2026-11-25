@@ -15,8 +15,8 @@ import com.pulldock.domain.download.repository.QueueFilter
 import com.pulldock.domain.download.state.DownloadStateMachine
 import com.pulldock.domain.extractor.MediaExtractor
 import com.pulldock.domain.extractor.model.MediaDescriptor
-import com.pulldock.domain.extractor.model.ProcessingStatus
 import com.pulldock.domain.extractor.ExtractorEvent
+import com.pulldock.domain.extractor.ExtractorResult
 import com.pulldock.domain.torrent.TorrentEngine
 import com.pulldock.domain.torrent.TorrentEvent
 import com.pulldock.domain.torrent.TorrentResult
@@ -285,15 +285,18 @@ class QueueCoordinatorImpl @Inject constructor(
                     .firstOrNull { it.engineTaskId == event.taskId() }?.id
                 ?: return@collect
             when (event) {
-                is ExtractorEvent.Progress -> onEngineEvent(
-                    taskId = taskId,
-                    sequence = eventSequence.incrementAndGet(),
-                    progressBytes = event.downloadedBytes,
-                    totalBytes = event.totalBytes,
-                    speed = event.speedBytesPerSec,
-                    state = null,
-                    error = null,
-                )
+                is ExtractorEvent.Progress -> {
+                    val total = event.totalBytes ?: repository.getTask(taskId)?.totalBytes
+                    onEngineEvent(
+                        taskId = taskId,
+                        sequence = eventSequence.incrementAndGet(),
+                        progressBytes = event.downloadedBytes,
+                        totalBytes = total,
+                        speed = event.speedBytesPerSec,
+                        state = null,
+                        error = null,
+                    )
+                }
                 is ExtractorEvent.StateChanged -> onEngineEvent(
                     taskId = taskId,
                     sequence = eventSequence.incrementAndGet(),
@@ -312,13 +315,7 @@ class QueueCoordinatorImpl @Inject constructor(
                     state = DownloadState.FAILED,
                     error = event.error,
                 )
-                is ExtractorEvent.Processing -> {
-                    if (event.status == com.pulldock.domain.extractor.model.ProcessingStatus.DONE) {
-                        repository.getTask(taskId)?.engineTaskId?.let { path ->
-                            completionFinalizer.finalizeMedia(taskId, path)
-                        }
-                    }
-                }
+                is ExtractorEvent.Processing -> Unit // completion is handled by the download result
             }
         }
     }
@@ -417,17 +414,39 @@ class QueueCoordinatorImpl @Inject constructor(
             durationSeconds = null,
             authorizedContext = null,
         )
-        return when (val result = extractor.download(descriptor, format)) {
-            is com.pulldock.domain.extractor.ExtractorResult.Success -> {
-                repository.updateEngineTaskId(task.id, result.value)
-                engineToTask[result.value] = task.id
-                repository.updateState(task.id, DownloadState.RUNNING)
-                // download() returns only after the temp file is complete.
-                completionFinalizer.finalizeMedia(task.id, result.value)
-                null
+        // Register the engine task id before the first progress event. The extractor
+        // emits progress as soon as bytes land; without this mapping every event is
+        // dropped and the UI shows an endless indeterminate bar.
+        val engineTaskId = "${details.providerId.name}-${details.originalUrl.hashCode()}"
+        repository.updateEngineTaskId(task.id, engineTaskId)
+        engineToTask[engineTaskId] = task.id
+        repository.updateState(task.id, DownloadState.RUNNING)
+
+        // The extractor download is long-running. Do not block the scheduling loop:
+        // run it in the coordinator scope and reconcile the result when it completes.
+        scope.launch {
+            val result = extractor.download(descriptor, format)
+            engineToTask.remove(engineTaskId)
+            when (result) {
+                is ExtractorResult.Success -> {
+                    val path = result.value
+                    engineToTask[path] = task.id
+                    repository.updateEngineTaskId(task.id, path)
+                    completionFinalizer.finalizeMedia(task.id, path)
+                }
+                is ExtractorResult.Failure -> {
+                    repository.getTask(task.id)?.let { failed ->
+                        repository.updateState(task.id, DownloadState.FAILED, result.error)
+                        retryCoordinator.onFailure(
+                            failed.copy(state = DownloadState.FAILED),
+                            result.error,
+                            policyRepository.current(),
+                        )
+                    }
+                }
             }
-            is com.pulldock.domain.extractor.ExtractorResult.Failure -> result.error
         }
+        return null
     }
 
     /** Battery level for the threshold check (sticky-intent read, T106). */
