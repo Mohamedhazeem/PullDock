@@ -8,6 +8,7 @@ import com.pulldock.domain.download.repository.MediaLibraryRepository
 import com.pulldock.domain.download.repository.MediaPreferencesRepository
 import com.pulldock.domain.download.repository.NetworkPolicyRepository
 import com.pulldock.domain.download.repository.StoragePreferencesRepository
+import com.pulldock.domain.download.repository.UsageRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -50,4 +51,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindMediaPreferencesRepository(impl: MediaPreferencesRepositoryImpl): MediaPreferencesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUsageRepository(impl: UsageRepositoryImpl): UsageRepository
 }
