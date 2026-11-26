@@ -47,7 +47,6 @@ class EventReconcilerTest {
         ) = error("unused")
         override suspend fun createGroup(type: DownloadType, title: String, source: String?) = error("unused")
         override fun observeGroups() = kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.pulldock.domain.download.model.DownloadGroup>())
-        override suspend fun getGroup(id: String) = error("unused")
         override suspend fun getTasksByGroup(groupId: String) = emptyList<DownloadTask>()
         override suspend fun deleteGroup(groupId: String, deleteFiles: Boolean) = Unit
 

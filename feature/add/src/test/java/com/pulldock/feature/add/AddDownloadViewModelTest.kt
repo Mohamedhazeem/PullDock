@@ -49,7 +49,6 @@ private class FakeLibraryForDedupe : com.pulldock.domain.download.repository.Med
     override fun observe(query: com.pulldock.domain.download.repository.LibraryQuery) =
         kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.pulldock.domain.download.repository.LibraryItem>())
     override suspend fun get(itemId: String) = null
-    override suspend fun recordFromTask(taskId: String) = null
     override suspend fun findBySourceHash(hash: String) = null
     override suspend fun reconcile() = com.pulldock.domain.download.repository.ReconcileReport(0, 0, 0)
     override suspend fun delete(itemId: String, deleteFile: Boolean) = Unit
@@ -107,7 +106,6 @@ class AddDownloadViewModelTest {
 
         override fun observeGroups() = MutableStateFlow(emptyList<com.pulldock.domain.download.model.DownloadGroup>())
 
-        override suspend fun getGroup(id: String) = null
 
         override suspend fun getTasksByGroup(groupId: String) = emptyList<DownloadTask>()
 

@@ -71,7 +71,6 @@ class PlaylistUseCasesTest {
             return group
         }
         override fun observeGroups() = MutableStateFlow(groups.toList())
-        override suspend fun getGroup(id: String) = groups.firstOrNull { it.id == id }
         override suspend fun getTasksByGroup(groupId: String) = tasks.filter { it.groupId == groupId }
         override suspend fun deleteGroup(groupId: String, deleteFiles: Boolean) {
             groups.removeAll { it.id == groupId }

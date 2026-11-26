@@ -26,6 +26,7 @@ import com.pulldock.core.designsystem.components.PdButton
 import com.pulldock.core.designsystem.components.PdCard
 import com.pulldock.core.designsystem.components.PdSectionHeader
 import com.pulldock.core.designsystem.theme.LocalPdTokens
+import com.pulldock.core.model.formatBytes
 import com.pulldock.domain.torrent.model.FileSelection
 import com.pulldock.domain.torrent.model.SeedingPolicy
 import com.pulldock.domain.torrent.model.TorrentTaskDetails
@@ -150,14 +151,5 @@ internal fun SeedingControlsSection(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-    }
-}
-
-internal fun formatBytes(bytes: Long): String {
-    val mb = bytes / (1024.0 * 1024.0)
-    return when {
-        mb >= 1024.0 -> "%.1f GB".format(mb / 1024.0)
-        mb >= 1.0 -> "%.1f MB".format(mb)
-        else -> "%d KB".format(bytes / 1024)
     }
 }

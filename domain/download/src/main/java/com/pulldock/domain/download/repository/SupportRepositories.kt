@@ -46,7 +46,6 @@ data class ReconcileReport(val missing: Int, val orphaned: Int, val ok: Int)
 interface MediaLibraryRepository {
     fun observe(query: LibraryQuery): Flow<List<LibraryItem>>
     suspend fun get(itemId: String): LibraryItem?
-    suspend fun recordFromTask(taskId: String): LibraryItem?
     /** An available library entry for a previously downloaded source (dedupe). */
     suspend fun findBySourceHash(hash: String): LibraryItem?
     suspend fun reconcile(): ReconcileReport

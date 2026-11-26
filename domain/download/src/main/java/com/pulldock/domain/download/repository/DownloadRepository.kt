@@ -53,8 +53,6 @@ interface DownloadRepository {
 
     fun observeGroups(): Flow<List<DownloadGroup>>
 
-    suspend fun getGroup(id: String): DownloadGroup?
-
     /** Child tasks of a group (playlist entries / a multi-file torrent's task). */
     suspend fun getTasksByGroup(groupId: String): List<DownloadTask>
 

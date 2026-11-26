@@ -1,7 +1,6 @@
 package com.pulldock.data.download
 
 import android.content.Context
-import android.net.Uri
 import com.pulldock.core.database.dao.LibraryItemDao
 import com.pulldock.core.database.entity.LibraryItemEntity
 import com.pulldock.core.model.DownloadType
@@ -16,7 +15,6 @@ import com.pulldock.domain.download.repository.LibrarySort
 import com.pulldock.domain.download.repository.MediaLibraryRepository
 import com.pulldock.domain.download.repository.ReconcileReport
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.File
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -66,7 +64,7 @@ class MediaLibraryRepositoryImpl @Inject constructor(
                 sizeBytes = sizeBytes ?: task.totalBytes,
                 resolution = task.resolution,
                 durationSeconds = null,
-                source = task.source.takeIf { it.length <= MAX_SOURCE_LENGTH }?.let(::sanitizeSource),
+                source = task.source.takeIf { it.length <= MAX_SOURCE_LENGTH }?.let(UriFileOps::sanitizeSource),
                 completedAt = (task.completedAt ?: Instant.now()).toEpochMilli(),
                 thumbnailUri = thumbnailUri,
                 fileAvailable = true,
@@ -74,13 +72,6 @@ class MediaLibraryRepositoryImpl @Inject constructor(
                 groupId = groupId,
             ),
         )
-    }
-
-    override suspend fun recordFromTask(taskId: String): LibraryItem? {
-        val task = downloadRepository.getTask(taskId) ?: return null
-        val uri = task.outputUri ?: return null
-        record(task, uri)
-        return get(taskId)
     }
 
     override suspend fun findBySourceHash(hash: String): LibraryItem? =
@@ -92,7 +83,7 @@ class MediaLibraryRepositoryImpl @Inject constructor(
         var missing = 0
         var ok = 0
         items.forEach { item ->
-            val available = exists(item.fileUri)
+            val available = UriFileOps.exists(context, item.fileUri)
             if (item.fileAvailable != available) dao.setAvailable(item.id, available)
             if (available) ok++ else missing++
         }
@@ -101,32 +92,10 @@ class MediaLibraryRepositoryImpl @Inject constructor(
 
     override suspend fun delete(itemId: String, deleteFile: Boolean) {
         val item = dao.get(itemId) ?: return
-        if (deleteFile) runCatching { deleteUri(item.fileUri) }
+        if (deleteFile) runCatching { UriFileOps.deleteUri(context, item.fileUri) }
         dao.delete(itemId)
         // The library row uses the download task id; remove the Home transfer too.
         runCatching { downloadRepository.removeTask(itemId, deleteFile) }
-    }
-
-    private fun exists(uriString: String): Boolean = try {
-        val uri = Uri.parse(uriString)
-        when (uri.scheme) {
-            "file" -> File(uri.path ?: return false).exists()
-            "content" -> context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { true } ?: false
-            else -> false
-        }
-    } catch (_: Exception) {
-        false
-    }
-
-    private fun deleteUri(uriString: String): Boolean = try {
-        val uri = Uri.parse(uriString)
-        when (uri.scheme) {
-            "file" -> File(uri.path ?: return false).delete()
-            "content" -> android.provider.DocumentsContract.deleteDocument(context.contentResolver, uri)
-            else -> false
-        }
-    } catch (_: Exception) {
-        false
     }
 
     private fun toDomain(entity: LibraryItemEntity) = LibraryItem(
@@ -162,12 +131,6 @@ class MediaLibraryRepositoryImpl @Inject constructor(
         LibrarySort.TITLE_DESC -> compareByDescending(String.CASE_INSENSITIVE_ORDER) { it.title }
         LibrarySort.SIZE_DESC -> compareByDescending { it.sizeBytes ?: 0L }
     }
-
-    /** Never persist raw private URLs (data-model.md §4.7): keep only scheme/host. */
-    private fun sanitizeSource(source: String): String = runCatching {
-        val uri = Uri.parse(source)
-        if (uri.scheme == null) "<local>" else "${uri.scheme}://${uri.host ?: "<unknown>"}"
-    }.getOrDefault("<local>")
 
     companion object {
         private const val MAX_SOURCE_LENGTH = 4_096

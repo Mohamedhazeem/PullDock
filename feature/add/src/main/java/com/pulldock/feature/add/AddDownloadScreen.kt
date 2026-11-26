@@ -48,6 +48,7 @@ import com.pulldock.core.designsystem.components.PdStatusBadge
 import com.pulldock.core.designsystem.components.PdStatusTone
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.core.model.DownloadError
+import com.pulldock.core.model.formatBytes
 import com.pulldock.domain.extractor.model.MediaDescriptor
 import com.pulldock.domain.extractor.model.MediaFormat
 import com.pulldock.domain.extractor.model.PlaylistDescriptor
@@ -488,11 +489,6 @@ private fun codecLabel(codec: String?): String? {
 
 private fun clean(value: String?): String? =
     value?.takeIf { it.isNotBlank() && it != "null" }
-
-private fun formatBytes(bytes: Long): String {
-    val mb = bytes / (1024.0 * 1024.0)
-    return if (mb >= 1024.0) "%.1f GB".format(mb / 1024.0) else "%.1f MB".format(mb)
-}
 
 /** Maps typed errors to actionable user text; never raw details. */
 @Composable

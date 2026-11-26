@@ -17,7 +17,6 @@ import com.pulldock.domain.download.model.DownloadTask
 import com.pulldock.domain.download.model.StorageDestination
 import com.pulldock.core.model.TransferLimits
 import com.pulldock.domain.download.repository.DownloadRepository
-import com.pulldock.domain.download.repository.LibraryQuery
 import com.pulldock.domain.download.repository.QueueFilter
 import com.pulldock.domain.extractor.model.ExtractorTaskDetails
 import com.pulldock.domain.extractor.model.MediaDescriptor
@@ -26,8 +25,6 @@ import com.pulldock.domain.torrent.model.TorrentSource
 import com.pulldock.domain.torrent.model.TorrentTaskDetails
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
-import android.net.Uri
-import java.io.File
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
@@ -242,7 +239,7 @@ class DownloadRepositoryImpl @Inject constructor(
             id = UUID.randomUUID().toString(),
             type = type,
             title = title,
-            source = source?.let(::sanitizeSource),
+            source = source?.let(UriFileOps::sanitizeSource),
             thumbnailUri = null,
             createdAt = Instant.now(),
         )
@@ -262,14 +259,12 @@ class DownloadRepositoryImpl @Inject constructor(
     override fun observeGroups(): Flow<List<DownloadGroup>> =
         groupDao.observeAll().map { list -> list.map(::toDomain) }
 
-    override suspend fun getGroup(id: String): DownloadGroup? = groupDao.getById(id)?.let(::toDomain)
-
     override suspend fun getTasksByGroup(groupId: String): List<DownloadTask> =
         taskDao.getByGroup(groupId).map(TaskMappers::toDomain)
 
     override suspend fun deleteGroup(groupId: String, deleteFiles: Boolean) {
         if (deleteFiles) {
-            libraryItemDao.getByGroup(groupId).forEach { runCatching { deleteUri(it.fileUri) } }
+            libraryItemDao.getByGroup(groupId).forEach { runCatching { UriFileOps.deleteUri(context, it.fileUri) } }
         }
         libraryItemDao.deleteByGroup(groupId)
         // Detail rows cascade from download_task; remove remaining tasks (e.g. active
@@ -286,23 +281,6 @@ class DownloadRepositoryImpl @Inject constructor(
         thumbnailUri = entity.thumbnailUri,
         createdAt = Instant.ofEpochMilli(entity.createdAt),
     )
-
-    /** Never persist raw private URLs (data-model.md §4.7): keep only scheme/host. */
-    private fun sanitizeSource(source: String): String = runCatching {
-        val uri = Uri.parse(source)
-        if (uri.scheme == null) "<local>" else "${uri.scheme}://${uri.host ?: "<unknown>"}"
-    }.getOrDefault("<local>")
-
-    private fun deleteUri(uriString: String): Boolean = try {
-        val uri = Uri.parse(uriString)
-        when (uri.scheme) {
-            "file" -> File(uri.path ?: return false).delete()
-            "content" -> android.provider.DocumentsContract.deleteDocument(context.contentResolver, uri)
-            else -> false
-        }
-    } catch (_: Exception) {
-        false
-    }
 
     private fun toState(value: String): DownloadState? =
         DownloadState.entries.firstOrNull { it.name == value }
