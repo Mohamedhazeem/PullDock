@@ -19,6 +19,7 @@ import androidx.room.PrimaryKey
         Index(value = ["createdAt"]),
         Index(value = ["priority"]),
         Index(value = ["queueOrder"]),
+        Index(value = ["groupId"]),
     ],
 )
 data class DownloadTaskEntity(
@@ -54,4 +55,6 @@ data class DownloadTaskEntity(
     @ColumnInfo(name = "priority") val priority: Int,
     @ColumnInfo(name = "queueOrder") val queueOrder: Int,
     @ColumnInfo(name = "engineTaskId") val engineTaskId: String?,
+    /** Owning group id (playlist / multi-file torrent); null for standalone tasks. */
+    @ColumnInfo(name = "groupId") val groupId: String? = null,
 )

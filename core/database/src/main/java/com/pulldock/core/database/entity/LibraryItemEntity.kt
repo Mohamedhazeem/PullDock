@@ -16,6 +16,7 @@ import androidx.room.PrimaryKey
         Index(value = ["fileUri"], unique = true),
         Index(value = ["type"]),
         Index(value = ["completedAt"]),
+        Index(value = ["groupId"]),
     ],
 )
 data class LibraryItemEntity(
@@ -32,4 +33,6 @@ data class LibraryItemEntity(
     @ColumnInfo(name = "fileAvailable") val fileAvailable: Boolean = true,
     /** Deterministic source key used to prevent re-downloading an existing file. */
     @ColumnInfo(name = "sourceHash") val sourceHash: String? = null,
+    /** Owning group id (playlist / multi-file torrent); null for standalone items. */
+    @ColumnInfo(name = "groupId") val groupId: String? = null,
 )

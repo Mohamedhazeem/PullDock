@@ -22,6 +22,15 @@ interface LibraryItemDao {
     @Query("SELECT * FROM library_item WHERE fileUri = :fileUri")
     suspend fun findByUri(fileUri: String): LibraryItemEntity?
 
+    @Query("SELECT * FROM library_item WHERE groupId = :groupId ORDER BY completedAt DESC")
+    fun observeByGroup(groupId: String): Flow<List<LibraryItemEntity>>
+
+    @Query("SELECT * FROM library_item WHERE groupId = :groupId")
+    suspend fun getByGroup(groupId: String): List<LibraryItemEntity>
+
+    @Query("DELETE FROM library_item WHERE groupId = :groupId")
+    suspend fun deleteByGroup(groupId: String)
+
     @Upsert
     suspend fun upsert(item: LibraryItemEntity)
 

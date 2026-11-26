@@ -57,6 +57,29 @@ object Migrations {
         }
     }
 
+    /** v6 introduces grouped downloads: the group table and child `groupId` columns. */
+    private val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `download_group` (
+                    `id` TEXT NOT NULL PRIMARY KEY,
+                    `type` TEXT NOT NULL,
+                    `title` TEXT NOT NULL,
+                    `source` TEXT,
+                    `thumbnailUri` TEXT,
+                    `createdAt` INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+            db.execSQL("ALTER TABLE `download_task` ADD COLUMN `groupId` TEXT")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_download_task_groupId` ON `download_task` (`groupId`)")
+            db.execSQL("ALTER TABLE `library_item` ADD COLUMN `groupId` TEXT")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_library_item_groupId` ON `library_item` (`groupId`)")
+        }
+    }
+
     /** All registered migrations, in declaration order. */
-    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    val ALL: List<Migration> =
+        listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }

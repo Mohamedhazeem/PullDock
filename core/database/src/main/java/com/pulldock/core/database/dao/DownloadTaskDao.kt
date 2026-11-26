@@ -69,6 +69,15 @@ interface DownloadTaskDao {
     @Query("SELECT * FROM download_task WHERE sourceHash = :hash LIMIT 1")
     suspend fun findBySourceHash(hash: String): DownloadTaskEntity?
 
+    @Query("SELECT * FROM download_task WHERE groupId = :groupId ORDER BY queueOrder ASC, createdAt ASC")
+    fun observeByGroup(groupId: String): Flow<List<DownloadTaskEntity>>
+
+    @Query("SELECT * FROM download_task WHERE groupId = :groupId ORDER BY queueOrder ASC, createdAt ASC")
+    suspend fun getByGroup(groupId: String): List<DownloadTaskEntity>
+
+    @Query("DELETE FROM download_task WHERE groupId = :groupId")
+    suspend fun deleteByGroup(groupId: String)
+
     /** Atomically applies a legal state transition with a new sequence number. */
     @Query(
         """

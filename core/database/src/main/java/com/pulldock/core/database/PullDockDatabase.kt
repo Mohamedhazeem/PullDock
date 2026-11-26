@@ -3,10 +3,12 @@ package com.pulldock.core.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.pulldock.core.database.dao.LibraryItemDao
+import com.pulldock.core.database.dao.DownloadGroupDao
 import com.pulldock.core.database.dao.DownloadTaskDao
 import com.pulldock.core.database.dao.ExtractorTaskDao
 import com.pulldock.core.database.dao.RecoveryMarkerDao
 import com.pulldock.core.database.dao.TorrentTaskDao
+import com.pulldock.core.database.entity.DownloadGroupEntity
 import com.pulldock.core.database.entity.DownloadTaskEntity
 import com.pulldock.core.database.entity.ExtractorTaskEntity
 import com.pulldock.core.database.entity.LibraryItemEntity
@@ -29,8 +31,9 @@ import com.pulldock.core.database.entity.TorrentTaskEntity
         ExtractorTaskEntity::class,
         RecoveryMarkerEntity::class,
         LibraryItemEntity::class,
+        DownloadGroupEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class PullDockDatabase : RoomDatabase() {
@@ -40,6 +43,7 @@ abstract class PullDockDatabase : RoomDatabase() {
     abstract fun extractorTaskDao(): ExtractorTaskDao
     abstract fun recoveryMarkerDao(): RecoveryMarkerDao
     abstract fun libraryItemDao(): LibraryItemDao
+    abstract fun downloadGroupDao(): DownloadGroupDao
 
     companion object {
         const val DATABASE_NAME: String = "pulldock.db"

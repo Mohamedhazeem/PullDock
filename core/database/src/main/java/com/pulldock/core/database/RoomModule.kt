@@ -3,6 +3,7 @@ package com.pulldock.core.database
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.pulldock.core.database.dao.DownloadGroupDao
 import com.pulldock.core.database.dao.DownloadTaskDao
 import com.pulldock.core.database.dao.ExtractorTaskDao
 import com.pulldock.core.database.dao.LibraryItemDao
@@ -47,4 +48,7 @@ object RoomModule {
 
     @Provides
     fun provideLibraryItemDao(database: PullDockDatabase): LibraryItemDao = database.libraryItemDao()
+
+    @Provides
+    fun provideDownloadGroupDao(database: PullDockDatabase): DownloadGroupDao = database.downloadGroupDao()
 }
