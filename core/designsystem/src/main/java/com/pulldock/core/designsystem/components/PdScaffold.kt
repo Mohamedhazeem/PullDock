@@ -23,6 +23,7 @@ fun PdScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     snackbarHostState: SnackbarHostState? = null,
     floatingActionButton: @Composable () -> Unit = {},
+    showTopBar: Boolean = true,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -30,13 +31,15 @@ fun PdScaffold(
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
-            PdTopAppBar(
-                title = title,
-                subtitle = subtitle,
-                onBack = onBack,
-                scrollBehavior = scrollBehavior,
-                actions = actions,
-            )
+            if (showTopBar) {
+                PdTopAppBar(
+                    title = title,
+                    subtitle = subtitle,
+                    onBack = onBack,
+                    scrollBehavior = scrollBehavior,
+                    actions = actions,
+                )
+            }
         },
         snackbarHost = {
             if (snackbarHostState != null) SnackbarHost(snackbarHostState)

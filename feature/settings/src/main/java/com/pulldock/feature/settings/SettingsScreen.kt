@@ -73,11 +73,10 @@ fun SettingsScreen(
 ) {
     val tokens = LocalPdTokens.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     PdScaffold(
         title = stringResource(R.string.settings_title),
-        scrollBehavior = scrollBehavior,
+        showTopBar = false,
     ) { innerPadding ->
         val policy = state.policy
         if (policy == null) {
@@ -90,7 +89,6 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(horizontal = tokens.spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
             ) {

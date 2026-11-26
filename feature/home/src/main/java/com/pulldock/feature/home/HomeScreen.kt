@@ -99,6 +99,7 @@ fun HomeScreen(
         title = stringResource(R.string.home_title),
         snackbarHostState = snackbar,
         scrollBehavior = scrollBehavior,
+        showTopBar = false,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddDownload,
@@ -116,7 +117,6 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .padding(horizontal = tokens.spacing.lg),
             verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
         ) {
