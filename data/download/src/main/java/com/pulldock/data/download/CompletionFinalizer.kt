@@ -48,13 +48,16 @@ class CompletionFinalizer @Inject constructor(
             is FileFinalizer.Result.Published -> {
                 val uri = File(result.path).toURI().toString()
                 val now = System.currentTimeMillis()
+                val actualSize = File(result.path).length()
                 val thumbnail = thumbnailFor(result.path, taskId)
-                if (taskDao.completeWithOutput(taskId, uri, File(result.path).name, now) > 0) {
+                if (taskDao.completeWithOutput(taskId, uri, File(result.path).name, actualSize, now) > 0) {
                     library.record(
                         task = TaskMappers.toDomain(entity).copy(
                             state = DownloadState.COMPLETED,
                             outputUri = uri,
                             completedAt = Instant.ofEpochMilli(now),
+                            totalBytes = actualSize,
+                            downloadedBytes = actualSize,
                         ),
                         fileUri = uri,
                         thumbnailUri = thumbnail,
@@ -87,12 +90,18 @@ class CompletionFinalizer @Inject constructor(
                 val actualSize = java.io.File(result.path).length()
                 val thumbnail = thumbnailFor(result.path, taskId)
                 taskDao.updateMetadata(taskId, entity.displayName, actualSize, now)
-                if (taskDao.completeMediaWithOutput(taskId, uri, java.io.File(result.path).name, now) > 0) {
+                if (taskDao.completeMediaWithOutput(taskId, uri, java.io.File(result.path).name, actualSize, now) > 0) {
                     library.record(
                         task = TaskMappers.toDomain(entity).copy(
                             state = DownloadState.COMPLETED,
                             outputUri = uri,
                             completedAt = Instant.ofEpochMilli(now),
+                            // The published file is the source of truth: the format's
+                            // estimatedBytes is only an estimate and excludes the muxed
+                            // audio, so persisting it shows a wrong size (e.g. 41.7 MB
+                            // shown for a 48.6 MB file). Record the real byte count.
+                            totalBytes = actualSize,
+                            downloadedBytes = actualSize,
                         ),
                         fileUri = uri,
                         thumbnailUri = thumbnail,

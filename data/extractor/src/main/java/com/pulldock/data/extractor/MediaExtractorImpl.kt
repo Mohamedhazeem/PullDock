@@ -103,8 +103,8 @@ class MediaExtractorImpl @Inject constructor(
     override suspend fun download(descriptor: MediaDescriptor, format: MediaFormat): ExtractorResult<String> {
         val taskId = "${descriptor.providerId.name}-${descriptor.sourceUrl.hashCode()}"
         val tempDir = File(context.cacheDir, "partial").apply { mkdirs() }
-        val needsMux = format.videoCodec != null && format.audioCodec == null
-        val formats = if (needsMux) {
+        val requestedMux = format.videoCodec != null && format.audioCodec == null
+        val formats = if (requestedMux) {
             formatCache[descriptor.sourceUrl] ?: when (val resolved = availableFormats(descriptor)) {
                 is ExtractorResult.Success -> resolved.value
                 is ExtractorResult.Failure -> return resolved
@@ -112,6 +112,20 @@ class MediaExtractorImpl @Inject constructor(
         } else {
             emptyList()
         }
+        // A progressive (already muxed) stream at the same resolution avoids the slow
+        // separate-audio download plus the MediaMuxer "compile" pass that runs after the
+        // video bytes land. Prefer it whenever the provider offers one; fall back to
+        // muxing only when it does not (e.g. YouTube/X video-only formats).
+        val progressive = if (requestedMux) {
+            formats.firstOrNull { candidate ->
+                candidate.videoCodec != null && candidate.audioCodec != null &&
+                    (format.resolution == null || candidate.resolution == format.resolution)
+            }
+        } else {
+            null
+        }
+        val effectiveFormat = progressive ?: format
+        val needsMux = requestedMux && progressive == null
         // MediaMuxer is most reliable with H.264/AAC in MP4. Prefer an H.264
         // video-only format at or below the selected resolution when one exists.
         val muxVideo = if (needsMux) {
@@ -173,12 +187,12 @@ class MediaExtractorImpl @Inject constructor(
         } else {
             runtime.download(
                 url = descriptor.sourceUrl,
-                formatId = format.id,
+                formatId = effectiveFormat.id,
                 outputPath = tempPath,
                 onProgress = { bytes, total ->
                     events.tryEmit(ExtractorEvent.Progress(taskId, bytes, total, 0L))
                 },
-                height = format.resolution?.removeSuffix("p")?.toIntOrNull(),
+                height = effectiveFormat.resolution?.removeSuffix("p")?.toIntOrNull(),
             )
         }
 

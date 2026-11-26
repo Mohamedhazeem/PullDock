@@ -46,10 +46,13 @@ class RetryCoordinator @Inject constructor(
             DownloadError.TorrentReason.METADATA_TIMEOUT,
             DownloadError.TorrentReason.NO_TRACKERS,
         )
-        is DownloadError.ExtractorEngine -> error.reason in setOf(
-            DownloadError.ExtractorReason.RATE_LIMITED,
-            DownloadError.ExtractorReason.PROVIDER_CHANGED,
-        )
+        // Extractor failures are worth a bounded retry: a task that was QUEUED behind
+        // another download can fail at dispatch (e.g. the runtime was still settling or
+        // a video-only selection had no audio stream). Retrying re-runs format selection
+        // and the progressive-format fallback instead of stranding the item as FAILED.
+        is DownloadError.ExtractorEngine -> true
+        // A finalize/storage failure is often transient (state race, temp file busy).
+        is DownloadError.Storage -> true
         else -> false
     }
 

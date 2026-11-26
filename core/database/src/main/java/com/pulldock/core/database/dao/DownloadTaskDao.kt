@@ -134,12 +134,20 @@ interface DownloadTaskDao {
             stateSequence = stateSequence + 1,
             outputUri = :outputUri,
             outputFilename = :filename,
+            totalBytes = :totalBytes,
+            downloadedBytes = :totalBytes,
             completedAt = :completedAt,
             updatedAt = :completedAt
         WHERE id = :id AND state = 'VERIFYING'
         """,
     )
-    suspend fun completeWithOutput(id: String, outputUri: String, filename: String, completedAt: Long): Int
+    suspend fun completeWithOutput(
+        id: String,
+        outputUri: String,
+        filename: String,
+        totalBytes: Long,
+        completedAt: Long,
+    ): Int
 
     @Query(
         """
@@ -148,12 +156,20 @@ interface DownloadTaskDao {
             stateSequence = stateSequence + 1,
             outputUri = :outputUri,
             outputFilename = :filename,
+            totalBytes = :totalBytes,
+            downloadedBytes = :totalBytes,
             completedAt = :completedAt,
             updatedAt = :completedAt
         WHERE id = :id AND state = 'RUNNING'
         """,
     )
-    suspend fun completeMediaWithOutput(id: String, outputUri: String, filename: String, completedAt: Long): Int
+    suspend fun completeMediaWithOutput(
+        id: String,
+        outputUri: String,
+        filename: String,
+        totalBytes: Long,
+        completedAt: Long,
+    ): Int
 
     @Query(
         """
