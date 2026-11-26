@@ -104,3 +104,18 @@ class RemoveDownload @Inject constructor(
         return UseCaseResult.Success(Unit)
     }
 }
+
+/**
+ * Removes a group and all its children. Active children are cancelled first, then the
+ * group row, child tasks, library items, and (when [deleteFiles]) files are deleted.
+ */
+class RemoveGroup @Inject constructor(
+    private val repository: DownloadRepository,
+    private val coordinator: QueueCoordinator,
+) {
+    suspend operator fun invoke(groupId: String, deleteFiles: Boolean): UseCaseResult<Unit> {
+        repository.getTasksByGroup(groupId).forEach { coordinator.cancel(it.id) }
+        repository.deleteGroup(groupId, deleteFiles)
+        return UseCaseResult.Success(Unit)
+    }
+}
