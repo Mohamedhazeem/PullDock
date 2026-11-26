@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Sort
@@ -71,6 +72,7 @@ import com.pulldock.core.designsystem.components.ThumbnailImage
 import com.pulldock.core.designsystem.components.pdLibraryIcon
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.core.model.formatBytes
+import com.pulldock.core.model.mediaKindOf
 import com.pulldock.domain.download.repository.LibraryItem
 import com.pulldock.domain.download.repository.LibrarySection
 import com.pulldock.domain.download.repository.LibrarySort
@@ -248,10 +250,14 @@ private fun LibraryItemCard(
     modifier: Modifier = Modifier,
 ) {
     val tokens = LocalPdTokens.current
+    val context = LocalContext.current
     val playLabel = stringResource(R.string.library_play, item.title)
+    val openLabel = stringResource(R.string.library_open, item.title)
     val shareLabel = stringResource(R.string.library_share)
+    val playable = mediaKindOf(item.fileUri).playable
+    val onPrimary: () -> Unit = if (playable) onPlay else ({ openFile(context, item) })
     PdCard(
-        onClick = if (item.fileAvailable) onPlay else null,
+        onClick = if (item.fileAvailable) onPrimary else null,
         modifier = modifier,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
@@ -295,10 +301,11 @@ private fun LibraryItemCard(
                 ) {
                     CardActions(
                         item = item,
-                        onPlay = onPlay,
+                        onPrimary = onPrimary,
                         onDelete = onDelete,
-                        playLabel = playLabel,
+                        primaryLabel = if (playable) playLabel else openLabel,
                         shareLabel = shareLabel,
+                        playable = playable,
                     )
                 }
             } else {
@@ -315,10 +322,11 @@ private fun LibraryItemCard(
                     Spacer(Modifier.weight(1f))
                     CardActions(
                         item = item,
-                        onPlay = onPlay,
+                        onPrimary = onPrimary,
                         onDelete = onDelete,
-                        playLabel = playLabel,
+                        primaryLabel = if (playable) playLabel else openLabel,
                         shareLabel = shareLabel,
+                        playable = playable,
                     )
                 }
             }
@@ -329,17 +337,18 @@ private fun LibraryItemCard(
 @Composable
 private fun CardActions(
     item: LibraryItem,
-    onPlay: () -> Unit,
+    onPrimary: () -> Unit,
     onDelete: () -> Unit,
-    playLabel: String,
+    primaryLabel: String,
     shareLabel: String,
+    playable: Boolean,
 ) {
     val context = LocalContext.current
     if (item.fileAvailable) {
-        IconButton(onClick = onPlay) {
+        IconButton(onClick = onPrimary) {
             Icon(
-                imageVector = Icons.Rounded.PlayArrow,
-                contentDescription = playLabel,
+                imageVector = if (playable) Icons.Rounded.PlayArrow else Icons.Rounded.OpenInBrowser,
+                contentDescription = primaryLabel,
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
@@ -375,9 +384,12 @@ private fun LibraryGridCard(
     val tokens = LocalPdTokens.current
     val context = LocalContext.current
     val playLabel = stringResource(R.string.library_play, item.title)
+    val openLabel = stringResource(R.string.library_open, item.title)
     val shareLabel = stringResource(R.string.library_share)
+    val playable = mediaKindOf(item.fileUri).playable
+    val onPrimary: () -> Unit = if (playable) onPlay else ({ openFile(context, item) })
     PdCard(
-        onClick = if (item.fileAvailable) onPlay else null,
+        onClick = if (item.fileAvailable) onPrimary else null,
         modifier = modifier,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
@@ -437,10 +449,10 @@ private fun LibraryGridCard(
                 horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
             ) {
                 if (item.fileAvailable) {
-                        IconButton(onClick = onPlay, modifier = Modifier.weight(1f)) {
+                        IconButton(onClick = onPrimary, modifier = Modifier.weight(1f)) {
                             Icon(
-                                imageVector = Icons.Rounded.PlayArrow,
-                                contentDescription = playLabel,
+                                imageVector = if (playable) Icons.Rounded.PlayArrow else Icons.Rounded.OpenInBrowser,
+                                contentDescription = if (playable) playLabel else openLabel,
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -503,18 +515,7 @@ private fun LibrarySkeletonCard() {
 }
 
 private fun shareFile(context: android.content.Context, item: LibraryItem) {
-    val source = Uri.parse(item.fileUri)
-    val shareUri = when (source.scheme) {
-        "file" -> {
-            val file = source.path?.let(::File) ?: return
-            if (!file.isFile) return
-            runCatching {
-                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-            }.getOrNull() ?: return
-        }
-        "content" -> source
-        else -> return
-    }
+    val shareUri = item.toShareableUri(context) ?: return
     runCatching {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = context.contentResolver.getType(shareUri) ?: "application/octet-stream"
@@ -522,6 +523,37 @@ private fun shareFile(context: android.content.Context, item: LibraryItem) {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.library_share_title)))
+    }
+}
+
+/** Open a non-playable file (PDF, book, image, …) in an external app via ACTION_VIEW. */
+private fun openFile(context: android.content.Context, item: LibraryItem) {
+    val viewUri = item.toShareableUri(context) ?: return
+    runCatching {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(
+                viewUri,
+                context.contentResolver.getType(viewUri) ?: "application/octet-stream",
+            )
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(intent)
+    }
+}
+
+/** Resolve a library item's file into a shareable/viewable content URI, or null. */
+private fun LibraryItem.toShareableUri(context: android.content.Context): Uri? {
+    val source = Uri.parse(fileUri)
+    return when (source.scheme) {
+        "file" -> {
+            val file = source.path?.let(::File) ?: return null
+            if (!file.isFile) return null
+            runCatching {
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            }.getOrNull()
+        }
+        "content" -> source
+        else -> null
     }
 }
 

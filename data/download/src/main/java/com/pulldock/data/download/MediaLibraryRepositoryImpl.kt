@@ -5,6 +5,8 @@ import android.net.Uri
 import com.pulldock.core.database.dao.LibraryItemDao
 import com.pulldock.core.database.entity.LibraryItemEntity
 import com.pulldock.core.model.DownloadType
+import com.pulldock.core.model.MediaKind
+import com.pulldock.core.model.mediaKindOf
 import com.pulldock.domain.download.model.DownloadTask
 import com.pulldock.domain.download.repository.DownloadRepository
 import com.pulldock.domain.download.repository.LibraryItem
@@ -135,9 +137,9 @@ class MediaLibraryRepositoryImpl @Inject constructor(
 
     private fun matchesSection(item: LibraryItem, section: LibrarySection): Boolean = when (section) {
         LibrarySection.ALL -> true
-        LibrarySection.VIDEO -> item.fileUri.hasExtension(VIDEO_EXTENSIONS)
-        LibrarySection.AUDIO -> item.fileUri.hasExtension(AUDIO_EXTENSIONS)
-        LibrarySection.OTHER -> !item.fileUri.hasExtension(VIDEO_EXTENSIONS + AUDIO_EXTENSIONS)
+        LibrarySection.VIDEO -> mediaKindOf(item.fileUri) == MediaKind.VIDEO
+        LibrarySection.AUDIO -> mediaKindOf(item.fileUri) == MediaKind.AUDIO
+        LibrarySection.OTHER -> mediaKindOf(item.fileUri) !in setOf(MediaKind.VIDEO, MediaKind.AUDIO)
     }
 
     private fun matchesSearch(item: LibraryItem, search: String?): Boolean =
@@ -157,12 +159,7 @@ class MediaLibraryRepositoryImpl @Inject constructor(
         if (uri.scheme == null) "<local>" else "${uri.scheme}://${uri.host ?: "<unknown>"}"
     }.getOrDefault("<local>")
 
-    private fun String.hasExtension(extensions: Set<String>): Boolean =
-        extensions.any { endsWith(".$it", ignoreCase = true) }
-
     companion object {
         private const val MAX_SOURCE_LENGTH = 4_096
-        private val VIDEO_EXTENSIONS = setOf("mp4", "mkv", "webm", "avi", "mov", "m4v")
-        private val AUDIO_EXTENSIONS = setOf("mp3", "m4a", "flac", "ogg", "wav", "opus")
     }
 }

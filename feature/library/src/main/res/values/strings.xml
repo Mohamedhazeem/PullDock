@@ -12,6 +12,7 @@
     <string name="library_empty_body">Completed downloads appear here.</string>
     <string name="library_unavailable">Unavailable</string>
     <string name="library_play">Play %1$s</string>
+    <string name="library_open">Open %1$s</string>
     <string name="library_delete">Delete</string>
     <string name="library_share">Share</string>
     <string name="library_share_title">Share with</string>

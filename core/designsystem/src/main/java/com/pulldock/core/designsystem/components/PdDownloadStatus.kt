@@ -6,6 +6,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.HourglassEmpty
+import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.InsertDriveFile
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Movie
@@ -20,6 +21,8 @@ import androidx.compose.ui.res.stringResource
 import com.pulldock.core.designsystem.R
 import com.pulldock.core.model.DownloadState
 import com.pulldock.core.model.DownloadType
+import com.pulldock.core.model.MediaKind
+import com.pulldock.core.model.mediaKindOf
 
 /** User-facing status label for a download state. */
 @Composable
@@ -90,10 +93,9 @@ fun pdTypeIcon(type: DownloadType): ImageVector = when (type) {
 }
 
 /** Library/content type icon by file extension. */
-fun pdLibraryIcon(fileName: String): ImageVector = when {
-    fileName.substringAfterLast('.', "").lowercase() in setOf("mp3", "m4a", "aac", "flac", "ogg", "wav", "opus") ->
-        Icons.Rounded.MusicNote
-    fileName.substringAfterLast('.', "").lowercase() in setOf("mp4", "mkv", "mov", "webm", "avi") ->
-        Icons.Rounded.Movie
-    else -> Icons.Rounded.InsertDriveFile
+fun pdLibraryIcon(fileName: String): ImageVector = when (mediaKindOf(fileName)) {
+    MediaKind.VIDEO -> Icons.Rounded.Movie
+    MediaKind.AUDIO -> Icons.Rounded.MusicNote
+    MediaKind.IMAGE -> Icons.Rounded.Image
+    MediaKind.DOCUMENT, MediaKind.OTHER -> Icons.Rounded.InsertDriveFile
 }
