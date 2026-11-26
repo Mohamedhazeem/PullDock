@@ -12,9 +12,9 @@ Grab the latest signed APK from **[GitHub Releases](https://github.com/Mohamedha
 
 | APK | Use it for |
 | --- | --- |
-| `app-arm64-v8a-release.apk` | Most phones (recommended) |
-| `app-universal-release.apk` | Any device (larger download) |
-| `app-x86_64-release.apk` | Emulators / x86_64 devices |
+| `pulldock-arm64-v8a-release.apk` | Most phones (recommended) |
+| `pulldock-universal-release.apk` | Any device (larger download) |
+| `pulldock-x86_64-release.apk` | Emulators / x86_64 devices |
 
 **Install:** open the [latest release](https://github.com/Mohamedhazeem/PullDock/releases/latest) on your phone → download the `arm64` (or `universal`) APK → tap it → allow “install unknown apps” for your browser → open PullDock.
 
