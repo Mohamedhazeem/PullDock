@@ -1,13 +1,17 @@
 package com.pulldock.data.download
 
 import com.pulldock.core.common.dispatchers.AppDispatchers
+import com.pulldock.core.database.dao.DownloadGroupDao
 import com.pulldock.core.database.dao.DownloadTaskDao
 import com.pulldock.core.database.dao.ExtractorTaskDao
+import com.pulldock.core.database.dao.LibraryItemDao
 import com.pulldock.core.database.dao.TorrentTaskDao
+import com.pulldock.core.database.entity.DownloadGroupEntity
 import com.pulldock.core.database.entity.DownloadTaskEntity
 import com.pulldock.core.model.DownloadError
 import com.pulldock.core.model.DownloadState
 import com.pulldock.core.model.DownloadType
+import com.pulldock.domain.download.model.DownloadGroup
 import com.pulldock.domain.download.model.DownloadProgress
 import com.pulldock.domain.download.model.DownloadTask
 import com.pulldock.domain.download.model.StorageDestination
@@ -20,6 +24,10 @@ import com.pulldock.domain.extractor.model.MediaDescriptor
 import com.pulldock.domain.extractor.model.MediaFormat
 import com.pulldock.domain.torrent.model.TorrentSource
 import com.pulldock.domain.torrent.model.TorrentTaskDetails
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
+import android.net.Uri
+import java.io.File
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
@@ -38,6 +46,9 @@ class DownloadRepositoryImpl @Inject constructor(
     private val taskDao: DownloadTaskDao,
     private val torrentDao: TorrentTaskDao,
     private val extractorDao: ExtractorTaskDao,
+    private val groupDao: DownloadGroupDao,
+    private val libraryItemDao: LibraryItemDao,
+    @ApplicationContext private val context: Context,
     private val dispatchers: AppDispatchers,
 ) : DownloadRepository {
 
@@ -80,7 +91,11 @@ class DownloadRepositoryImpl @Inject constructor(
     override suspend fun getExtractorDetails(taskId: String): ExtractorTaskDetails? =
         extractorDao.getByTaskId(taskId)?.let(TaskMappers::toDomain)
 
-    override suspend fun addTorrent(source: TorrentSource, destination: StorageDestination): DownloadTask {
+    override suspend fun addTorrent(
+        source: TorrentSource,
+        destination: StorageDestination,
+        groupId: String?,
+    ): DownloadTask {
         val now = Instant.now()
         val sourceHash = com.pulldock.domain.download.model.SourceHashing.forTorrent(source)
         val task = DownloadTask(
@@ -110,12 +125,18 @@ class DownloadRepositoryImpl @Inject constructor(
             priority = 0,
             queueOrder = Int.MAX_VALUE,
             engineTaskId = null,
+            groupId = groupId,
         )
         taskDao.insert(TaskMappers.toEntity(task))
         return task
     }
 
-    override suspend fun addMedia(descriptor: MediaDescriptor, format: MediaFormat, destination: StorageDestination): DownloadTask {
+    override suspend fun addMedia(
+        descriptor: MediaDescriptor,
+        format: MediaFormat,
+        destination: StorageDestination,
+        groupId: String?,
+    ): DownloadTask {
         val now = Instant.now()
         val task = DownloadTask(
             id = UUID.randomUUID().toString(),
@@ -145,6 +166,7 @@ class DownloadRepositoryImpl @Inject constructor(
             priority = 0,
             queueOrder = Int.MAX_VALUE,
             engineTaskId = null,
+            groupId = groupId,
         )
         taskDao.insert(TaskMappers.toEntity(task))
         extractorDao.upsert(
@@ -213,6 +235,73 @@ class DownloadRepositoryImpl @Inject constructor(
 
     override suspend fun updateLimits(id: String, limits: TransferLimits) {
         taskDao.updateLimits(id, limits.downloadRateBytesPerSec, limits.uploadRateBytesPerSec, limits.maxConnections, System.currentTimeMillis())
+    }
+
+    override suspend fun createGroup(type: DownloadType, title: String, source: String?): DownloadGroup {
+        val group = DownloadGroup(
+            id = UUID.randomUUID().toString(),
+            type = type,
+            title = title,
+            source = source?.let(::sanitizeSource),
+            thumbnailUri = null,
+            createdAt = Instant.now(),
+        )
+        groupDao.upsert(
+            DownloadGroupEntity(
+                id = group.id,
+                type = group.type.name,
+                title = group.title,
+                source = group.source,
+                thumbnailUri = group.thumbnailUri,
+                createdAt = group.createdAt.toEpochMilli(),
+            ),
+        )
+        return group
+    }
+
+    override fun observeGroups(): Flow<List<DownloadGroup>> =
+        groupDao.observeAll().map { list -> list.map(::toDomain) }
+
+    override suspend fun getGroup(id: String): DownloadGroup? = groupDao.getById(id)?.let(::toDomain)
+
+    override suspend fun getTasksByGroup(groupId: String): List<DownloadTask> =
+        taskDao.getByGroup(groupId).map(TaskMappers::toDomain)
+
+    override suspend fun deleteGroup(groupId: String, deleteFiles: Boolean) {
+        if (deleteFiles) {
+            libraryItemDao.getByGroup(groupId).forEach { runCatching { deleteUri(it.fileUri) } }
+        }
+        libraryItemDao.deleteByGroup(groupId)
+        // Detail rows cascade from download_task; remove remaining tasks (e.g. active
+        // children not yet published to the library) as well.
+        taskDao.deleteByGroup(groupId)
+        groupDao.delete(groupId)
+    }
+
+    private fun toDomain(entity: DownloadGroupEntity): DownloadGroup = DownloadGroup(
+        id = entity.id,
+        type = DownloadType.entries.firstOrNull { it.name == entity.type } ?: DownloadType.EXTRACTOR,
+        title = entity.title,
+        source = entity.source,
+        thumbnailUri = entity.thumbnailUri,
+        createdAt = Instant.ofEpochMilli(entity.createdAt),
+    )
+
+    /** Never persist raw private URLs (data-model.md §4.7): keep only scheme/host. */
+    private fun sanitizeSource(source: String): String = runCatching {
+        val uri = Uri.parse(source)
+        if (uri.scheme == null) "<local>" else "${uri.scheme}://${uri.host ?: "<unknown>"}"
+    }.getOrDefault("<local>")
+
+    private fun deleteUri(uriString: String): Boolean = try {
+        val uri = Uri.parse(uriString)
+        when (uri.scheme) {
+            "file" -> File(uri.path ?: return false).delete()
+            "content" -> android.provider.DocumentsContract.deleteDocument(context.contentResolver, uri)
+            else -> false
+        }
+    } catch (_: Exception) {
+        false
     }
 
     private fun toState(value: String): DownloadState? =

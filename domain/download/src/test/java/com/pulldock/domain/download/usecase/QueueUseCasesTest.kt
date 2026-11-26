@@ -54,7 +54,7 @@ class QueueUseCasesTest {
         override suspend fun getTorrentDetails(taskId: String): TorrentTaskDetails? = null
         override suspend fun getExtractorDetails(taskId: String): ExtractorTaskDetails? = null
 
-        override suspend fun addTorrent(source: TorrentSource, destination: StorageDestination): DownloadTask {
+        override suspend fun addTorrent(source: TorrentSource, destination: StorageDestination, groupId: String?): DownloadTask {
             val task = minimalTask(source.value, DownloadType.TORRENT)
             tasks[task.id] = task
             return task
@@ -64,11 +64,29 @@ class QueueUseCasesTest {
             descriptor: com.pulldock.domain.extractor.model.MediaDescriptor,
             format: com.pulldock.domain.extractor.model.MediaFormat,
             destination: StorageDestination,
+            groupId: String?,
         ): DownloadTask {
             val task = minimalTask(descriptor.sourceUrl, DownloadType.EXTRACTOR)
             tasks[task.id] = task
             return task
         }
+
+        override suspend fun createGroup(type: DownloadType, title: String, source: String?) =
+            com.pulldock.domain.download.model.DownloadGroup(
+                id = "g${tasks.size + 1}",
+                type = type,
+                title = title,
+                source = source,
+                thumbnailUri = null,
+                createdAt = Instant.EPOCH,
+            )
+
+        override fun observeGroups() =
+            kotlinx.coroutines.flow.MutableStateFlow(emptyList<com.pulldock.domain.download.model.DownloadGroup>())
+
+        override suspend fun getGroup(id: String) = null
+        override suspend fun getTasksByGroup(groupId: String) = emptyList<DownloadTask>()
+        override suspend fun deleteGroup(groupId: String, deleteFiles: Boolean) {}
 
         override suspend fun updateState(id: String, to: DownloadState, error: DownloadError?): Boolean {
             if (nextTransitionRejects) return false

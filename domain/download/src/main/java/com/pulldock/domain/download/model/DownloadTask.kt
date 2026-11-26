@@ -112,4 +112,6 @@ data class DownloadTask(
     /** Manual queue order; lower runs first within the same priority. */
     val queueOrder: Int,
     val engineTaskId: String?,
+    /** Owning group id (playlist / multi-file torrent); null for standalone tasks. */
+    val groupId: String? = null,
 )

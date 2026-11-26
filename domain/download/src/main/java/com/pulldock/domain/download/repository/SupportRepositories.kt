@@ -35,6 +35,8 @@ data class LibraryItem(
     val fileAvailable: Boolean,
     /** Deterministic source key; used to prevent downloading the same content twice. */
     val sourceHash: String? = null,
+    /** Owning group id (playlist / multi-file torrent); null for standalone items. */
+    val groupId: String? = null,
 )
 
 /** Result of reconciling library records with actual files (data-model.md §4.6). */

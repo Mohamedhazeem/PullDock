@@ -70,6 +70,7 @@ object TaskMappers {
         priority = entity.priority,
         queueOrder = entity.queueOrder,
         engineTaskId = entity.engineTaskId,
+        groupId = entity.groupId,
     )
 
     fun toEntity(task: DownloadTask, stateSequence: Long = 0): DownloadTaskEntity = DownloadTaskEntity(
@@ -104,6 +105,7 @@ object TaskMappers {
         priority = task.priority,
         queueOrder = task.queueOrder,
         engineTaskId = task.engineTaskId,
+        groupId = task.groupId,
     )
 
     fun toDomain(entity: TorrentTaskEntity, files: List<TorrentFileEntity>, state: DownloadState?): TorrentTaskDetails =

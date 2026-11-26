@@ -41,35 +41,67 @@ class CompletionFinalizer @Inject constructor(
         val root = context.getExternalFilesDir(null) ?: return fail(entity)
         val folder = storagePreferences.currentDownloadFolder()
         val saveRoot = if (folder.isNullOrBlank()) root else java.io.File(root, folder).takeIf { it.exists() || it.mkdirs() } ?: root
-        val candidate = findOutput(taskId, saveRoot) ?: return fail(entity)
-        val filename = FilenameSanitizer.sanitize(candidate.name).ifBlank { "download" }
-        val finalizer = FileFinalizer(saveRoot) { it.exists() && it.length() > 0L }
-        return when (val result = finalizer.publish(candidate, filename)) {
-            is FileFinalizer.Result.Published -> {
-                val uri = File(result.path).toURI().toString()
-                val now = System.currentTimeMillis()
-                val actualSize = File(result.path).length()
-                val thumbnail = thumbnailFor(result.path, taskId)
-                if (taskDao.completeWithOutput(taskId, uri, File(result.path).name, actualSize, now) > 0) {
-                    library.record(
-                        task = TaskMappers.toDomain(entity).copy(
-                            state = DownloadState.COMPLETED,
-                            outputUri = uri,
-                            completedAt = Instant.ofEpochMilli(now),
-                            totalBytes = actualSize,
-                            downloadedBytes = actualSize,
-                        ),
-                        fileUri = uri,
-                        thumbnailUri = thumbnail,
-                    )
-                    uri
-                } else {
-                    null
-                }
+
+        // Publish every selected file (all files when none were explicitly selected),
+        // so a multi-file torrent exposes each file as its own library item.
+        val files = torrentDao.getFiles(taskId)
+        val selected = files.filter { it.selected }.ifEmpty { files }
+        if (selected.isEmpty()) return fail(entity)
+
+        val published = mutableListOf<PublishedFile>()
+        for (file in selected) {
+            val candidate = File(saveRoot, file.path).takeIf { it.isFile } ?: continue
+            val filename = FilenameSanitizer.sanitize(candidate.name).ifBlank { "download" }
+            val finalizer = FileFinalizer(saveRoot) { it.exists() && it.length() > 0L }
+            val result = finalizer.publish(candidate, filename)
+            if (result is FileFinalizer.Result.Published) {
+                val path = result.path
+                published += PublishedFile(
+                    uri = File(path).toURI().toString(),
+                    size = File(path).length(),
+                    thumbnail = thumbnailFor(path, "$taskId-${file.fileIndex}"),
+                    title = File(path).name,
+                    id = "$taskId:${file.fileIndex}",
+                )
             }
-            is FileFinalizer.Result.Rejected -> fail(entity)
         }
+        if (published.isEmpty()) return fail(entity)
+
+        val now = System.currentTimeMillis()
+        val first = published.first()
+        val totalBytes = published.sumOf { it.size }
+        if (taskDao.completeWithOutput(taskId, first.uri, first.title, totalBytes, now) > 0) {
+            val domainTask = TaskMappers.toDomain(entity).copy(
+                state = DownloadState.COMPLETED,
+                outputUri = first.uri,
+                completedAt = Instant.ofEpochMilli(now),
+                totalBytes = totalBytes,
+                downloadedBytes = totalBytes,
+            )
+            published.forEach { file ->
+                library.record(
+                    task = domainTask,
+                    fileUri = file.uri,
+                    thumbnailUri = file.thumbnail,
+                    id = file.id,
+                    title = file.title,
+                    sizeBytes = file.size,
+                    groupId = entity.groupId,
+                )
+            }
+            return first.uri
+        }
+        return null
     }
+
+    /** A single published file from a (possibly multi-file) torrent. */
+    private data class PublishedFile(
+        val uri: String,
+        val size: Long,
+        val thumbnail: String?,
+        val title: String,
+        val id: String,
+    )
 
     /** Publishes a verified extractor temp file, then completes the task. */
     suspend fun finalizeMedia(taskId: String, tempPath: String): String? {
@@ -154,16 +186,5 @@ class CompletionFinalizer @Inject constructor(
             }
             output.toURI().toString()
         }.getOrNull()
-    }
-
-    private suspend fun findOutput(taskId: String, root: File): File? {
-        val paths = torrentDao.getFiles(taskId).map { it.path }
-        val fromMetadata = paths.mapNotNull { relative ->
-            File(root, relative).takeIf { it.isFile }
-        }
-        return fromMetadata.maxByOrNull { it.length() }
-            ?: root.walkTopDown()
-                .filter { it.isFile && !it.absolutePath.contains("/datastore/") && it.length() > 0L }
-                .maxByOrNull { it.length() }
     }
 }

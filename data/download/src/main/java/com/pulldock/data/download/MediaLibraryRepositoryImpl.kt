@@ -47,15 +47,23 @@ class MediaLibraryRepositoryImpl @Inject constructor(
     override suspend fun get(itemId: String): LibraryItem? = dao.get(itemId)?.let(::toDomain)
 
     /** Records a finalized task output; called by the completion flow. */
-    suspend fun record(task: DownloadTask, fileUri: String, thumbnailUri: String? = null) {
+    suspend fun record(
+        task: DownloadTask,
+        fileUri: String,
+        thumbnailUri: String? = null,
+        id: String? = null,
+        title: String? = null,
+        sizeBytes: Long? = null,
+        groupId: String? = task.groupId,
+    ) {
         val existing = dao.findByUri(fileUri)
         dao.upsert(
             LibraryItemEntity(
-                id = existing?.id ?: task.id,
+                id = existing?.id ?: id ?: task.id,
                 fileUri = fileUri,
                 type = task.type.name,
-                title = task.displayName,
-                sizeBytes = task.totalBytes,
+                title = title ?: task.displayName,
+                sizeBytes = sizeBytes ?: task.totalBytes,
                 resolution = task.resolution,
                 durationSeconds = null,
                 source = task.source.takeIf { it.length <= MAX_SOURCE_LENGTH }?.let(::sanitizeSource),
@@ -63,6 +71,7 @@ class MediaLibraryRepositoryImpl @Inject constructor(
                 thumbnailUri = thumbnailUri,
                 fileAvailable = true,
                 sourceHash = task.sourceHash,
+                groupId = groupId,
             ),
         )
     }
@@ -133,6 +142,7 @@ class MediaLibraryRepositoryImpl @Inject constructor(
         thumbnailUri = entity.thumbnailUri,
         fileAvailable = entity.fileAvailable,
         sourceHash = entity.sourceHash,
+        groupId = entity.groupId,
     )
 
     private fun matchesSection(item: LibraryItem, section: LibrarySection): Boolean = when (section) {

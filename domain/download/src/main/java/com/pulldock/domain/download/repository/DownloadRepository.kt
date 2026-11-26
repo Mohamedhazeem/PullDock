@@ -2,6 +2,8 @@ package com.pulldock.domain.download.repository
 
 import com.pulldock.core.model.DownloadError
 import com.pulldock.core.model.DownloadState
+import com.pulldock.core.model.DownloadType
+import com.pulldock.domain.download.model.DownloadGroup
 import com.pulldock.domain.download.model.DownloadProgress
 import com.pulldock.domain.download.model.DownloadTask
 import com.pulldock.domain.download.model.StorageDestination
@@ -32,10 +34,35 @@ interface DownloadRepository {
     suspend fun getExtractorDetails(taskId: String): ExtractorTaskDetails?
 
     /** Creates a torrent task; validates the source and returns the persisted task. */
-    suspend fun addTorrent(source: TorrentSource, destination: StorageDestination): DownloadTask
+    suspend fun addTorrent(
+        source: TorrentSource,
+        destination: StorageDestination,
+        groupId: String? = null,
+    ): DownloadTask
 
     /** Creates a media task from a resolved descriptor and chosen format (FR-019). */
-    suspend fun addMedia(descriptor: MediaDescriptor, format: MediaFormat, destination: StorageDestination): DownloadTask
+    suspend fun addMedia(
+        descriptor: MediaDescriptor,
+        format: MediaFormat,
+        destination: StorageDestination,
+        groupId: String? = null,
+    ): DownloadTask
+
+    /** Creates a logical group (playlist / multi-file torrent) that children reference. */
+    suspend fun createGroup(type: DownloadType, title: String, source: String?): DownloadGroup
+
+    fun observeGroups(): Flow<List<DownloadGroup>>
+
+    suspend fun getGroup(id: String): DownloadGroup?
+
+    /** Child tasks of a group (playlist entries / a multi-file torrent's task). */
+    suspend fun getTasksByGroup(groupId: String): List<DownloadTask>
+
+    /**
+     * Deletes a group and all its children (tasks, library items, and files when
+     * [deleteFiles] is set). Requires user confirmation upstream (FR-041).
+     */
+    suspend fun deleteGroup(groupId: String, deleteFiles: Boolean): Unit
 
     /**
      * Applies a state transition through the state machine (invariant §3.3); returns
