@@ -10,6 +10,7 @@ local.properties
 *.aab
 *.keystore
 !debug.keystore
+keystore.properties
 .cxx/
 .externalNativeBuild/
 captures/

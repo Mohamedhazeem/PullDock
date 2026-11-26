@@ -261,7 +261,13 @@ class ChaquopyExtractorRuntime @Inject constructor(
             info.offset = 0
             info.size = size
             info.presentationTimeUs = extractor.sampleTime
-            info.flags = extractor.sampleFlags
+            // MediaExtractor sample flags and MediaCodec.BufferInfo flags are distinct
+            // constant sets; map the only one MediaMuxer cares about (sync frames).
+            info.flags = if (extractor.sampleFlags and android.media.MediaExtractor.SAMPLE_FLAG_SYNC != 0) {
+                android.media.MediaCodec.BUFFER_FLAG_SYNC_FRAME
+            } else {
+                0
+            }
             buffer.position(0)
             buffer.limit(size)
             muxer.writeSampleData(destinationTrack, buffer, info)

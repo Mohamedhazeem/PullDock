@@ -42,3 +42,12 @@
 -keepclasseswithmembernames class * {
     native <methods>;
 }
+
+# Chaquopy / Python runtime: the Python bridge is reached reflectively.
+-keep class com.chaquo.python.** { *; }
+-dontwarn com.chaquo.python.**
+
+# libtorrent4j (SWIG JNI): the native layer calls back into these classes/methods
+# by name; R8 must not rename or remove them.
+-keep class org.libtorrent4j.** { *; }
+-dontwarn org.libtorrent4j.**
