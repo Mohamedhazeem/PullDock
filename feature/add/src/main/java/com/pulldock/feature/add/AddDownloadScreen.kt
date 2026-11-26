@@ -50,6 +50,8 @@ import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.core.model.DownloadError
 import com.pulldock.domain.extractor.model.MediaDescriptor
 import com.pulldock.domain.extractor.model.MediaFormat
+import com.pulldock.domain.extractor.model.PlaylistDescriptor
+import com.pulldock.domain.extractor.model.PlaylistEntry
 
 /**
  * Add-download screen: URL/magnet entry with live classification, typed validation
@@ -70,6 +72,7 @@ fun AddDownloadScreen(
             when (event) {
                 AddDownloadEvent.TorrentAdded -> onClose()
                 AddDownloadEvent.MediaEnqueued -> onClose()
+                AddDownloadEvent.PlaylistEnqueued -> onClose()
             }
         }
     }
@@ -194,6 +197,109 @@ fun AddDownloadScreen(
             onEnqueue = viewModel::enqueueMedia,
             onDismiss = viewModel::dismissResolved,
         )
+    }
+
+    state.playlist?.let { playlist ->
+        PlaylistSelectionSheet(
+            playlist = playlist,
+            selected = state.selectedPlaylistIndexes,
+            submitting = state.submitting,
+            resolving = state.playlistResolving,
+            total = state.playlistTotal,
+            onToggle = viewModel::togglePlaylistEntry,
+            onConfirm = viewModel::confirmPlaylist,
+            onDismiss = viewModel::dismissPlaylist,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlaylistSelectionSheet(
+    playlist: PlaylistDescriptor,
+    selected: Set<Int>,
+    submitting: Boolean,
+    resolving: Int?,
+    total: Int,
+    onToggle: (Int) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val tokens = LocalPdTokens.current
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = tokens.spacing.lg, vertical = tokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
+                Text(playlist.title, style = MaterialTheme.typography.headlineSmall, maxLines = 2)
+                Text(stringResource(R.string.add_playlist_title), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(R.string.add_playlist_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (playlist.entries.isEmpty()) {
+                PdErrorState(
+                    title = stringResource(R.string.add_playlist_title),
+                    message = stringResource(R.string.add_playlist_empty),
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+                ) {
+                    items(playlist.entries, key = { it.index }) { entry ->
+                        PlaylistEntryRow(
+                            entry = entry,
+                            selected = entry.index in selected,
+                            onToggle = { onToggle(entry.index) },
+                        )
+                    }
+                }
+                val label = if (submitting && resolving != null) {
+                    stringResource(R.string.add_playlist_resolving, resolving, total)
+                } else {
+                    stringResource(R.string.add_playlist_download, selected.size)
+                }
+                PdButton(
+                    label = label,
+                    onClick = onConfirm,
+                    loading = submitting,
+                    enabled = selected.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistEntryRow(entry: PlaylistEntry, selected: Boolean, onToggle: () -> Unit) {
+    val tokens = LocalPdTokens.current
+    PdCard(onClick = onToggle) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = if (selected) Icons.Rounded.RadioButtonChecked else Icons.Rounded.RadioButtonUnchecked,
+                contentDescription = null,
+                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
+            )
+            Spacer(Modifier.width(tokens.spacing.md))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(entry.title, style = MaterialTheme.typography.bodyLarge, maxLines = 2)
+                entry.durationSeconds?.let { seconds ->
+                    Text(
+                        text = "%d:%02d".format(seconds / 60, seconds % 60),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }
 

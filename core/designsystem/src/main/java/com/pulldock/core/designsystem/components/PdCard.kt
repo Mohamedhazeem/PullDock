@@ -9,24 +9,31 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 
-/** Warm, low-elevation surface used as the base for cards and sections. */
+/**
+ * Warm, low-elevation surface used as the base for cards and sections.
+ *
+ * When [flat] is true the card loses its border, elevation, and container color so it can
+ * sit inside another card (e.g. grouped children) without a nested-card look.
+ */
 @Composable
 fun PdCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    flat: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val tokens = LocalPdTokens.current
     val colors = CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = if (flat) Color.Transparent else MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
     )
-    val elevation = CardDefaults.cardElevation(defaultElevation = tokens.elevation.low)
+    val elevation = CardDefaults.cardElevation(defaultElevation = if (flat) 0.dp else tokens.elevation.low)
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(tokens.radius.lg)
-    val border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
+    val border = if (flat) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
     if (onClick != null) {
         Card(
             onClick = onClick,

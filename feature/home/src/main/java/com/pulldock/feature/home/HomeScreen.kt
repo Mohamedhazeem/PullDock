@@ -41,6 +41,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pulldock.core.designsystem.components.PdCard
 import com.pulldock.core.designsystem.components.PdConfirmDialog
 import com.pulldock.core.designsystem.components.PdEmptyState
+import com.pulldock.core.designsystem.components.PdExpandableGroup
 import com.pulldock.core.designsystem.components.PdFilterChips
 import com.pulldock.core.designsystem.components.PdProgress
 import com.pulldock.core.designsystem.components.PdScaffold
@@ -135,7 +137,7 @@ fun HomeScreen(
 
             if (state.loading) {
                 items(3) { LoadingTransferCard() }
-            } else if (state.tasks.isEmpty()) {
+            } else if (state.isEmpty) {
                 item {
                     PdEmptyState(
                         title = stringResource(R.string.home_empty_title),
@@ -147,6 +149,24 @@ fun HomeScreen(
                     )
                 }
             } else {
+                items(
+                    items = state.groups,
+                    key = { "group:" + it.group.id },
+                    contentType = { "group" },
+                ) { group ->
+                    GroupCard(
+                        group = group,
+                        details = state.torrentDetails,
+                        onOpenTask = onOpenTask,
+                        onPause = { viewModel.pause(it) },
+                        onResume = { viewModel.resume(it) },
+                        onRetry = { viewModel.retry(it) },
+                        onDelete = { viewModel.requestDelete(it) },
+                        onRemoveCompleted = { viewModel.removeCompleted(it) },
+                        onDeleteGroup = { viewModel.requestDeleteGroup(it) },
+                        modifier = Modifier.animateItem(),
+                    )
+                }
                 items(
                     items = state.tasks,
                     key = { it.id },
@@ -178,6 +198,86 @@ fun HomeScreen(
             onDismiss = viewModel::dismissDelete,
         )
     }
+
+    state.pendingGroupDelete?.let {
+        PdConfirmDialog(
+            title = stringResource(R.string.home_group_delete_title),
+            text = stringResource(R.string.home_group_delete_body),
+            confirmLabel = stringResource(R.string.home_group_delete_confirm),
+            dismissLabel = stringResource(R.string.home_delete_dismiss),
+            onConfirm = viewModel::confirmGroupDelete,
+            onDismiss = viewModel::dismissGroupDelete,
+        )
+    }
+}
+
+@Composable
+private fun GroupCard(
+    group: HomeGroup,
+    details: Map<String, TorrentTaskDetails>,
+    onOpenTask: (String) -> Unit,
+    onPause: (String) -> Unit,
+    onResume: (String) -> Unit,
+    onRetry: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onRemoveCompleted: (String) -> Unit,
+    onDeleteGroup: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val tokens = LocalPdTokens.current
+    var expanded by rememberSaveable(group.group.id) { mutableStateOf(false) }
+    val subtitle = buildString {
+        append(stringResource(R.string.home_group_items, group.tasks.size))
+        group.totalBytes?.let { append(" · ").append(formatBytes(it)) }
+    }
+    PdExpandableGroup(
+        title = group.group.title,
+        subtitle = subtitle,
+        icon = pdTypeIcon(group.group.type),
+        expanded = expanded,
+        onToggle = { expanded = !expanded },
+        toggleLabel = stringResource(
+            if (expanded) R.string.home_group_hide else R.string.home_group_show,
+            group.group.title,
+        ),
+        expandedLabel = stringResource(R.string.home_group_expanded),
+        collapsedLabel = stringResource(R.string.home_group_collapsed),
+        modifier = modifier,
+        headerContent = {
+            PdStatusBadge(
+                label = pdStatusLabel(group.state),
+                icon = pdStatusIcon(group.state),
+                tone = pdStatusTone(group.state),
+            )
+        },
+    ) {
+        group.tasks.forEach { task ->
+            TransferCard(
+                task = task,
+                details = details[task.id],
+                onOpen = { onOpenTask(task.id) },
+                onPause = { onPause(task.id) },
+                onResume = { onResume(task.id) },
+                onRetry = { onRetry(task.id) },
+                onDelete = { onDelete(task.id) },
+                onRemoveCompleted = { onRemoveCompleted(task.id) },
+                flat = true,
+            )
+        }
+        OutlinedButton(
+            onClick = { onDeleteGroup(group.group.id) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Delete,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(tokens.spacing.xs))
+            Text(stringResource(R.string.home_group_delete_confirm))
+        }
+    }
 }
 
 @Composable
@@ -191,6 +291,7 @@ private fun TransferCard(
     onDelete: () -> Unit,
     onRemoveCompleted: () -> Unit,
     modifier: Modifier = Modifier,
+    flat: Boolean = false,
 ) {
     val tokens = LocalPdTokens.current
     val stateLabel = pdStatusLabel(task.state)
@@ -200,7 +301,7 @@ private fun TransferCard(
     } ?: formatBytes(task.progress.downloadedBytes)
 
     Box(modifier) {
-        PdCard(onClick = onOpen) {
+        PdCard(onClick = onOpen, flat = flat) {
             Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(

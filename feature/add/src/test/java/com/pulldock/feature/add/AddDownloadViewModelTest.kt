@@ -13,8 +13,10 @@ import com.pulldock.domain.download.repository.DownloadRepository
 import com.pulldock.domain.download.queue.QueueCoordinator
 import com.pulldock.domain.download.usecase.AddTorrent
 import com.pulldock.domain.download.usecase.EnqueueDownload
+import com.pulldock.domain.download.usecase.EnqueuePlaylist
 import com.pulldock.domain.download.usecase.FetchAvailableFormats
 import com.pulldock.domain.download.usecase.ResolveMediaUrl
+import com.pulldock.domain.download.usecase.ResolvePlaylist
 import com.pulldock.domain.extractor.ExtractorResult
 import com.pulldock.domain.extractor.MediaExtractor
 import com.pulldock.domain.extractor.model.ExtractorRuntimeInfo
@@ -60,6 +62,7 @@ class AddDownloadViewModelTest {
 
     private class FakeRepository : DownloadRepository {
         val tasks = mutableListOf<DownloadTask>()
+        val groups = mutableListOf<com.pulldock.domain.download.model.DownloadGroup>()
         override fun observeTask(id: String) = MutableStateFlow<DownloadTask?>(null)
         override fun observeQueue(filter: com.pulldock.domain.download.repository.QueueFilter) = MutableStateFlow(tasks.toList())
         override fun observeTorrentDetails(taskId: String) = MutableStateFlow<com.pulldock.domain.torrent.model.TorrentTaskDetails?>(null)
@@ -68,7 +71,11 @@ class AddDownloadViewModelTest {
         override suspend fun getTorrentDetails(taskId: String) = null
         override suspend fun getExtractorDetails(taskId: String) = null
 
-        override suspend fun addTorrent(source: TorrentSource, destination: StorageDestination): DownloadTask {
+        override suspend fun addTorrent(
+            source: TorrentSource,
+            destination: StorageDestination,
+            groupId: String?,
+        ): DownloadTask {
             val task = task(source.value, DownloadType.TORRENT, SourceHashing.forTorrent(source))
             tasks.add(task)
             return task
@@ -78,11 +85,33 @@ class AddDownloadViewModelTest {
             descriptor: MediaDescriptor,
             format: MediaFormat,
             destination: StorageDestination,
+            groupId: String?,
         ): DownloadTask {
             val task = task(descriptor.sourceUrl, DownloadType.EXTRACTOR, SourceHashing.forMedia(descriptor.sourceUrl))
             tasks.add(task)
             return task
         }
+
+        override suspend fun createGroup(
+            type: DownloadType,
+            title: String,
+            source: String?,
+        ) = com.pulldock.domain.download.model.DownloadGroup(
+            id = "g-${groups.size + 1}",
+            type = type,
+            title = title,
+            source = source,
+            thumbnailUri = null,
+            createdAt = Instant.EPOCH,
+        )
+
+        override fun observeGroups() = MutableStateFlow(emptyList<com.pulldock.domain.download.model.DownloadGroup>())
+
+        override suspend fun getGroup(id: String) = null
+
+        override suspend fun getTasksByGroup(groupId: String) = emptyList<DownloadTask>()
+
+        override suspend fun deleteGroup(groupId: String, deleteFiles: Boolean) {}
 
         override suspend fun updateState(id: String, to: DownloadState, error: DownloadError?): Boolean = true
         override suspend fun updateProgress(id: String, progress: DownloadProgress) {}
@@ -221,6 +250,8 @@ class AddDownloadViewModelTest {
             ResolveMediaUrl(FakeExtractor(incompatible = false)),
             FetchAvailableFormats(FakeExtractor(incompatible = false)),
             EnqueueDownload(repo, coordinator),
+            ResolvePlaylist(FakeExtractor(incompatible = false)),
+            EnqueuePlaylist(repo, FakeExtractor(incompatible = false), coordinator, FakeMediaPreferences()),
             FakeMediaPreferences(),
             androidx.lifecycle.SavedStateHandle(),
         )
@@ -245,6 +276,8 @@ class AddDownloadViewModelTest {
             ResolveMediaUrl(FakeExtractor(incompatible = false)),
             FetchAvailableFormats(FakeExtractor(incompatible = false)),
             EnqueueDownload(repo, coordinator),
+            ResolvePlaylist(FakeExtractor(incompatible = false)),
+            EnqueuePlaylist(repo, FakeExtractor(incompatible = false), coordinator, FakeMediaPreferences()),
             FakeMediaPreferences(),
             androidx.lifecycle.SavedStateHandle(),
         )
@@ -267,6 +300,8 @@ class AddDownloadViewModelTest {
             ResolveMediaUrl(FakeExtractor(incompatible = false)),
             FetchAvailableFormats(FakeExtractor(incompatible = false)),
             EnqueueDownload(repo, coordinator),
+            ResolvePlaylist(FakeExtractor(incompatible = false)),
+            EnqueuePlaylist(repo, FakeExtractor(incompatible = false), coordinator, FakeMediaPreferences()),
             FakeMediaPreferences(),
             androidx.lifecycle.SavedStateHandle(),
         )
@@ -300,6 +335,8 @@ class AddDownloadViewModelTest {
             ResolveMediaUrl(FakeExtractor(incompatible = true)),
             FetchAvailableFormats(FakeExtractor(incompatible = true)),
             EnqueueDownload(repo, coordinator),
+            ResolvePlaylist(FakeExtractor(incompatible = false)),
+            EnqueuePlaylist(repo, FakeExtractor(incompatible = false), coordinator, FakeMediaPreferences()),
             FakeMediaPreferences(),
             androidx.lifecycle.SavedStateHandle(),
         )
@@ -330,6 +367,8 @@ class AddDownloadViewModelTest {
             ResolveMediaUrl(FakeExtractor(incompatible = false)),
             FetchAvailableFormats(FakeExtractor(incompatible = false)),
             EnqueueDownload(repo, coordinator),
+            ResolvePlaylist(FakeExtractor(incompatible = false)),
+            EnqueuePlaylist(repo, FakeExtractor(incompatible = false), coordinator, FakeMediaPreferences()),
             FakeMediaPreferences(),
             handle,
         )

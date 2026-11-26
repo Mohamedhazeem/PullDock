@@ -26,4 +26,12 @@
     <string name="home_hero_title">Your transfers</string>
     <string name="home_hero_body">One calm queue for torrents and authorized media.</string>
     <string name="home_completed_label">Completed</string>
+    <string name="home_group_items">%1$d items</string>
+    <string name="home_group_show">Show %1$s</string>
+    <string name="home_group_hide">Hide %1$s</string>
+    <string name="home_group_delete_title">Remove group?</string>
+    <string name="home_group_delete_body">Removes every file in this group from this device. This cannot be undone.</string>
+    <string name="home_group_delete_confirm">Remove group</string>
+    <string name="home_group_expanded">Expanded</string>
+    <string name="home_group_collapsed">Collapsed</string>
 </resources>

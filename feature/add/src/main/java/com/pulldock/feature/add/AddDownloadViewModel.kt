@@ -7,14 +7,17 @@ import com.pulldock.core.model.DownloadError
 import com.pulldock.domain.download.model.StorageDestinationDefaults
 import com.pulldock.domain.download.usecase.AddTorrent
 import com.pulldock.domain.download.usecase.EnqueueDownload
+import com.pulldock.domain.download.usecase.EnqueuePlaylist
 import com.pulldock.domain.download.usecase.FetchAvailableFormats
 import com.pulldock.domain.download.usecase.FormatFallback
 import com.pulldock.domain.download.repository.MediaPreferencesRepository
 import com.pulldock.domain.download.usecase.ResolveMediaUrl
+import com.pulldock.domain.download.usecase.ResolvePlaylist
 import com.pulldock.domain.download.usecase.UseCaseResult
 import com.pulldock.domain.extractor.ExtractorResult
 import com.pulldock.domain.extractor.model.MediaDescriptor
 import com.pulldock.domain.extractor.model.MediaFormat
+import com.pulldock.domain.extractor.model.PlaylistDescriptor
 import com.pulldock.domain.torrent.model.TorrentSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -44,6 +47,14 @@ data class AddDownloadUiState(
     val selectedFormat: MediaFormat? = null,
     /** Flow-level failure (network/runtime) rendered as a full error state. */
     val failedError: DownloadError? = null,
+    /** Resolved playlist awaiting per-entry selection; null for single media. */
+    val playlist: PlaylistDescriptor? = null,
+    /** Indexes of the playlist entries the user chose to download. */
+    val selectedPlaylistIndexes: Set<Int> = emptySet(),
+    /** Entries resolved so far while enqueuing a playlist (null when idle). */
+    val playlistResolving: Int? = null,
+    /** Total entries being enqueued for the current playlist. */
+    val playlistTotal: Int = 0,
 )
 
 /** One-shot add-flow events. */
@@ -53,6 +64,9 @@ sealed interface AddDownloadEvent {
 
     /** Media task created and queued for the chosen format. */
     data object MediaEnqueued : AddDownloadEvent
+
+    /** Group of playlist tasks created and queued. */
+    data object PlaylistEnqueued : AddDownloadEvent
 }
 
 /**
@@ -67,6 +81,8 @@ class AddDownloadViewModel @Inject constructor(
     private val resolveMediaUrl: ResolveMediaUrl,
     private val fetchAvailableFormats: FetchAvailableFormats,
     private val enqueueDownload: EnqueueDownload,
+    private val resolvePlaylist: ResolvePlaylist,
+    private val enqueuePlaylist: EnqueuePlaylist,
     private val mediaPreferences: MediaPreferencesRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -102,6 +118,8 @@ class AddDownloadViewModel @Inject constructor(
                 resolvedDescriptor = null,
                 formats = emptyList(),
                 selectedFormat = null,
+                playlist = null,
+                selectedPlaylistIndexes = emptySet(),
             )
         }
     }
@@ -123,6 +141,57 @@ class AddDownloadViewModel @Inject constructor(
     /** Selects a format (remembered for the download, US3 scenario 2). */
     fun selectFormat(format: MediaFormat) {
         _uiState.update { it.copy(selectedFormat = format) }
+    }
+
+    /** Toggles one playlist entry's selection. */
+    fun togglePlaylistEntry(index: Int) {
+        _uiState.update {
+            val next = it.selectedPlaylistIndexes.toMutableSet().apply {
+                if (!add(index)) remove(index)
+            }
+            it.copy(selectedPlaylistIndexes = next)
+        }
+    }
+
+    /** Enqueues the chosen playlist entries as one group; duplicates fail typed. */
+    fun confirmPlaylist() {
+        val state = _uiState.value
+        val playlist = state.playlist ?: return
+        val selected = playlist.entries.filter { it.index in state.selectedPlaylistIndexes }
+        if (selected.isEmpty()) return
+        _uiState.update {
+            it.copy(
+                submitting = true,
+                failedError = null,
+                playlistResolving = 0,
+                playlistTotal = selected.size,
+            )
+        }
+        viewModelScope.launch {
+            try {
+                when (val result = enqueuePlaylist(
+                    playlist = playlist,
+                    entries = selected,
+                    destination = StorageDestinationDefaults.appSpecific(),
+                    onProgress = { done, total ->
+                        _uiState.update { it.copy(playlistResolving = done, playlistTotal = total) }
+                    },
+                )) {
+                    is UseCaseResult.Success -> {
+                        _uiState.update { AddDownloadUiState() }
+                        _events.tryEmit(AddDownloadEvent.PlaylistEnqueued)
+                    }
+                    is UseCaseResult.Failure -> _uiState.update { it.copy(inputError = result.error) }
+                }
+            } finally {
+                _uiState.update { it.copy(submitting = false) }
+            }
+        }
+    }
+
+    /** Dismisses the playlist sheet; the user can edit the URL instead. */
+    fun dismissPlaylist() {
+        _uiState.update { it.copy(playlist = null, selectedPlaylistIndexes = emptySet()) }
     }
 
     /** Enqueues the media download for the chosen format; duplicates fail typed. */
@@ -189,15 +258,33 @@ class AddDownloadViewModel @Inject constructor(
                 resolvedDescriptor = null,
                 formats = emptyList(),
                 selectedFormat = null,
+                playlist = null,
+                selectedPlaylistIndexes = emptySet(),
             )
         }
         viewModelScope.launch {
             try {
-                when (val result = resolveMediaUrl(url)) {
+                // A playlist URL resolves to a selectable entry list; anything else
+                // (single video, or a provider without playlist support) falls back to
+                // the single-video resolution path.
+                when (val playlistResult = resolvePlaylist(url)) {
                     is ExtractorResult.Success -> {
-                        if (_uiState.value.input.trim() == url) loadFormats(result.value)
+                        val playlist = playlistResult.value
+                        if (_uiState.value.input.trim() == url) {
+                            _uiState.update {
+                                it.copy(
+                                    playlist = playlist,
+                                    selectedPlaylistIndexes = playlist.entries.map { entry -> entry.index }.toSet(),
+                                )
+                            }
+                        }
                     }
-                    is ExtractorResult.Failure -> _uiState.update { it.copy(failedError = result.error) }
+                    is ExtractorResult.Failure -> when (val result = resolveMediaUrl(url)) {
+                        is ExtractorResult.Success -> {
+                            if (_uiState.value.input.trim() == url) loadFormats(result.value)
+                        }
+                        is ExtractorResult.Failure -> _uiState.update { it.copy(failedError = result.error) }
+                    }
                 }
             } finally {
                 _uiState.update { it.copy(submitting = false) }

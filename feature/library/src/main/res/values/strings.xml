@@ -31,4 +31,12 @@
     <string name="library_sort_title">A–Z</string>
     <string name="library_sort_title_desc">Z–A</string>
     <string name="library_sort_size">Largest</string>
+    <string name="library_group_items">%1$d items</string>
+    <string name="library_group_show">Show %1$s</string>
+    <string name="library_group_hide">Hide %1$s</string>
+    <string name="library_group_delete_title">Remove group?</string>
+    <string name="library_group_delete_body">Removes every file in this group from this device. This cannot be undone.</string>
+    <string name="library_group_delete_confirm">Remove group</string>
+    <string name="library_group_expanded">Expanded</string>
+    <string name="library_group_collapsed">Collapsed</string>
 </resources>

@@ -37,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pulldock.core.designsystem.components.PdCard
 import com.pulldock.core.designsystem.components.PdConfirmDialog
 import com.pulldock.core.designsystem.components.PdEmptyState
+import com.pulldock.core.designsystem.components.PdExpandableGroup
 import com.pulldock.core.designsystem.components.PdFilterChips
 import com.pulldock.core.designsystem.components.PdScaffold
 import com.pulldock.core.designsystem.components.PdSearchField
@@ -70,6 +73,7 @@ import com.pulldock.core.designsystem.components.PdStatusBadge
 import com.pulldock.core.designsystem.components.PdStatusTone
 import com.pulldock.core.designsystem.components.ThumbnailImage
 import com.pulldock.core.designsystem.components.pdLibraryIcon
+import com.pulldock.core.designsystem.components.pdTypeIcon
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.core.model.formatBytes
 import com.pulldock.core.model.mediaKindOf
@@ -193,7 +197,7 @@ fun LibraryScreen(
 
             if (state.loading) {
                 items(6) { LibrarySkeletonCard() }
-            } else if (state.items.isEmpty()) {
+            } else if (state.isEmpty) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     PdEmptyState(
                         title = stringResource(R.string.library_empty_title),
@@ -205,6 +209,21 @@ fun LibraryScreen(
                     )
                 }
             } else {
+                items(
+                    items = state.groups,
+                    key = { "group:" + it.group.id },
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = { "group" },
+                ) { group ->
+                    LibraryGroupCard(
+                        group = group,
+                        gridMode = gridMode,
+                        onPlay = { onPlay(it) },
+                        onDelete = { viewModel.requestDelete(it) },
+                        onDeleteGroup = { viewModel.requestDeleteGroup(it) },
+                        modifier = Modifier.animateItem(),
+                    )
+                }
                 items(
                     items = state.items,
                     key = { it.id },
@@ -240,6 +259,87 @@ fun LibraryScreen(
             onDismiss = viewModel::dismissDelete,
         )
     }
+
+    state.pendingGroupDelete?.let {
+        PdConfirmDialog(
+            title = stringResource(R.string.library_group_delete_title),
+            text = stringResource(R.string.library_group_delete_body),
+            confirmLabel = stringResource(R.string.library_group_delete_confirm),
+            dismissLabel = stringResource(R.string.library_delete_dismiss),
+            onConfirm = { viewModel.confirmGroupDelete(deleteFile = true) },
+            onDismiss = viewModel::dismissGroupDelete,
+        )
+    }
+}
+
+@Composable
+private fun LibraryGroupCard(
+    group: LibraryGroup,
+    gridMode: Boolean,
+    onPlay: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onDeleteGroup: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val tokens = LocalPdTokens.current
+    var expanded by rememberSaveable(group.group.id) { mutableStateOf(false) }
+    val subtitle = buildString {
+        append(stringResource(R.string.library_group_items, group.items.size))
+        append(" · ").append(formatBytes(group.totalBytes))
+    }
+    PdExpandableGroup(
+        title = group.group.title,
+        subtitle = subtitle,
+        icon = pdTypeIcon(group.group.type),
+        expanded = expanded,
+        onToggle = { expanded = !expanded },
+        toggleLabel = stringResource(
+            if (expanded) R.string.library_group_hide else R.string.library_group_show,
+            group.group.title,
+        ),
+        expandedLabel = stringResource(R.string.library_group_expanded),
+        collapsedLabel = stringResource(R.string.library_group_collapsed),
+        modifier = modifier,
+    ) {
+        if (gridMode) {
+            group.items.chunked(2).forEach { rowItems ->
+                Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+                    rowItems.forEach { item ->
+                        LibraryGridCard(
+                            item = item,
+                            onPlay = { onPlay(item.id) },
+                            onDelete = { onDelete(item.id) },
+                            flat = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (rowItems.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        } else {
+            group.items.forEach { item ->
+                LibraryItemCard(
+                    item = item,
+                    onPlay = { onPlay(item.id) },
+                    onDelete = { onDelete(item.id) },
+                    flat = true,
+                )
+            }
+        }
+        OutlinedButton(
+            onClick = { onDeleteGroup(group.group.id) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Delete,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(tokens.spacing.xs))
+            Text(stringResource(R.string.library_group_delete_confirm))
+        }
+    }
 }
 
 @Composable
@@ -248,6 +348,7 @@ private fun LibraryItemCard(
     onPlay: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    flat: Boolean = false,
 ) {
     val tokens = LocalPdTokens.current
     val context = LocalContext.current
@@ -259,6 +360,7 @@ private fun LibraryItemCard(
     PdCard(
         onClick = if (item.fileAvailable) onPrimary else null,
         modifier = modifier,
+        flat = flat,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -380,6 +482,7 @@ private fun LibraryGridCard(
     onPlay: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    flat: Boolean = false,
 ) {
     val tokens = LocalPdTokens.current
     val context = LocalContext.current
@@ -391,6 +494,7 @@ private fun LibraryGridCard(
     PdCard(
         onClick = if (item.fileAvailable) onPrimary else null,
         modifier = modifier,
+        flat = flat,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
             ThumbnailImage(

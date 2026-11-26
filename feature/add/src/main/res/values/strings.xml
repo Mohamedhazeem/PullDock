@@ -45,4 +45,9 @@
     <string name="add_error_pick_torrent">Could not read that file.</string>
     <string name="add_error_open_picker">Could not open file picker.</string>
     <string name="add_media_enqueued">Download queued.</string>
+    <string name="add_playlist_title">Select videos</string>
+    <string name="add_playlist_hint">Choose which videos to download from this playlist.</string>
+    <string name="add_playlist_download">Download %1$d</string>
+    <string name="add_playlist_resolving">Resolving %1$d of %2$d…</string>
+    <string name="add_playlist_empty">No videos selected.</string>
 </resources>
