@@ -40,18 +40,24 @@
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
 
+    <string name="settings_section_usage">Usage</string>
+    <string name="settings_usage_total">Total data</string>
+    <string name="settings_usage_wifi">Wi-Fi</string>
+    <string name="settings_usage_mobile">Mobile</string>
+    <string name="settings_usage_active">Active time</string>
+    <string name="settings_usage_open">App open</string>
+    <string name="settings_usage_empty">No usage recorded yet</string>
+    <string name="settings_usage_chart_desc">Data usage: %1$s (Wi-Fi %2$s, mobile %3$s)</string>
+    <string name="settings_range_day">Day</string>
+    <string name="settings_range_3days">3 days</string>
+    <string name="settings_range_week">7 days</string>
+    <string name="settings_range_month">Month</string>
+
     <string name="settings_section_providers">Providers</string>
-    <string name="settings_providers_note">Runtime not verified.</string>
-    <string name="settings_providers_unavailable">None detected</string>
-    <string name="settings_provider_current">Current</string>
-    <string name="settings_provider_update_recommended">Update</string>
-    <string name="settings_provider_update_required">Update required</string>
-    <string name="settings_provider_platform_change">Provider change</string>
-    <string name="settings_provider_unavailable">Unavailable</string>
-    <string name="settings_provider_unsupported">Unsupported</string>
-    <string name="settings_provider_auth_required">Sign-in required</string>
-    <string name="settings_provider_unknown">Unknown</string>
-    <string name="settings_provider_runtime">Incompatible</string>
+    <string name="settings_provider_active">Active</string>
+    <string name="settings_provider_inactive">Inactive</string>
+    <string name="settings_runtime_verified">Runtime verified</string>
+    <string name="settings_runtime_unverified">Runtime unverified</string>
 
     <string name="settings_section_privacy">Privacy</string>
     <string name="settings_privacy_body">No accounts. No analytics.</string>

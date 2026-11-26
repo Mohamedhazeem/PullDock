@@ -15,11 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.BatterySaver
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Download
@@ -33,6 +32,7 @@ import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -53,16 +53,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pulldock.core.designsystem.components.PdBarChart
 import com.pulldock.core.designsystem.components.PdCard
 import com.pulldock.core.designsystem.components.PdLoadingState
 import com.pulldock.core.designsystem.components.PdScaffold
 import com.pulldock.core.designsystem.components.PdSettingRow
+import com.pulldock.core.designsystem.components.PdStatData
+import com.pulldock.core.designsystem.components.PdStatGrid
+import com.pulldock.core.designsystem.components.PdUsageBar
 import com.pulldock.core.designsystem.theme.LocalPdTokens
+import com.pulldock.core.model.ProviderId
+import com.pulldock.core.model.formatBytes
+import com.pulldock.domain.download.model.UsageRange
 import com.pulldock.domain.download.repository.AppearanceTheme
-import com.pulldock.domain.extractor.model.ProviderHealthState
+import java.time.format.DateTimeFormatter
 
 /** Settings: short labels and icons; long explanations live in Legal. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -161,15 +169,12 @@ fun SettingsScreen(
                             "Movies" to stringResource(R.string.settings_folder_movies),
                             "Music" to stringResource(R.string.settings_folder_music),
                         )
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                            items(folders) { (path, label) ->
-                                androidx.compose.material3.FilterChip(
-                                    selected = state.downloadFolder == path,
-                                    onClick = { viewModel.setDownloadFolder(path) },
-                                    label = { Text(label) },
-                                )
-                            }
-                        }
+                        ChipGrid2(
+                            items = folders,
+                            isSelected = { state.downloadFolder == it.first },
+                            label = { it.second },
+                            onSelect = { viewModel.setDownloadFolder(it.first) },
+                        )
                         val folderPicker = rememberLauncherForActivityResult(
                             ActivityResultContracts.OpenDocumentTree(),
                         ) { uri ->
@@ -198,23 +203,19 @@ fun SettingsScreen(
                             text = stringResource(R.string.settings_quality_label),
                             style = MaterialTheme.typography.titleSmall,
                         )
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                            items(listOf(null, 360, 480, 720, 1080)) { height ->
-                                androidx.compose.material3.FilterChip(
-                                    selected = state.defaultQualityHeight == height,
-                                    onClick = { viewModel.setDefaultQuality(height) },
-                                    label = {
-                                        Text(
-                                            if (height == null) {
-                                                stringResource(R.string.settings_quality_auto)
-                                            } else {
-                                                "${height}p"
-                                            },
-                                        )
-                                    },
-                                )
-                            }
-                        }
+                        val qualityOptions = listOf(
+                            null to stringResource(R.string.settings_quality_auto),
+                            360 to "360p",
+                            480 to "480p",
+                            720 to "720p",
+                            1080 to "1080p",
+                        )
+                        ChipGrid2(
+                            items = qualityOptions,
+                            isSelected = { state.defaultQualityHeight == it.first },
+                            label = { it.second },
+                            onSelect = { viewModel.setDefaultQuality(it.first) },
+                        )
                     }
                 }
                 item {
@@ -271,44 +272,11 @@ fun SettingsScreen(
                     }
                 }
                 item {
+                    UsageSection(state = state, onRange = viewModel::setUsageRange)
+                }
+                item {
                     Section(title = stringResource(R.string.settings_section_providers), icon = Icons.Rounded.Cloud) {
-                        Text(
-                            text = stringResource(R.string.settings_providers_note),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        if (state.providers.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.settings_providers_unavailable),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        } else {
-                            state.providers.forEach { (id, health) ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(10.dp)
-                                            .clip(RoundedCornerShape(50))
-                                            .background(providerColor(health.state)),
-                                    )
-                                    Text(
-                                        text = id.name.lowercase().replaceFirstChar { it.uppercase() },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    Text(
-                                        text = providerLabel(health.state),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
+                        ProviderGrid(state = state)
                     }
                 }
                 item {
@@ -435,23 +403,166 @@ private fun TextButtonCompat(label: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun providerLabel(state: ProviderHealthState): String = when (state) {
-    ProviderHealthState.CURRENT -> stringResource(R.string.settings_provider_current)
-    ProviderHealthState.UPDATE_RECOMMENDED -> stringResource(R.string.settings_provider_update_recommended)
-    ProviderHealthState.UPDATE_REQUIRED -> stringResource(R.string.settings_provider_update_required)
-    ProviderHealthState.PLATFORM_CHANGE_SUSPECTED -> stringResource(R.string.settings_provider_platform_change)
-    ProviderHealthState.PROVIDER_TEMPORARILY_UNAVAILABLE -> stringResource(R.string.settings_provider_unavailable)
-    ProviderHealthState.PROVIDER_UNSUPPORTED -> stringResource(R.string.settings_provider_unsupported)
-    ProviderHealthState.AUTHORIZATION_REQUIRED -> stringResource(R.string.settings_provider_auth_required)
-    ProviderHealthState.VERSION_CHECK_UNAVAILABLE -> stringResource(R.string.settings_provider_unknown)
-    ProviderHealthState.RUNTIME_INCOMPATIBLE -> stringResource(R.string.settings_provider_runtime)
+private fun <T> ChipGrid2(
+    items: List<T>,
+    isSelected: (T) -> Boolean,
+    label: (T) -> String,
+    onSelect: (T) -> Unit,
+) {
+    val tokens = LocalPdTokens.current
+    Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
+        items.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+                row.forEach { item ->
+                    FilterChip(
+                        selected = isSelected(item),
+                        onClick = { onSelect(item) },
+                        label = { Text(label(item), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
 }
 
-private fun providerColor(state: ProviderHealthState): androidx.compose.ui.graphics.Color = when (state) {
-    ProviderHealthState.CURRENT -> androidx.compose.ui.graphics.Color(0xFF226C3B)
-    ProviderHealthState.UPDATE_RECOMMENDED, ProviderHealthState.VERSION_CHECK_UNAVAILABLE ->
-        androidx.compose.ui.graphics.Color(0xFF8C5300)
-    ProviderHealthState.UPDATE_REQUIRED, ProviderHealthState.RUNTIME_INCOMPATIBLE,
-    ProviderHealthState.PROVIDER_UNSUPPORTED -> androidx.compose.ui.graphics.Color(0xFFB3261E)
-    else -> androidx.compose.ui.graphics.Color(0xFF625C54)
+@Composable
+private fun UsageSection(
+    state: SettingsUiState,
+    onRange: (UsageRange) -> Unit,
+) {
+    val tokens = LocalPdTokens.current
+    Section(title = stringResource(R.string.settings_section_usage), icon = Icons.Rounded.BarChart) {
+        val ranges = UsageRange.entries
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            ranges.forEachIndexed { index, range ->
+                SegmentedButton(
+                    selected = state.usageRange == range,
+                    onClick = { onRange(range) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = ranges.size),
+                    label = { Text(rangeLabel(range)) },
+                )
+            }
+        }
+        val bars = state.usage.map { day ->
+            PdUsageBar(
+                label = day.day.format(DAY_FORMATTER),
+                wifiBytes = day.wifiBytes,
+                mobileBytes = day.mobileBytes,
+            )
+        }
+        val total = state.usage.sumOf { it.totalBytes }
+        val wifi = state.usage.sumOf { it.wifiBytes }
+        val mobile = state.usage.sumOf { it.mobileBytes }
+        val active = state.usage.sumOf { it.activeTransferMs }
+        val open = state.usage.sumOf { it.appOpenMs }
+        PdBarChart(
+            bars = bars,
+            contentDescription = stringResource(
+                R.string.settings_usage_chart_desc,
+                formatBytes(total),
+                formatBytes(wifi),
+                formatBytes(mobile),
+            ),
+            emptyLabel = stringResource(R.string.settings_usage_empty),
+        )
+        PdStatGrid(
+            stats = listOf(
+                PdStatData(stringResource(R.string.settings_usage_total), formatBytes(total)),
+                PdStatData(stringResource(R.string.settings_usage_wifi), formatBytes(wifi)),
+                PdStatData(stringResource(R.string.settings_usage_mobile), formatBytes(mobile)),
+                PdStatData(stringResource(R.string.settings_usage_active), formatDuration(active)),
+                PdStatData(stringResource(R.string.settings_usage_open), formatDuration(open)),
+            ),
+        )
+        Spacer(Modifier.size(tokens.spacing.xs))
+    }
 }
+
+@Composable
+private fun ProviderGrid(state: SettingsUiState) {
+    val tokens = LocalPdTokens.current
+    val runtimeText = stringResource(
+        if (state.runtime?.runtimeCompatible == true) {
+            R.string.settings_runtime_verified
+        } else {
+            R.string.settings_runtime_unverified
+        },
+    )
+    ProviderId.entries.chunked(2).forEach { row ->
+        Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+            row.forEach { id ->
+                val supported = providerSupported(id)
+                PdCard(modifier = Modifier.weight(1f)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
+                        Text(
+                            text = id.name.lowercase().replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(
+                                        if (supported) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.error
+                                        },
+                                    ),
+                            )
+                            Spacer(Modifier.width(tokens.spacing.xs))
+                            Text(
+                                text = stringResource(
+                                    if (supported) {
+                                        R.string.settings_provider_active
+                                    } else {
+                                        R.string.settings_provider_inactive
+                                    },
+                                ),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            text = runtimeText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+            if (row.size == 1) Spacer(Modifier.weight(1f))
+        }
+    }
+}
+
+/** All current providers are recognized; a removed/unknown id would be unsupported. */
+private fun providerSupported(id: ProviderId): Boolean = id in ProviderId.entries
+
+@Composable
+private fun rangeLabel(range: UsageRange): String = when (range) {
+    UsageRange.DAY -> stringResource(R.string.settings_range_day)
+    UsageRange.THREE_DAYS -> stringResource(R.string.settings_range_3days)
+    UsageRange.WEEK -> stringResource(R.string.settings_range_week)
+    UsageRange.MONTH -> stringResource(R.string.settings_range_month)
+}
+
+private fun formatDuration(millis: Long): String {
+    val totalSeconds = (millis / 1000).coerceAtLeast(0)
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    return when {
+        hours > 0 -> "%dh %dm".format(hours, minutes)
+        minutes > 0 -> "%dm".format(minutes)
+        else -> "%ds".format(totalSeconds)
+    }
+}
+
+private val DAY_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM")

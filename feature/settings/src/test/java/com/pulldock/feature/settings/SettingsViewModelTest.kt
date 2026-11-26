@@ -5,6 +5,9 @@ import com.pulldock.domain.download.model.DownloadPolicy
 import com.pulldock.domain.download.repository.AppearanceRepository
 import com.pulldock.domain.download.repository.AppearanceTheme
 import com.pulldock.domain.download.repository.NetworkPolicyRepository
+import com.pulldock.domain.download.repository.UsageRepository
+import com.pulldock.domain.download.model.UsageDaily
+import com.pulldock.domain.download.model.UsageDelta
 import java.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -80,11 +83,17 @@ class SettingsViewModelTest {
         override suspend fun setDefaultQuality(value: Int?) { height = value }
     }
 
+    private class FakeUsageRepository : UsageRepository {
+        override fun observe(days: Int): Flow<List<UsageDaily>> = MutableStateFlow(emptyList())
+        override suspend fun addDelta(delta: UsageDelta) = Unit
+        override suspend fun prune(days: Int) = Unit
+    }
+
     @Test
     fun `policy edits persist through the repository`() = runTest(mainRule.testDispatcher) {
         val policyRepo = FakePolicyRepository()
         val appearanceRepo = FakeAppearanceRepository()
-        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth(), FakeStoragePreferences(), FakeMediaPreferences())
+        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth(), FakeStoragePreferences(), FakeMediaPreferences(), FakeUsageRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -105,7 +114,7 @@ class SettingsViewModelTest {
     fun `theme preference persists`() = runTest(mainRule.testDispatcher) {
         val policyRepo = FakePolicyRepository()
         val appearanceRepo = FakeAppearanceRepository()
-        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth(), FakeStoragePreferences(), FakeMediaPreferences())
+        val vm = SettingsViewModel(policyRepo, appearanceRepo, stubProviderHealth(), FakeStoragePreferences(), FakeMediaPreferences(), FakeUsageRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
 

@@ -4,9 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pulldock.domain.download.repository.AppearanceTheme
 import com.pulldock.core.model.DownloadType
+import com.pulldock.core.model.ProviderId
 import com.pulldock.domain.download.model.DownloadPolicy
+import com.pulldock.domain.download.model.UsageDaily
+import com.pulldock.domain.download.model.UsageRange
 import com.pulldock.domain.download.repository.NetworkPolicyRepository
 import com.pulldock.domain.download.repository.StoragePreferencesRepository
+import com.pulldock.domain.download.repository.UsageRepository
+import com.pulldock.domain.extractor.model.ExtractorRuntimeInfo
+import com.pulldock.domain.extractor.model.ProviderHealth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -17,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -32,7 +39,13 @@ data class SettingsUiState(
     /** Preferred resolution height; null = ask every time. */
     val defaultQualityHeight: Int? = null,
     /** Per-provider extractor health (US8); keys follow ProviderId order. */
-    val providers: Map<com.pulldock.core.model.ProviderId, com.pulldock.domain.extractor.model.ProviderHealth> = emptyMap(),
+    val providers: Map<ProviderId, ProviderHealth> = emptyMap(),
+    /** Extractor runtime info (version / verification) shown under each provider. */
+    val runtime: ExtractorRuntimeInfo? = null,
+    /** Selected usage range and its daily buckets (oldest first, zero-filled). */
+    val usageRange: UsageRange = UsageRange.WEEK,
+    val usage: List<UsageDaily> = emptyList(),
+    val usageLoading: Boolean = true,
 )
 
 /** One-shot settings events. */
@@ -52,11 +65,13 @@ class SettingsViewModel @Inject constructor(
     private val providerHealth: com.pulldock.domain.extractor.usecase.ObserveProviderHealth,
     private val storagePreferences: StoragePreferencesRepository,
     private val mediaPreferences: com.pulldock.domain.download.repository.MediaPreferencesRepository,
+    private val usageRepository: UsageRepository,
 ) : ViewModel() {
 
     private val saving = MutableStateFlow(false)
+    private val usageRange = MutableStateFlow(UsageRange.WEEK)
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    private val baseState = combine(
         policyRepository.observe(),
         appearanceRepository.observeTheme(),
         saving,
@@ -70,8 +85,17 @@ class SettingsViewModel @Inject constructor(
             downloadFolder = folder,
             defaultQualityHeight = quality,
             providers = providerHealth.all(),
+            runtime = providerHealth.runtimeInfo(),
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
+    }
+
+    val uiState: StateFlow<SettingsUiState> = baseState
+        .combine(usageRange.flatMapLatest { range ->
+            usageRepository.observe(range.days).map { days -> range to days }
+        }) { base, (range, days) ->
+            base.copy(usageRange = range, usage = days, usageLoading = false)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     private val _events = MutableSharedFlow<SettingsEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<SettingsEvent> = _events.asSharedFlow()
@@ -110,6 +134,11 @@ class SettingsViewModel @Inject constructor(
     /** Persists the preferred resolution used for automatic format fallback. */
     fun setDefaultQuality(height: Int?) {
         viewModelScope.launch { mediaPreferences.setDefaultQuality(height) }
+    }
+
+    /** Selects the usage chart range (Day / 3 days / 7 days / Month). */
+    fun setUsageRange(range: UsageRange) {
+        usageRange.value = range
     }
 
     private fun updatePolicy(transform: (DownloadPolicy) -> DownloadPolicy) {
