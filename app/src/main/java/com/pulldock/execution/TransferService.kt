@@ -22,6 +22,7 @@ import com.pulldock.domain.download.model.DownloadPolicy
 import com.pulldock.domain.download.repository.NetworkPolicyRepository
 import com.pulldock.domain.download.repository.QueueFilter
 import com.pulldock.domain.download.repository.DownloadRepository
+import com.pulldock.usage.UsageSampler
 
 /**
  * `dataSync` foreground service for API < 34 (T108, ADR-0005, FR-031/FR-032):
@@ -38,6 +39,7 @@ class TransferService : Service() {
     @Inject lateinit var policyEnforcer: PolicyEnforcer
     @Inject lateinit var dispatchers: AppDispatchers
     @Inject lateinit var notifications: TransferNotifications
+    @Inject lateinit var usageSampler: UsageSampler
 
     private lateinit var scope: CoroutineScope
     private var enforcementJob: Job? = null
@@ -55,6 +57,7 @@ class TransferService : Service() {
         )
         enforcementJob = scope.launch {
             while (isActive) {
+                usageSampler.sample()
                 val policy: DownloadPolicy = policyRepository.current()
                 val tasks = repository.observeQueue(QueueFilter.ALL).first()
                 policyEnforcer.pauseViolating(tasks, policy, batteryPercent())
@@ -82,6 +85,11 @@ class TransferService : Service() {
 
     override fun onDestroy() {
         enforcementJob?.cancel()
+        // Best-effort final flush on a detached scope so the pending deltas are persisted
+        // even though the service scope is being cancelled.
+        CoroutineScope(SupervisorJob() + dispatchers.io).launch {
+            runCatching { usageSampler.flush() }
+        }
         scope.cancel()
         super.onDestroy()
     }
