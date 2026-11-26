@@ -8,9 +8,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -31,7 +28,6 @@ import kotlinx.coroutines.launch
  * survive process death — durable state lives in Room/DataStore through the domain and
  * data layers. The appearance preference from [SettingsDataStore] drives the theme.
  */
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -55,11 +51,10 @@ class MainActivity : ComponentActivity() {
                 ThemePreference.LIGHT -> false
                 ThemePreference.DARK -> true
             }
-            val windowSize = calculateWindowSizeClass(this)
             PullDockTheme(darkTheme = darkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     RootNavHost(
-                        useRail = windowSize.widthSizeClass >= WindowWidthSizeClass.Medium,
+                        useRail = false,
                         pendingSource = pendingSource,
                         onPendingSourceConsumed = { pendingSource = null },
                     )

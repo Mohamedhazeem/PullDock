@@ -280,11 +280,19 @@ fun PlayerScreen(
                         onTap = { controlsVisible = !controlsVisible },
                         onDoubleTap = { offset ->
                             if (!locked) {
-                                val delta = if (offset.x < size.width / 2) -10_000L else 10_000L
-                                val next = (player.currentPosition + delta)
-                                    .coerceIn(0L, duration.takeIf { it > 0 } ?: Long.MAX_VALUE)
-                                player.seekTo(next)
-                                seekFeedback = if (delta < 0) "−10s" else "+10s"
+                                // Seek only on the left/right thirds; the centre does nothing.
+                                val third = size.width / 3
+                                val delta = when {
+                                    offset.x < third -> -10_000L
+                                    offset.x > size.width - third -> 10_000L
+                                    else -> 0L
+                                }
+                                if (delta != 0L) {
+                                    val next = (player.currentPosition + delta)
+                                        .coerceIn(0L, duration.takeIf { it > 0 } ?: Long.MAX_VALUE)
+                                    player.seekTo(next)
+                                    seekFeedback = if (delta < 0) "−10s" else "+10s"
+                                }
                             }
                         },
                     )
@@ -336,21 +344,23 @@ fun PlayerScreen(
         }
 
         AnimatedVisibility(
-            visible = !locked && controlsVisible && !playing && playbackError == null,
+            visible = !locked && controlsVisible && playbackError == null,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.Center),
         ) {
             IconButton(
-                onClick = { player.playWhenReady = true },
+                onClick = {
+                    if (player.isPlaying) player.pause() else player.playWhenReady = true
+                },
                 modifier = Modifier
                     .size(76.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.92f)),
             ) {
                 Icon(
-                    Icons.Filled.PlayArrow,
-                    contentDescription = stringResource(R.string.player_play),
+                    if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = stringResource(R.string.player_play_pause),
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(52.dp),
                 )
@@ -373,28 +383,18 @@ fun PlayerScreen(
             }
         }
 
-        AnimatedVisibility(
-            visible = !locked && controlsVisible,
-            enter = fadeIn() + slideInVertically { it },
-            exit = fadeOut() + slideOutVertically { it },
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
+        if (!locked && controlsVisible) {
             Column(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
                             listOf(Color.Transparent, Color.Black.copy(alpha = 0.78f)),
                         ),
                     )
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 40.dp),
             ) {
-                LinearProgressIndicator(
-                    progress = { buffered.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color.White.copy(alpha = 0.45f),
-                    trackColor = Color.White.copy(alpha = 0.16f),
-                )
                 Slider(
                     value = if (duration > 0) position.coerceAtMost(duration).toFloat() else 0f,
                     onValueChange = {
@@ -412,21 +412,18 @@ fun PlayerScreen(
                         inactiveTrackColor = Color.White.copy(alpha = 0.22f),
                     ),
                 )
-                Text(
-                    text = "${formatTime(position)} / ${formatTime(duration)}",
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelMedium,
-                )
-                Spacer(Modifier.height(4.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     PlayerIcon(Icons.Filled.Replay10, stringResource(R.string.player_rewind)) {
                         player.seekTo((player.currentPosition - 10_000L).coerceAtLeast(0L))
                     }
-                    PlayerIcon(Icons.Filled.PlayArrow, stringResource(R.string.player_play_pause)) {
+                    PlayerIcon(
+                        if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        stringResource(R.string.player_play_pause),
+                    ) {
                         if (player.isPlaying) player.pause() else player.playWhenReady = true
                     }
                     PlayerIcon(Icons.Filled.Forward10, stringResource(R.string.player_forward)) {
@@ -597,11 +594,17 @@ private fun adjustVolume(context: Context, delta: Float) {
     }
 }
 
+/**
+ * Rotates only while the player is open. The activity is manifest-locked to portrait for
+ * the app shell; the player explicitly requests landscape (full-screen, nav bar hidden),
+ * then restores portrait on close. Using requestedOrientation (not a graphicsLayer) is
+ * required because PlayerView renders on a SurfaceView, which ignores layer rotation.
+ */
 private fun setOrientation(context: Context, landscape: Boolean) {
     val activity = activityOf(context) ?: return
     activity.requestedOrientation = if (landscape) {
         android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
     } else {
-        android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     }
 }

@@ -45,6 +45,12 @@ fun MainScaffold(
     val currentRoute = backStackEntry?.destination?.route
     val navItems = PullDockDestination.Primary.navigationOrder
 
+    // The player is a full-screen surface: no nav bar/rail while it is open.
+    if (currentRoute == com.pulldock.navigation.Routes.PLAYER) {
+        content(Modifier.fillMaxSize())
+        return
+    }
+
     if (useRail) {
         Row(modifier = Modifier.fillMaxSize()) {
             NavigationRail(
