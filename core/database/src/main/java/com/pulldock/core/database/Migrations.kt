@@ -79,7 +79,26 @@ object Migrations {
         }
     }
 
+    /** v7 adds the per-day usage table (no backfill; collection starts fresh). */
+    private val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `usage_daily` (
+                    `day` TEXT NOT NULL PRIMARY KEY,
+                    `wifiRxBytes` INTEGER NOT NULL DEFAULT 0,
+                    `wifiTxBytes` INTEGER NOT NULL DEFAULT 0,
+                    `mobileRxBytes` INTEGER NOT NULL DEFAULT 0,
+                    `mobileTxBytes` INTEGER NOT NULL DEFAULT 0,
+                    `activeTransferMs` INTEGER NOT NULL DEFAULT 0,
+                    `appOpenMs` INTEGER NOT NULL DEFAULT 0
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
     /** All registered migrations, in declaration order. */
     val ALL: List<Migration> =
-        listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+        listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 }

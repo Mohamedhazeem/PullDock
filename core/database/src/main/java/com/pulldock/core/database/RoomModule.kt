@@ -9,6 +9,7 @@ import com.pulldock.core.database.dao.ExtractorTaskDao
 import com.pulldock.core.database.dao.LibraryItemDao
 import com.pulldock.core.database.dao.RecoveryMarkerDao
 import com.pulldock.core.database.dao.TorrentTaskDao
+import com.pulldock.core.database.dao.UsageDailyDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -51,4 +52,7 @@ object RoomModule {
 
     @Provides
     fun provideDownloadGroupDao(database: PullDockDatabase): DownloadGroupDao = database.downloadGroupDao()
+
+    @Provides
+    fun provideUsageDailyDao(database: PullDockDatabase): UsageDailyDao = database.usageDailyDao()
 }
