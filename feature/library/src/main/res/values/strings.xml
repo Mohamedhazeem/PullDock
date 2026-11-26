@@ -6,6 +6,7 @@
     <string name="library_more_actions">More</string>
     <string name="library_play_short">Play</string>
     <string name="library_sort_label">Sort</string>
+    <string name="library_layout_toggle">Toggle grid/list layout</string>
     <string name="library_search">Search</string>
     <string name="library_empty_title">No media yet</string>
     <string name="library_empty_body">Completed downloads appear here.</string>

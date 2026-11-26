@@ -240,28 +240,32 @@ private fun TransferCard(
             )
             PdProgress(fraction = task.progress.percent?.toFloat(), summary = sizeText)
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
-            ) {
-                StatSlot(
-                    "↓ " + if (task.progress.speedBytesPerSec > 0) {
-                        formatSpeed(task.progress.speedBytesPerSec.toDouble())
-                    } else {
-                        "—"
-                    },
-                    Modifier.weight(1f),
-                )
-                StatSlot(
-                    "↑ " + if ((task.uploadSpeed ?: 0L) > 0) {
-                        formatSpeed((task.uploadSpeed ?: 0L).toDouble())
-                    } else {
-                        "—"
-                    },
-                    Modifier.weight(1f),
-                )
-                StatSlot("${details?.peerCount ?: 0} peers", Modifier.weight(1f))
-                StatSlot("${details?.seedCount ?: 0} seeds", Modifier.weight(1f))
+            // Transfer telemetry (speed/peers/seeds) is only meaningful while active;
+            // hide it once completed so the card stays compact.
+            if (task.state != DownloadState.COMPLETED) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+                ) {
+                    StatSlot(
+                        "↓ " + if (task.progress.speedBytesPerSec > 0) {
+                            formatSpeed(task.progress.speedBytesPerSec.toDouble())
+                        } else {
+                            "—"
+                        },
+                        Modifier.weight(1f),
+                    )
+                    StatSlot(
+                        "↑ " + if ((task.uploadSpeed ?: 0L) > 0) {
+                            formatSpeed((task.uploadSpeed ?: 0L).toDouble())
+                        } else {
+                            "—"
+                        },
+                        Modifier.weight(1f),
+                    )
+                    StatSlot("${details?.peerCount ?: 0} peers", Modifier.weight(1f))
+                    StatSlot("${details?.seedCount ?: 0} seeds", Modifier.weight(1f))
+                }
             }
 
             when (task.state) {

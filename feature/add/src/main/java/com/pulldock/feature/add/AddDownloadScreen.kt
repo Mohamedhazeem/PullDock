@@ -19,12 +19,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.RadioButtonChecked
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -114,6 +116,18 @@ fun AddDownloadScreen(
                             isError = inputError != null,
                             singleLine = true,
                             shape = RoundedCornerShape(tokens.radius.md),
+                            trailingIcon = {
+                                if (state.input.isNotEmpty()) {
+                                    IconButton(onClick = { viewModel.onInputChanged("") }) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Clear,
+                                            contentDescription = stringResource(R.string.add_clear),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    }
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth(),
                         )
                         SourceKindBadge(kind = detectedKind)

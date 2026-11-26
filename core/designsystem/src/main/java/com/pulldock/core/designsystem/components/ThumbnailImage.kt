@@ -1,6 +1,7 @@
 package com.pulldock.core.designsystem.components
 
 import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -32,7 +33,15 @@ fun ThumbnailImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
 ) {
-    val file = remember(uri) { uri?.removePrefix("file://")?.let(::File) }
+    // Stored thumbnails use `File.toURI()` (single-slash `file:/…`), so parse the Uri
+    // instead of stripping a literal "file://" prefix (which never matched and left the
+    // bitmap null, showing only the fallback icon).
+    val file = remember(uri) {
+        uri?.let { value ->
+            val parsed = Uri.parse(value)
+            if (parsed.scheme == "file") parsed.path?.let(::File) else null
+        }
+    }
     val bitmap by produceState<ImageBitmap?>(initialValue = null, file) {
         value = withContext(Dispatchers.IO) {
             file?.let {

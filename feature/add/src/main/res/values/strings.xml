@@ -5,6 +5,7 @@
     <string name="add_explanation">Paste a link or choose a torrent file.</string>
     <string name="add_input_label">Link</string>
     <string name="add_input_hint">URL or magnet</string>
+    <string name="add_clear">Clear link</string>
     <string name="add_source_magnet">Magnet</string>
     <string name="add_source_media">Media</string>
     <string name="add_submit">Add</string>

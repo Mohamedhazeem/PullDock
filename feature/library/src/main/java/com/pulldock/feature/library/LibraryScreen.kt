@@ -23,10 +23,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Sort
+import androidx.compose.material.icons.rounded.ViewList
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -88,7 +91,11 @@ fun LibraryScreen(
     val snackbar = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var sortMenuExpanded by remember { mutableStateOf(false) }
+    var gridMode by remember { mutableStateOf(false) }
     val sectionOptions = LibrarySection.entries.map { sectionLabel(it) }
+
+    // Detect files removed outside the app (e.g. deleted from the gallery) on open.
+    LaunchedEffect(Unit) { viewModel.reconcile() }
 
     PdScaffold(
         title = stringResource(R.string.library_title),
@@ -105,7 +112,7 @@ fun LibraryScreen(
         },
     ) { innerPadding ->
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = tokens.layout.gridMinWidth),
+            columns = if (gridMode) GridCells.Fixed(2) else GridCells.Fixed(1),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
@@ -146,6 +153,13 @@ fun LibraryScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
+                    IconButton(onClick = { gridMode = !gridMode }) {
+                        Icon(
+                            imageVector = if (gridMode) Icons.Rounded.ViewList else Icons.Rounded.GridView,
+                            contentDescription = stringResource(R.string.library_layout_toggle),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Box {
                         TextButton(onClick = { sortMenuExpanded = true }) {
                             Icon(
@@ -240,37 +254,45 @@ private fun LibraryItemCard(
         onClick = if (item.fileAvailable) onPlay else null,
         modifier = modifier,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ThumbnailImage(
-                uri = item.thumbnailUri,
-                fallback = pdLibraryIcon(item.fileUri),
-                contentDescription = item.title,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(tokens.radius.md))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-            )
-            Spacer(Modifier.width(tokens.spacing.md))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
+        Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                ThumbnailImage(
+                    uri = item.thumbnailUri,
+                    fallback = pdLibraryIcon(item.fileUri),
+                    contentDescription = item.title,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(tokens.radius.md))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                 )
-                Text(
-                    text = buildString {
-                        item.sizeBytes?.let { append(formatBytes(it)) }
-                        item.resolution?.let {
-                            if (isNotEmpty()) append(" · ")
-                            append(it)
-                        }
-                        if (item.sizeBytes != null || item.resolution != null) append(" · ")
-                        append(dateFormatter.format(item.completedAt.atZone(ZoneId.systemDefault())))
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
+                Spacer(Modifier.width(tokens.spacing.md))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2,
+                    )
+                    Text(
+                        text = buildString {
+                            item.sizeBytes?.let { append(formatBytes(it)) }
+                            item.resolution?.let {
+                                if (isNotEmpty()) append(" · ")
+                                append(it)
+                            }
+                            if (item.sizeBytes != null || item.resolution != null) append(" · ")
+                            append(dateFormatter.format(item.completedAt.atZone(ZoneId.systemDefault())))
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+            ) {
                 if (!item.fileAvailable) {
                     PdStatusBadge(
                         label = stringResource(R.string.library_unavailable),
@@ -278,33 +300,34 @@ private fun LibraryItemCard(
                         tone = PdStatusTone.Error,
                     )
                 }
-            }
-            IconButton(
-                onClick = onPlay,
-                enabled = item.fileAvailable,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.PlayArrow,
-                    contentDescription = playLabel,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            IconButton(
-                onClick = { shareFile(context, item) },
-                enabled = item.fileAvailable,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Share,
-                    contentDescription = shareLabel,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Rounded.Delete,
-                    contentDescription = stringResource(R.string.library_delete),
-                    tint = MaterialTheme.colorScheme.error,
-                )
+                Spacer(Modifier.weight(1f))
+                IconButton(
+                    onClick = onPlay,
+                    enabled = item.fileAvailable,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PlayArrow,
+                        contentDescription = playLabel,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                IconButton(
+                    onClick = { shareFile(context, item) },
+                    enabled = item.fileAvailable,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Share,
+                        contentDescription = shareLabel,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = stringResource(R.string.library_delete),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
     }
