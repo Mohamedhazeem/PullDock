@@ -28,6 +28,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
  * Provider-registry implementation of [MediaExtractor] (T086, FR-014–022).
@@ -115,12 +119,17 @@ class MediaExtractorImpl @Inject constructor(
         // A progressive (already muxed) stream at the same resolution avoids the slow
         // separate-audio download plus the MediaMuxer "compile" pass that runs after the
         // video bytes land. Prefer it whenever the provider offers one; fall back to
-        // muxing only when it does not (e.g. YouTube/X video-only formats).
+        // muxing only when it does not (e.g. YouTube video-only formats).
         val progressive = if (requestedMux) {
-            formats.firstOrNull { candidate ->
+            val sameResolution = formats.firstOrNull { candidate ->
                 candidate.videoCodec != null && candidate.audioCodec != null &&
                     (format.resolution == null || candidate.resolution == format.resolution)
             }
+            // Some providers (e.g. Instagram) only expose VP8/VP9 video and AAC audio,
+            // which MediaMuxer cannot combine into either MP4 or WebM. When no
+            // same-resolution combined stream exists, fall back to any combined stream so
+            // the download succeeds instead of failing at the mux step.
+            sameResolution ?: formats.firstOrNull { it.videoCodec != null && it.audioCodec != null }
         } else {
             null
         }
@@ -145,6 +154,14 @@ class MediaExtractorImpl @Inject constructor(
         }
         val extension = if (needsMux) ".$targetContainer" else ".mp4"
         val tempPath = File(tempDir, taskId + extension).absolutePath
+        // The runtime's progress poller only reports downloaded bytes, so a direct/unknown
+        // format (no estimatedBytes) would show a blank total until completion. Probe the
+        // HTTP Content-Length up front so the total is visible as soon as the download starts.
+        if (!needsMux && effectiveFormat.estimatedBytes == null) {
+            withContext(Dispatchers.IO) { probeContentLength(descriptor.sourceUrl) }?.let { total ->
+                events.tryEmit(ExtractorEvent.Progress(taskId, 0L, total, 0L))
+            }
+        }
         events.tryEmit(ExtractorEvent.Processing(taskId, ProcessingStatus.RUNNING))
 
         val audioFormat = if (needsMux) {
@@ -234,4 +251,21 @@ class MediaExtractorImpl @Inject constructor(
     override suspend fun close() = Unit
 
     private fun providerFor(url: String) = providers.firstOrNull { it.recognizes(url) }
+
+    /** Best-effort total size via an HTTP HEAD request; null when the server withholds it. */
+    private fun probeContentLength(url: String): Long? = try {
+        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            requestMethod = "HEAD"
+            connectTimeout = 5_000
+            readTimeout = 5_000
+            instanceFollowRedirects = true
+        }
+        try {
+            connection.contentLengthLong.takeIf { it > 0L }
+        } finally {
+            connection.disconnect()
+        }
+    } catch (_: Throwable) {
+        null
+    }
 }

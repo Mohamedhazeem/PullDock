@@ -2,6 +2,7 @@ package com.pulldock.domain.download.usecase
 
 import com.pulldock.core.model.DownloadError
 import com.pulldock.domain.download.model.DownloadTask
+import com.pulldock.domain.download.model.SourceHashing
 import com.pulldock.domain.download.model.StorageDestination
 import com.pulldock.domain.download.queue.QueueCoordinator
 import com.pulldock.domain.download.repository.DownloadRepository
@@ -66,8 +67,11 @@ class EnqueueDownload @Inject constructor(
     ): UseCaseResult<DownloadTask> {
         UrlValidator.validate(descriptor.sourceUrl)?.let { return UseCaseResult.Failure(it) }
 
-        val existing = repository.findBySourceHash("url:${descriptor.sourceUrl.trim().lowercase()}")
-        if (existing != null && !existing.state.isTerminal) {
+        // Duplicate guard must use the same SHA-256 projection the repository persists
+        // (SourceHashing.forMedia); passing the raw "url:…" string never matched, so a
+        // re-added URL slipped through and crashed on the UNIQUE sourceHash constraint.
+        val existing = repository.findBySourceHash(SourceHashing.forMedia(descriptor.sourceUrl))
+        if (existing != null) {
             return UseCaseResult.Failure(DownloadError.ExtractorEngine(DownloadError.ExtractorReason.UNSUPPORTED, "duplicate"))
         }
 

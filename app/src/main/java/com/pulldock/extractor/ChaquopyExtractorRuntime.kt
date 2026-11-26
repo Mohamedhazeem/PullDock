@@ -199,10 +199,16 @@ class ChaquopyExtractorRuntime @Inject constructor(
             val audioFormat = audioExtractor.getTrackFormat(audioTrack)
             val videoMime = videoFormat.getString(android.media.MediaFormat.KEY_MIME) ?: ""
             val audioMime = audioFormat.getString(android.media.MediaFormat.KEY_MIME) ?: ""
-            val mp4 = container.equals("mp4", true) ||
-                videoMime.contains("avc", true) ||
-                videoMime.contains("av01", true) ||
-                audioMime.contains("mp4a", true)
+            // The container is driven by the video codec: VP8/VP9 only live in WebM, while
+            // H.264/AV1 go in MP4. Audio must not force MP4 when the video is VP9 (that
+            // combination is invalid and MediaMuxer.addTrack would throw).
+            val videoIsVp = videoMime.contains("vp8", true) || videoMime.contains("vp9", true)
+            val mp4 = !videoIsVp && (
+                container.equals("mp4", true) ||
+                    videoMime.contains("avc", true) ||
+                    videoMime.contains("av01", true) ||
+                    audioMime.contains("mp4a", true)
+                )
             android.util.Log.e("PullDockMux", "mux container=$container video=$videoMime audio=$audioMime")
             muxer = android.media.MediaMuxer(
                 outputPath,
