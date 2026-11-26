@@ -17,6 +17,7 @@ import com.pulldock.data.extractor.provider.YouTubeProvider
 import com.pulldock.domain.extractor.model.ExtractorRuntimeInfo
 import com.pulldock.domain.extractor.model.MediaDescriptor
 import com.pulldock.domain.extractor.model.MediaFormat
+import com.pulldock.domain.extractor.model.PlaylistDescriptor
 import com.pulldock.domain.extractor.model.ProcessingStatus
 import com.pulldock.domain.extractor.model.ProviderHealth
 import com.pulldock.domain.extractor.model.ProviderHealthState
@@ -73,6 +74,35 @@ class MediaExtractorImpl @Inject constructor(
                         authorizedContext = "user-provided authorized URL",
                     ),
                 )
+            }
+            is ExtractorResult.Failure -> result
+        }
+    }
+
+    override suspend fun resolvePlaylist(url: String): ExtractorResult<PlaylistDescriptor> {
+        val provider = providerFor(url) ?: return ExtractorResult.Failure(
+            DownloadError.Input(DownloadError.InputReason.UNSUPPORTED_PROVIDER),
+        )
+        return when (val result = runtime.playlist(url, provider.id)) {
+            is ExtractorResult.Success -> {
+                val info = result.value
+                if (info.entries.isEmpty()) {
+                    ExtractorResult.Failure(
+                        DownloadError.ExtractorEngine(
+                            DownloadError.ExtractorReason.UNSUPPORTED,
+                            "no playlist entries",
+                        ),
+                    )
+                } else {
+                    ExtractorResult.Success(
+                        PlaylistDescriptor(
+                            sourceUrl = info.sourceUrl,
+                            providerId = info.providerId,
+                            title = info.title,
+                            entries = info.entries,
+                        ),
+                    )
+                }
             }
             is ExtractorResult.Failure -> result
         }

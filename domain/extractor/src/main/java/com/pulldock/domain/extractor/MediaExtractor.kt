@@ -7,6 +7,7 @@ import com.pulldock.domain.extractor.model.ExtractorRuntimeInfo
 import com.pulldock.domain.extractor.model.MediaDescriptor
 import com.pulldock.domain.extractor.model.MediaFormat
 import com.pulldock.domain.extractor.model.MediaSource
+import com.pulldock.domain.extractor.model.PlaylistDescriptor
 import com.pulldock.domain.extractor.model.ProcessingStatus
 import kotlinx.coroutines.flow.Flow
 
@@ -47,6 +48,15 @@ interface Provider {
     /** Resolves an authorized URL into a descriptor or typed failure (FR-019). */
     suspend fun resolve(url: String): ExtractorResult<MediaDescriptor>
 
+    /**
+     * Resolves a playlist URL into a selectable entry list, or a typed failure
+     * (`NOT_PLAYLIST` for a single video). Default providers do not support playlists.
+     */
+    suspend fun resolvePlaylist(url: String): ExtractorResult<PlaylistDescriptor> =
+        ExtractorResult.Failure(
+            DownloadError.ExtractorEngine(DownloadError.ExtractorReason.UNSUPPORTED, "playlist unsupported"),
+        )
+
     /** Available formats for a resolved descriptor; may be typed-empty (NO_FORMATS). */
     suspend fun formats(descriptor: MediaDescriptor): ExtractorResult<List<MediaFormat>>
 
@@ -63,6 +73,15 @@ interface MediaExtractor {
 
     /** Recognizes and resolves a URL via the provider registry, or fails typed. */
     suspend fun resolve(url: String): ExtractorResult<MediaDescriptor>
+
+    /**
+     * Resolves a playlist URL into a selectable entry list, or a typed failure
+     * (`NOT_PLAYLIST` for a single video). Default providers do not support playlists.
+     */
+    suspend fun resolvePlaylist(url: String): ExtractorResult<PlaylistDescriptor> =
+        ExtractorResult.Failure(
+            DownloadError.ExtractorEngine(DownloadError.ExtractorReason.UNSUPPORTED, "playlist unsupported"),
+        )
 
     /** Available formats for a resolved descriptor; may be typed-empty. */
     suspend fun availableFormats(descriptor: MediaDescriptor): ExtractorResult<List<MediaFormat>>

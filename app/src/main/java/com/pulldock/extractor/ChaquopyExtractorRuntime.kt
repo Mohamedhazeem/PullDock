@@ -9,6 +9,7 @@ import com.pulldock.domain.extractor.ExtractorResult
 import com.pulldock.domain.extractor.ExtractorRuntime
 import com.pulldock.domain.extractor.model.ExtractorRuntimeInfo
 import com.pulldock.domain.extractor.model.MediaFormat
+import com.pulldock.domain.extractor.model.PlaylistEntry
 import com.pulldock.domain.extractor.model.RuntimeVerificationStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -84,6 +85,57 @@ class ChaquopyExtractorRuntime @Inject constructor(
                     durationSeconds = json.optLong("durationSeconds", 0L).takeIf { it > 0 },
                     thumbnailUrl = json.optString("thumbnailUrl").ifBlank { null },
                     formats = formats,
+                ),
+            )
+        } catch (t: Throwable) {
+            ExtractorResult.Failure(mapThrowable(t))
+        }
+    }
+
+    override suspend fun playlist(
+        url: String,
+        providerId: ProviderId,
+    ): ExtractorResult<ExtractorRuntime.PlaylistInfo> {
+        val mod = module() ?: return ExtractorResult.Failure(
+            DownloadError.ExtractorEngine(DownloadError.ExtractorReason.RUNTIME_INCOMPATIBLE),
+        )
+        return try {
+            val json = JSONObject(withContext(kotlinx.coroutines.Dispatchers.IO) {
+                mod.callAttr("playlist", url).toString()
+            })
+            if (json.has("error")) {
+                val code = json.optString("error", "")
+                if (code == "NOT_PLAYLIST") {
+                    return ExtractorResult.Failure(
+                        DownloadError.ExtractorEngine(
+                            DownloadError.ExtractorReason.UNSUPPORTED,
+                            "not a playlist",
+                        ),
+                    )
+                }
+                return ExtractorResult.Failure(mapError(code))
+            }
+            val entries = mutableListOf<PlaylistEntry>()
+            val array = json.optJSONArray("entries")
+            if (array != null) {
+                for (i in 0 until array.length()) {
+                    val e = array.getJSONObject(i)
+                    val entryUrl = e.stringOrNull("url") ?: continue
+                    entries += PlaylistEntry(
+                        index = e.optInt("index", i),
+                        title = e.optString("title").ifBlank { "Entry ${i + 1}" },
+                        url = entryUrl,
+                        durationSeconds = e.optLong("durationSeconds", 0L).takeIf { it > 0 },
+                        thumbnailUrl = e.stringOrNull("thumbnailUrl"),
+                    )
+                }
+            }
+            ExtractorResult.Success(
+                ExtractorRuntime.PlaylistInfo(
+                    sourceUrl = url,
+                    providerId = providerId,
+                    title = json.optString("title").ifBlank { "Playlist" },
+                    entries = entries,
                 ),
             )
         } catch (t: Throwable) {

@@ -54,6 +54,30 @@ data class MediaSource(
 /** Processing status of a media download's merge/finalize stage. */
 enum class ProcessingStatus { NONE, PENDING, RUNNING, DONE, FAILED }
 
+/**
+ * One entry of a resolved playlist (e.g. a YouTube playlist video). [url] is the
+ * per-entry authorized source; [index] is the provider's 0-based position.
+ */
+data class PlaylistEntry(
+    val index: Int,
+    val title: String,
+    val url: String,
+    val durationSeconds: Long?,
+    val thumbnailUrl: String?,
+)
+
+/**
+ * A resolved playlist awaiting per-entry selection (data-model.md §1.4). The user picks
+ * entries; each selected entry is resolved to a descriptor+format and enqueued as a
+ * grouped task.
+ */
+data class PlaylistDescriptor(
+    val sourceUrl: String,
+    val providerId: ProviderId,
+    val title: String,
+    val entries: List<PlaylistEntry>,
+)
+
 /** Per-task extractors detail keyed by [taskId] (data-model.md §1.3). */
 data class ExtractorTaskDetails(
     val taskId: String,

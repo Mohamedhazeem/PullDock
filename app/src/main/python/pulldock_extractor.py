@@ -85,6 +85,20 @@ def _options_common():
     }
 
 
+def _options_playlist():
+    # Flat extraction enumerates a playlist's entries without downloading or probing
+    # each video's formats. `noplaylist` is intentionally omitted so a playlist URL is
+    # expanded (the single-video `probe` path keeps `noplaylist: True`).
+    return {
+        "quiet": True,
+        "no_warnings": True,
+        "extract_flat": True,
+        "skip_download": True,
+        "no_color": True,
+        "socket_timeout": 30,
+    }
+
+
 def _sort_key(entry):
     resolution = entry.get("resolution") or ""
     height = 0
@@ -155,6 +169,43 @@ def probe(url):
             "durationSeconds": int(info.get("duration") or 0) or None,
             "thumbnailUrl": info.get("thumbnail"),
             "formats": formats,
+        })
+    except Exception as exc:  # sanitized: message only, never credentials/URLs
+        return json.dumps({"error": type(exc).__name__, "message": str(exc)[:200]})
+
+
+def playlist(url):
+    """Enumerate a playlist's entries (flat, no download). NOT_PLAYLIST for a single video."""
+    try:
+        opts = _options_playlist()
+        with YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+        if not info:
+            return json.dumps({"error": "NO_INFO"})
+        entries = info.get("entries")
+        if entries is None:
+            return json.dumps({"error": "NOT_PLAYLIST"})
+        items = []
+        for index, entry in enumerate(entries):
+            if not entry:
+                continue
+            entry_url = entry.get("url") or entry.get("webpage_url")
+            if not entry_url and entry.get("id"):
+                entry_url = "https://www.youtube.com/watch?v=" + str(entry.get("id"))
+            if not entry_url:
+                continue
+            if entry_url.startswith("//"):
+                entry_url = "https:" + entry_url
+            items.append({
+                "index": index,
+                "title": _safe_title(entry.get("title")),
+                "url": entry_url,
+                "durationSeconds": int(entry.get("duration") or 0) or None,
+                "thumbnailUrl": entry.get("thumbnail"),
+            })
+        return json.dumps({
+            "title": _safe_title(info.get("title")),
+            "entries": items,
         })
     except Exception as exc:  # sanitized: message only, never credentials/URLs
         return json.dumps({"error": type(exc).__name__, "message": str(exc)[:200]})
