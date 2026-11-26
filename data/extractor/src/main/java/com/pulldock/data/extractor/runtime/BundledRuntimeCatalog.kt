@@ -94,11 +94,6 @@ object BundledRuntimeCatalog {
         ProviderId.TIKTOK to listOf(
             Regex("""^https?://(www\.)?tiktok\.com/@[^/]+/video/[^/?&]+.*""", RegexOption.IGNORE_CASE),
         ),
-        ProviderId.REDDIT to listOf(
-            Regex("""^https?://(www\.|old\.)?reddit\.com/r/[^/]+/comments/[^/?&]+.*""", RegexOption.IGNORE_CASE),
-            Regex("""^https?://redd\.it/[^/?&]+.*""", RegexOption.IGNORE_CASE),
-            Regex("""^https?://v\.redd\.it/[^/?&]+.*""", RegexOption.IGNORE_CASE),
-        ),
     )
 
     /**

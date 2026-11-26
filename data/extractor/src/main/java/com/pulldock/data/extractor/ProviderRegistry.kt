@@ -19,7 +19,6 @@ class ProviderRegistry @Inject constructor() {
         com.pulldock.data.extractor.provider.InstagramProvider(),
         com.pulldock.data.extractor.provider.FacebookProvider(),
         com.pulldock.data.extractor.provider.TikTokProvider(),
-        com.pulldock.data.extractor.provider.RedditProvider(),
     )
 
     private val byId: Map<ProviderId, Provider> = all.associateBy { it.id }
