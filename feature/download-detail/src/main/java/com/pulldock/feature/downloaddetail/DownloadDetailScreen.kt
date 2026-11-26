@@ -262,7 +262,10 @@ private fun ActionsRow(
 ) {
     val tokens = LocalPdTokens.current
     PdCard {
-        Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+        ) {
             Text(
                 text = stringResource(R.string.detail_actions_title),
                 style = MaterialTheme.typography.titleMedium,
@@ -273,12 +276,14 @@ private fun ActionsRow(
                     stringResource(R.string.detail_action_pause),
                     onPause,
                     primary = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 DownloadState.PAUSED -> ActionButton(
                     Icons.Rounded.PlayArrow,
                     stringResource(R.string.detail_action_resume),
                     onResume,
                     primary = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 DownloadState.FAILED, DownloadState.NEEDS_USER_ACTION, DownloadState.BLOCKED,
                 DownloadState.NEEDS_PERMISSION -> ActionButton(
@@ -286,6 +291,7 @@ private fun ActionsRow(
                     stringResource(R.string.detail_action_retry),
                     onRetry,
                     primary = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 else -> Unit
             }
