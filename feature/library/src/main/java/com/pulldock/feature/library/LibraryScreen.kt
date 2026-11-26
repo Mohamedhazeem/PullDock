@@ -466,7 +466,7 @@ private fun CardActions(
         Icon(
             imageVector = Icons.Rounded.Delete,
             contentDescription = stringResource(R.string.library_delete),
-            tint = MaterialTheme.colorScheme.error,
+            tint = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -574,7 +574,7 @@ private fun LibraryGridCard(
                             Icon(
                                 imageVector = Icons.Rounded.Delete,
                                 contentDescription = stringResource(R.string.library_delete),
-                                tint = MaterialTheme.colorScheme.error,
+                                tint = MaterialTheme.colorScheme.primary,
                             )
                         }
                 } else {
