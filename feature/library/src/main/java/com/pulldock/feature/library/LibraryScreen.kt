@@ -1,6 +1,7 @@
 package com.pulldock.feature.library
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -322,13 +323,22 @@ private fun LibrarySkeletonCard() {
 }
 
 private fun shareFile(context: android.content.Context, item: LibraryItem) {
-    val file = File(item.fileUri.removePrefix("file://"))
-    if (!file.isFile) return
+    val source = Uri.parse(item.fileUri)
+    val shareUri = when (source.scheme) {
+        "file" -> {
+            val file = source.path?.let(::File) ?: return
+            if (!file.isFile) return
+            runCatching {
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            }.getOrNull() ?: return
+        }
+        "content" -> source
+        else -> return
+    }
     runCatching {
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = context.contentResolver.getType(uri) ?: "application/octet-stream"
-            putExtra(Intent.EXTRA_STREAM, uri)
+            type = context.contentResolver.getType(shareUri) ?: "application/octet-stream"
+            putExtra(Intent.EXTRA_STREAM, shareUri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(intent, context.getString(R.string.library_share_title)))
