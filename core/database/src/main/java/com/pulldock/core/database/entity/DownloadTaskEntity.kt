@@ -27,6 +27,7 @@ data class DownloadTaskEntity(
     @ColumnInfo(name = "source") val source: String,
     @ColumnInfo(name = "sourceHash") val sourceHash: String,
     @ColumnInfo(name = "displayName") val displayName: String,
+    @ColumnInfo(name = "resolution") val resolution: String? = null,
     @ColumnInfo(name = "outputFilename") val outputFilename: String,
     @ColumnInfo(name = "state") val state: String,
     /** Monotonic per-task transition sequence; grows on every persisted transition. */

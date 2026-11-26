@@ -34,6 +34,7 @@ object TaskMappers {
         source = entity.source,
         sourceHash = entity.sourceHash,
         displayName = entity.displayName,
+        resolution = entity.resolution,
         outputFilename = entity.outputFilename,
         state = requireState(entity.state),
         progress = DownloadProgress(
@@ -77,6 +78,7 @@ object TaskMappers {
         source = task.source,
         sourceHash = task.sourceHash,
         displayName = task.displayName,
+        resolution = task.resolution,
         outputFilename = task.outputFilename,
         state = task.state.name,
         stateSequence = stateSequence,

@@ -49,6 +49,14 @@ object Migrations {
         }
     }
 
+    /** v5 records the selected media resolution on tasks and library items. */
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `download_task` ADD COLUMN `resolution` TEXT")
+            db.execSQL("ALTER TABLE `library_item` ADD COLUMN `resolution` TEXT")
+        }
+    }
+
     /** All registered migrations, in declaration order. */
-    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }

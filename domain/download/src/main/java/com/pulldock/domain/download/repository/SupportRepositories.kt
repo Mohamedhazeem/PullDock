@@ -25,6 +25,8 @@ data class LibraryItem(
     val title: String,
     val fileUri: String,
     val sizeBytes: Long?,
+    /** Media resolution (e.g. "720p"); null when unknown. */
+    val resolution: String? = null,
     val durationSeconds: Long?,
     val source: String?,
     val completedAt: java.time.Instant,

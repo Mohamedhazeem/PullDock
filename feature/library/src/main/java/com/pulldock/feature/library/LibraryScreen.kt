@@ -260,7 +260,11 @@ private fun LibraryItemCard(
                 Text(
                     text = buildString {
                         item.sizeBytes?.let { append(formatBytes(it)) }
-                        if (item.sizeBytes != null) append(" · ")
+                        item.resolution?.let {
+                            if (isNotEmpty()) append(" · ")
+                            append(it)
+                        }
+                        if (item.sizeBytes != null || item.resolution != null) append(" · ")
                         append(dateFormatter.format(item.completedAt.atZone(ZoneId.systemDefault())))
                     },
                     style = MaterialTheme.typography.labelSmall,

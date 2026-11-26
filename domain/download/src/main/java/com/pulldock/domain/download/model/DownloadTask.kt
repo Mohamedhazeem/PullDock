@@ -87,6 +87,8 @@ data class DownloadTask(
     /** Deterministic hash used for duplicate detection; unique (invariant §3.2). */
     val sourceHash: String,
     val displayName: String,
+    /** Selected format resolution (e.g. "720p"); null for torrents/unknown. */
+    val resolution: String? = null,
     val outputFilename: String,
     val state: DownloadState,
     val progress: DownloadProgress,

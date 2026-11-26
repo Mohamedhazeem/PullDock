@@ -24,6 +24,7 @@ data class LibraryItemEntity(
     @ColumnInfo(name = "type") val type: String,
     @ColumnInfo(name = "title") val title: String,
     @ColumnInfo(name = "sizeBytes") val sizeBytes: Long?,
+    @ColumnInfo(name = "resolution") val resolution: String? = null,
     @ColumnInfo(name = "durationSeconds") val durationSeconds: Long?,
     @ColumnInfo(name = "source") val source: String?,
     @ColumnInfo(name = "completedAt") val completedAt: Long,

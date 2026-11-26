@@ -123,6 +123,7 @@ class DownloadRepositoryImpl @Inject constructor(
             source = descriptor.sourceUrl,
             sourceHash = com.pulldock.domain.download.model.SourceHashing.forMedia(descriptor.sourceUrl),
             displayName = descriptor.title,
+            resolution = format.resolution,
             outputFilename = "",
             state = DownloadState.CREATED,
             progress = DownloadProgress.IDLE,

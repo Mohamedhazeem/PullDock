@@ -222,7 +222,11 @@ private fun TransferCard(
                             maxLines = 1,
                         )
                         Text(
-                            text = "${pdTypeLabel(task.type)} · $stateLabel",
+                            text = buildString {
+                                append(pdTypeLabel(task.type))
+                                task.resolution?.let { append(" · ").append(it) }
+                                append(" · ").append(stateLabel)
+                            },
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

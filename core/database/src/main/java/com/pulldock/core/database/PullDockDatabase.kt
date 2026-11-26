@@ -30,7 +30,7 @@ import com.pulldock.core.database.entity.TorrentTaskEntity
         RecoveryMarkerEntity::class,
         LibraryItemEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class PullDockDatabase : RoomDatabase() {
