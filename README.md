@@ -6,6 +6,20 @@ It combines a clean Material 3 interface with a modular Kotlin architecture, dur
 
 > PullDock is for content you own or have permission to download. Respect copyright, provider terms, and applicable law.
 
+## Download
+
+Grab the latest signed APK from **[GitHub Releases](https://github.com/Mohamedhazeem/PullDock/releases/latest)** — no Play Store needed.
+
+| APK | Use it for |
+| --- | --- |
+| `app-arm64-v8a-release.apk` | Most phones (recommended) |
+| `app-universal-release.apk` | Any device (larger download) |
+| `app-x86_64-release.apk` | Emulators / x86_64 devices |
+
+**Install:** open the [latest release](https://github.com/Mohamedhazeem/PullDock/releases/latest) on your phone → download the `arm64` (or `universal`) APK → tap it → allow “install unknown apps” for your browser → open PullDock.
+
+Requires **Android 8.0+ (API 26+)**.
+
 ## Features
 
 - **One queue for media and torrents** — Home shows every transfer with progress, speed, ETA, pause/resume, retry, and removal.
@@ -75,7 +89,7 @@ sdk.dir=/path/to/Android/sdk
 # Install the arm64 debug APK on a connected device
 adb install -r app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 
-# Release build (unsigned)
+# Release build (signed when keystore.properties is present, otherwise unsigned)
 ./gradlew :app:assembleRelease
 ```
 
