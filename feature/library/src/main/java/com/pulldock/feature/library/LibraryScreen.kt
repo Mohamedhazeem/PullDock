@@ -118,7 +118,7 @@ fun LibraryScreen(
                 .padding(innerPadding)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .padding(horizontal = tokens.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
             horizontalArrangement = Arrangement.spacedBy(tokens.spacing.md),
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -216,12 +216,21 @@ fun LibraryScreen(
                     key = { it.id },
                     contentType = { "library_item" },
                 ) { item ->
-                    LibraryItemCard(
-                        item = item,
-                        onPlay = { onPlay(item.id) },
-                        onDelete = { viewModel.requestDelete(item.id) },
-                        modifier = Modifier.animateItem(),
-                    )
+                    if (gridMode) {
+                        LibraryGridCard(
+                            item = item,
+                            onPlay = { onPlay(item.id) },
+                            onDelete = { viewModel.requestDelete(item.id) },
+                            modifier = Modifier.animateItem(),
+                        )
+                    } else {
+                        LibraryItemCard(
+                            item = item,
+                            onPlay = { onPlay(item.id) },
+                            onDelete = { viewModel.requestDelete(item.id) },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
                 }
             }
         }
@@ -247,7 +256,6 @@ private fun LibraryItemCard(
     modifier: Modifier = Modifier,
 ) {
     val tokens = LocalPdTokens.current
-    val context = LocalContext.current
     val playLabel = stringResource(R.string.library_play, item.title)
     val shareLabel = stringResource(R.string.library_share)
     PdCard(
@@ -288,45 +296,170 @@ private fun LibraryItemCard(
                     )
                 }
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
-            ) {
-                if (!item.fileAvailable) {
+            if (item.fileAvailable) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    CardActions(
+                        item = item,
+                        onPlay = onPlay,
+                        onDelete = onDelete,
+                        playLabel = playLabel,
+                        shareLabel = shareLabel,
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+                ) {
                     PdStatusBadge(
                         label = stringResource(R.string.library_unavailable),
                         icon = Icons.Rounded.ErrorOutline,
                         tone = PdStatusTone.Error,
                     )
-                }
-                Spacer(Modifier.weight(1f))
-                IconButton(
-                    onClick = onPlay,
-                    enabled = item.fileAvailable,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.PlayArrow,
-                        contentDescription = playLabel,
-                        tint = MaterialTheme.colorScheme.primary,
+                    Spacer(Modifier.weight(1f))
+                    CardActions(
+                        item = item,
+                        onPlay = onPlay,
+                        onDelete = onDelete,
+                        playLabel = playLabel,
+                        shareLabel = shareLabel,
                     )
                 }
-                IconButton(
-                    onClick = { shareFile(context, item) },
-                    enabled = item.fileAvailable,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Share,
-                        contentDescription = shareLabel,
-                        tint = MaterialTheme.colorScheme.primary,
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardActions(
+    item: LibraryItem,
+    onPlay: () -> Unit,
+    onDelete: () -> Unit,
+    playLabel: String,
+    shareLabel: String,
+) {
+    val context = LocalContext.current
+    if (item.fileAvailable) {
+        IconButton(onClick = onPlay) {
+            Icon(
+                imageVector = Icons.Rounded.PlayArrow,
+                contentDescription = playLabel,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+        IconButton(onClick = { shareFile(context, item) }) {
+            Icon(
+                imageVector = Icons.Rounded.Share,
+                contentDescription = shareLabel,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+    IconButton(onClick = onDelete) {
+        Icon(
+            imageVector = Icons.Rounded.Delete,
+            contentDescription = stringResource(R.string.library_delete),
+            tint = MaterialTheme.colorScheme.error,
+        )
+    }
+}
+
+/**
+ * Grid card: a large thumbnail on top, the title and size below, and an evenly
+ * distributed action row. Unavailable items show only a Delete action (no disabled
+ * play/share icons) so the row stays aligned and deletion is always easy to reach.
+ */
+@Composable
+private fun LibraryGridCard(
+    item: LibraryItem,
+    onPlay: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val tokens = LocalPdTokens.current
+    val context = LocalContext.current
+    val playLabel = stringResource(R.string.library_play, item.title)
+    val shareLabel = stringResource(R.string.library_share)
+    PdCard(
+        onClick = if (item.fileAvailable) onPlay else null,
+        modifier = modifier,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
+            ThumbnailImage(
+                uri = item.thumbnailUri,
+                fallback = pdLibraryIcon(item.fileUri),
+                contentDescription = item.title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+                    .clip(RoundedCornerShape(tokens.radius.md))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+            )
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 2,
+            )
+            Text(
+                text = buildString {
+                    item.sizeBytes?.let { append(formatBytes(it)) }
+                    item.resolution?.let {
+                        if (isNotEmpty()) append(" · ")
+                        append(it)
+                    }
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+            ) {
+                if (item.fileAvailable) {
+                    IconButton(onClick = onPlay, modifier = Modifier.weight(1f)) {
+                        Icon(
+                            imageVector = Icons.Rounded.PlayArrow,
+                            contentDescription = playLabel,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    IconButton(
+                        onClick = { shareFile(context, item) },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Share,
+                            contentDescription = shareLabel,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    IconButton(onClick = onDelete, modifier = Modifier.weight(1f)) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = stringResource(R.string.library_delete),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                } else {
+                    PdStatusBadge(
+                        label = stringResource(R.string.library_unavailable),
+                        icon = Icons.Rounded.ErrorOutline,
+                        tone = PdStatusTone.Error,
                     )
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        imageVector = Icons.Rounded.Delete,
-                        contentDescription = stringResource(R.string.library_delete),
-                        tint = MaterialTheme.colorScheme.error,
-                    )
+                    Spacer(Modifier.weight(1f))
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Rounded.Delete,
+                            contentDescription = stringResource(R.string.library_delete),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
             }
         }

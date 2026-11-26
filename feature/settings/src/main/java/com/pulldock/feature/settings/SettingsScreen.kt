@@ -92,7 +92,7 @@ fun SettingsScreen(
                     .padding(innerPadding)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(horizontal = tokens.spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+                verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
             ) {
                 item {
                     Section(title = stringResource(R.string.settings_section_downloads), icon = Icons.Rounded.Download) {

@@ -2,6 +2,7 @@ package com.pulldock.core.designsystem.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -15,6 +16,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.pulldock.core.designsystem.R
 
 /** Consistent PullDock top bar with optional back action and trailing actions. */
@@ -29,12 +31,12 @@ fun PdTopAppBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     TopAppBar(
-        modifier = modifier,
+        modifier = modifier.heightIn(max = 56.dp),
         title = {
             Column {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 subtitle?.let {

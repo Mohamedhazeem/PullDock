@@ -28,7 +28,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -100,13 +100,16 @@ fun HomeScreen(
         snackbarHostState = snackbar,
         scrollBehavior = scrollBehavior,
         floatingActionButton = {
-            ExtendedFloatingActionButton(
+            FloatingActionButton(
                 onClick = onAddDownload,
-                icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.home_add)) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-            )
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = stringResource(R.string.home_add),
+                )
+            }
         },
     ) { innerPadding ->
         LazyColumn(
@@ -115,7 +118,7 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .padding(horizontal = tokens.spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
         ) {
             item {
                 PdFilterChips(
@@ -233,12 +236,32 @@ private fun TransferCard(
                     }
                 }
 
-            PdStatusBadge(
-                label = stateLabel,
-                icon = pdStatusIcon(task.state),
-                tone = pdStatusTone(task.state),
-            )
-            PdProgress(fraction = task.progress.percent?.toFloat(), summary = sizeText)
+            if (task.state == DownloadState.COMPLETED) {
+                // Completed: a single size next to the Completed chip (no progress bar,
+                // no "downloaded / total" pair).
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+                ) {
+                    PdStatusBadge(
+                        label = stateLabel,
+                        icon = pdStatusIcon(task.state),
+                        tone = pdStatusTone(task.state),
+                    )
+                    Text(
+                        text = formatBytes(task.totalBytes ?: task.downloadedBytes),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                PdStatusBadge(
+                    label = stateLabel,
+                    icon = pdStatusIcon(task.state),
+                    tone = pdStatusTone(task.state),
+                )
+                PdProgress(fraction = task.progress.percent?.toFloat(), summary = sizeText)
+            }
 
             // Transfer telemetry (speed/peers/seeds) is only meaningful while active;
             // hide it once completed so the card stays compact.
