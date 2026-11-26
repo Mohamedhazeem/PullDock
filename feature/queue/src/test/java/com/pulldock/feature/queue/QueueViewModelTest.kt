@@ -55,13 +55,21 @@ class QueueViewModelTest {
         override suspend fun addTorrent(
             source: com.pulldock.domain.torrent.model.TorrentSource,
             destination: StorageDestination,
+            groupId: String?,
         ) = error("unused")
 
         override suspend fun addMedia(
             descriptor: com.pulldock.domain.extractor.model.MediaDescriptor,
             format: com.pulldock.domain.extractor.model.MediaFormat,
             destination: StorageDestination,
+            groupId: String?,
         ) = error("unused")
+
+        override suspend fun createGroup(type: DownloadType, title: String, source: String?) = error("unused")
+        override fun observeGroups() = MutableStateFlow(emptyList<com.pulldock.domain.download.model.DownloadGroup>())
+        override suspend fun getGroup(id: String) = error("unused")
+        override suspend fun getTasksByGroup(groupId: String) = emptyList<DownloadTask>()
+        override suspend fun deleteGroup(groupId: String, deleteFiles: Boolean) = Unit
 
         override suspend fun updateState(id: String, to: DownloadState, error: DownloadError?): Boolean {
             tasks.value = tasks.value.map { if (it.id == id) it.copy(state = to) else it }
