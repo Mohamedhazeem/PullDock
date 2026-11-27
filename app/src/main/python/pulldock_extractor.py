@@ -747,15 +747,94 @@ def _download_format(url, format_selector, output_path):
     return best
 
 
+def _download_raw(media_url, output_path, referer=None):
+    """Stream a single stream (video-only or audio-only) to disk without muxed-media checks.
+
+    Used by the muxed path where a video-only stream is expected to have no audio. Sends the
+    page Referer when known (some CDNs require it) and only rejects HTML/tiny payloads.
+    """
+    if _is_blocked_host(media_url):
+        return json.dumps({"error": "SNIFF_FAILED"})
+    headers = {"User-Agent": _USER_AGENT}
+    if referer:
+        headers["Referer"] = referer
+    part_path = output_path + ".part"
+    try:
+        _clear_outputs(output_path)
+        _write_total(output_path, _content_length(media_url))
+        req = urllib.request.Request(media_url, headers=headers)
+        with _OPENER.open(req, timeout=30) as resp:
+            ctype = (resp.headers.get("Content-Type") or "").lower()
+            final_url = resp.geturl()
+            first = resp.read(64)
+            is_hls = (
+                "mpegurl" in ctype
+                or final_url.lower().split("?", 1)[0].endswith(".m3u8")
+                or first.lstrip().startswith(b"#EXTM3U")
+            )
+            if is_hls:
+                return _download_hls(final_url, output_path, referer=referer)
+            if "text/html" in ctype:
+                return json.dumps({"error": "SNIFF_FAILED"})
+            with open(part_path, "wb") as handle:
+                if first:
+                    handle.write(first)
+                while True:
+                    chunk = resp.read(1 << 16)
+                    if not chunk:
+                        break
+                    handle.write(chunk)
+    except Exception as exc:
+        _safe_remove(part_path)
+        if _is_network_error(exc):
+            return json.dumps({"error": "NETWORK", "message": type(exc).__name__})
+        return json.dumps({"error": "SNIFF_FAILED", "message": type(exc).__name__})
+    try:
+        if os.path.getsize(part_path) < 1024:
+            _safe_remove(part_path)
+            return json.dumps({"error": "SNIFF_FAILED"})
+    except OSError:
+        return json.dumps({"error": "SNIFF_FAILED"})
+    try:
+        os.replace(part_path, output_path)
+    except OSError as exc:
+        _safe_remove(part_path)
+        return json.dumps({"error": "SNIFF_FAILED", "message": type(exc).__name__})
+    return json.dumps({"path": output_path, "bytes": os.path.getsize(output_path)})
+
+
+def _download_one(url, format_id, output_path):
+    """Download one stream, preferring the direct URL captured at probe.
+
+    yt-dlp re-extraction at download time fails for signed/rotating media URLs (notably
+    Instagram), so reuse the cached URL when present and only fall back to yt-dlp if the
+    cached download fails. Returns the saved path, or None.
+    """
+    direct = _DIRECT_URLS.get(format_id)
+    if direct:
+        if ".m3u8" in direct.lower():
+            result = _download_hls(direct, output_path, referer=url)
+        else:
+            result = _download_raw(direct, output_path, referer=url)
+        try:
+            data = json.loads(result)
+        except (ValueError, TypeError):
+            data = {}
+        if data.get("path"):
+            return data["path"]
+        _clear_outputs(output_path)
+    return _download_format(url, format_id, output_path)
+
+
 def download_muxed(url, video_format_id, audio_format_id, video_path, audio_path, height=0):
     """Download separate video and audio streams for MediaMuxer."""
     try:
         _clear_outputs(video_path)
         _clear_outputs(audio_path)
-        video = _download_format(url, video_format_id, video_path)
+        video = _download_one(url, video_format_id, video_path)
         if not video:
             return json.dumps({"error": "NO_VIDEO"})
-        audio = _download_format(url, audio_format_id, audio_path)
+        audio = _download_one(url, audio_format_id, audio_path)
         if not audio:
             return json.dumps({"error": "NO_AUDIO"})
         return json.dumps({

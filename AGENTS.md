@@ -130,8 +130,10 @@ Design and ADR-0008 for the module-boundary rules; the summary below is the oper
   `sniff-mp4:`/`sniff-hls:` format ids route to direct/HLS downloaders, and raw HLS is
   remuxed to `.mp4` via FFmpegKit in `ChaquopyExtractorRuntime`. A size/HTML junk guard
   prevents a webpage from ever being published as media.
-- Device-verified steps still open: torrent runtime PoC (T075/T060), extractor PoC
-  (T080/T094), background-execution behavior (T114/T163), connected tests.
+- Device-verified steps still open: torrent runtime PoC (T075/T060), background-execution
+  behavior (T114/T163), connected tests. Extractor runtime (T080/T094) is device-verified
+  for direct media, HLS, and social platforms (YouTube Shorts, X/Twitter, Instagram,
+  Facebook); per-provider anti-bot failures remain possible.
 - Static analysis (Detekt/ktlint), coverage tooling, dependency verification metadata —
   CI documents where they activate (T176).
 

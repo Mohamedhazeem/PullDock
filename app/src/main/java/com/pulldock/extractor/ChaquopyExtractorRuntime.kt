@@ -353,13 +353,21 @@ class ChaquopyExtractorRuntime @Inject constructor(
         container: String,
     ): ExtractorResult<String> {
         // FFmpegKit mux (fast, native) replaces the slow MediaMuxer sample-copy loop, which
-        // could stall for minutes or throw on non-monotonic DTS for large DASH streams. VP8/VP9
-        // only live in WebM, so retarget .mp4 -> .webm if the data layer picked mp4 for a VP codec.
+        // could stall for minutes or throw on non-monotonic DTS for large DASH streams.
+        // Container choice matters: VP8/VP9 normally live in WebM, but WebM cannot carry AAC
+        // audio (e.g. Instagram's mp4a track), so a VP9+AAC pair must stay in MP4 (both are
+        // valid there). Only retarget to WebM when the audio is WebM-compatible (Opus/Vorbis).
         val vp = videoCodec?.contains("vp8", true) == true || videoCodec?.contains("vp9", true) == true
-        val target = if (vp && outputPath.endsWith(".mp4", true)) {
-            outputPath.substringBeforeLast('.') + ".webm"
-        } else {
-            outputPath
+        val aac = audioCodec?.contains("mp4a", true) == true || audioCodec?.contains("aac", true) == true
+        val target = when {
+            vp && aac -> if (outputPath.endsWith(".webm", true)) {
+                outputPath.substringBeforeLast('.') + ".mp4"
+            } else {
+                outputPath
+            }
+            vp && outputPath.endsWith(".mp4", true) ->
+                outputPath.substringBeforeLast('.') + ".webm"
+            else -> outputPath
         }
         return try {
             val session = FFmpegKit.execute(

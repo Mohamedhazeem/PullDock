@@ -24,8 +24,8 @@ Requires **Android 8.0+ (API 26+)**.
 
 - **One queue for media and torrents** — Home shows every transfer with progress, speed, ETA, pause/resume, retry, and removal.
 - **Multiple input types** — Add an HTTP(S) media URL, magnet link, `.torrent` file, or share a link from another app.
-- **Media extraction** — Resolve public media pages through yt-dlp, choose a format, and download. Sites yt-dlp can't extract fall back to a generic HTML sniffer (direct `.mp4`/`.m3u8`) and an on-device HLS downloader, with FFmpegKit remuxing to `.mp4`.
-- **Video with audio** — Video-only streams are paired with the original-language audio track and merged on-device with Android `MediaMuxer`.
+- **Media extraction** — Resolve public media pages through yt-dlp, choose a format, and download. Sites yt-dlp can't extract fall back to a generic HTML sniffer (direct `.mp4`/`.m3u8`) and an on-device HLS downloader, with FFmpegKit remuxing to `.mp4`. Social platforms (YouTube Shorts, X/Twitter, Instagram Reels, Facebook Reels) resolve and download alongside direct media pages.
+- **Video with audio** — Video-only streams are paired with the original-language audio track and merged on-device with FFmpegKit (VP9+AAC stays in MP4; VP8/VP9 with Opus/Vorbis uses WebM).
 - **BitTorrent transfers** — libtorrent4j-backed engine with file selection and transfer limits.
 - **Durable state** — Room stores tasks and recovery data; DataStore stores preferences. Downloads are designed to survive process death and device restarts.
 - **Foreground execution** — A dataSync foreground service keeps active transfers alive while respecting Android background limits.

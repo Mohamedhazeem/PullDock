@@ -23,10 +23,12 @@ Honest, user-visible constraints. Nothing here is hidden in the UI.
 - Provider compatibility is recorded per provider with dated verification results;
   a failing provider degrades alone (FR-062).
 - **T080 bundled runtime**: implemented 2026-11-25 (Chaquopy 17.2.0 / Python 3.12 /
-  yt-dlp 2026.11.23, ADR-0012). On-device provider verification still pending device
-  reconnection; anti-bot failures remain possible per provider.
-- Progressive formats only: merge-required video+audio formats are not offered until an
-  FFmpeg binary is pinned and licensed (ADR-0003/ADR-0012).
+  yt-dlp 2026.11.23, ADR-0012). On-device provider verification is in progress;
+  direct media, HLS, and social platforms (YouTube Shorts, X/Twitter, Instagram,
+  Facebook) have been verified on-device, while anti-bot failures remain possible per
+  provider.
+- Merge-required video+audio formats are downloaded as separate streams and merged
+  on-device with FFmpegKit (VP9+AAC in MP4, VP8/VP9+Opus/Vorbis in WebM).
 
 ## Devices
 
