@@ -57,3 +57,6 @@
 -keep class com.arthenica.ffmpegkit.** { *; }
 -dontwarn com.arthenica.ffmpegkit.**
 -dontwarn com.arthenica.smartexception.**
+# Local stand-in for smartexception: FFmpegKit calls registerRootPackage/getStackTraceString
+# by name, so R8 must not rename or strip it.
+-keep class com.arthenica.smartexception.java.** { *; }

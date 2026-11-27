@@ -243,34 +243,25 @@ class ChaquopyExtractorRuntime @Inject constructor(
                     ),
                 )
             }
+            // Fallback: the raw HLS file is a valid MPEG-TS that ExoPlayer plays natively.
+            // If FFmpeg cannot remux (codec/timestamp quirks), publish the raw .ts instead
+            // of failing the whole task.
+            fun publishRaw(): ExtractorResult<String> = ExtractorResult.Success(rawPath)
             try {
                 val session = FFmpegKit.execute(
-                    "-y -i \"$rawPath\" -c copy -movflags +faststart \"$outputPath\"",
+                    "-y -fflags +genpts -i \"$rawPath\" -c copy " +
+                        "-avoid_negative_ts make_zero -movflags +faststart \"$outputPath\"",
                 )
-                runCatching { raw.delete() }
-                if (ReturnCode.isSuccess(session.returnCode)) {
-                    val out = File(outputPath)
-                    if (out.isFile && out.length() > 0L) {
-                        ExtractorResult.Success(outputPath)
-                    } else {
-                        ExtractorResult.Failure(
-                            DownloadError.ExtractorEngine(
-                                DownloadError.ExtractorReason.UNSUPPORTED,
-                                "remux produced no output",
-                            ),
-                        )
-                    }
+                val out = File(outputPath)
+                val ok = ReturnCode.isSuccess(session.returnCode) && out.isFile && out.length() > 0L
+                if (ok) {
+                    runCatching { raw.delete() }
+                    ExtractorResult.Success(outputPath)
                 } else {
-                    ExtractorResult.Failure(
-                        DownloadError.ExtractorEngine(
-                            DownloadError.ExtractorReason.UNSUPPORTED,
-                            "remux failed",
-                        ),
-                    )
+                    publishRaw()
                 }
             } catch (t: Throwable) {
-                runCatching { raw.delete() }
-                ExtractorResult.Failure(mapThrowable(t))
+                publishRaw()
             }
         }
 
@@ -382,13 +373,27 @@ class ChaquopyExtractorRuntime @Inject constructor(
         val scope = coroutineContext[Job] ?: return null
         val names = paths.map { File(it).name }
         val dir = paths.firstNotNullOfOrNull { File(it).parentFile } ?: return null
+        val totalFile = File(paths.first() + ".total")
+        val progressFile = File(paths.first() + ".progress")
         return kotlinx.coroutines.CoroutineScope(scope).launch {
             while (isActive) {
                 delay(300)
-                val bytes = dir.listFiles()
+                val fileBytes = dir.listFiles()
                     ?.filter { file -> names.any { file.name.startsWith(it + ".") } }
                     ?.sumOf { it.length() } ?: 0L
-                onProgress(bytes, null)
+                // The Python downloader publishes cumulative bytes to a ".progress" sidecar
+                // (hlsfetch writes the output only at the end) and the total to ".total".
+                val bytes = if (progressFile.isFile) {
+                    progressFile.readText().trim().toLongOrNull() ?: fileBytes
+                } else {
+                    fileBytes
+                }
+                val total = if (totalFile.isFile) {
+                    totalFile.readText().trim().toLongOrNull()?.takeIf { it > 0L }
+                } else {
+                    null
+                }
+                onProgress(bytes, total)
             }
         }
     }

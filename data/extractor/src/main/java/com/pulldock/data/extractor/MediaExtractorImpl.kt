@@ -218,6 +218,20 @@ class MediaExtractorImpl @Inject constructor(
             return ExtractorResult.Failure(error)
         }
 
+        // Progress reporting: the runtime poller only knows bytes on disk, so inject the
+        // known total (estimate) and derive a speed from the byte delta over time.
+        var lastBytes = 0L
+        var lastAt = System.nanoTime()
+        val knownTotal = effectiveFormat.estimatedBytes
+        fun reportProgress(bytes: Long, total: Long?) {
+            val now = System.nanoTime()
+            val dt = (now - lastAt) / 1_000_000_000.0
+            val speed = if (dt >= 0.2) ((bytes - lastBytes).coerceAtLeast(0L) / dt).toLong() else 0L
+            lastBytes = bytes
+            lastAt = now
+            events.tryEmit(ExtractorEvent.Progress(taskId, bytes, knownTotal ?: total, speed))
+        }
+
         val result = if (needsMux && audioFormat != null) {
             runtime.downloadMuxed(
                 url = descriptor.sourceUrl,
@@ -227,9 +241,7 @@ class MediaExtractorImpl @Inject constructor(
                 audioCodec = audioFormat.audioCodec,
                 container = targetContainer,
                 outputPath = tempPath,
-                onProgress = { bytes, total ->
-                    events.tryEmit(ExtractorEvent.Progress(taskId, bytes, total, 0L))
-                },
+                onProgress = { bytes, total -> reportProgress(bytes, total) },
                 height = muxVideo.resolution?.removeSuffix("p")?.toIntOrNull(),
             )
         } else {
@@ -237,9 +249,7 @@ class MediaExtractorImpl @Inject constructor(
                 url = descriptor.sourceUrl,
                 formatId = effectiveFormat.id,
                 outputPath = tempPath,
-                onProgress = { bytes, total ->
-                    events.tryEmit(ExtractorEvent.Progress(taskId, bytes, total, 0L))
-                },
+                onProgress = { bytes, total -> reportProgress(bytes, total) },
                 height = effectiveFormat.resolution?.removeSuffix("p")?.toIntOrNull(),
             )
         }

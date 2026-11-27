@@ -327,6 +327,15 @@ def _safe_remove(path):
         pass
 
 
+def _write_total(output_path, total):
+    """Publish the expected total size so the Kotlin progress poller can show it."""
+    try:
+        with open(output_path + ".total", "w") as handle:
+            handle.write(str(int(total or 0)))
+    except OSError:
+        pass
+
+
 class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Re-validate the host on every redirect hop (a public URL may 302 to an internal one)."""
 
@@ -370,6 +379,70 @@ def _http_get_text(url, referer=None):
     with _OPENER.open(req, timeout=20) as resp:
         data = resp.read(_SNIFF_MAX_BYTES + 1)
     return data[:_SNIFF_MAX_BYTES].decode("utf-8", "ignore")
+
+
+def _fetch_text(url, timeout=20):
+    try:
+        if _is_blocked_host(url):
+            return None
+        req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+        with _OPENER.open(req, timeout=timeout) as resp:
+            return resp.read(_SNIFF_MAX_BYTES).decode("utf-8", "ignore")
+    except Exception:
+        return None
+
+
+def _content_length(url):
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT}, method="HEAD")
+        with _OPENER.open(req, timeout=20) as resp:
+            raw = resp.headers.get("Content-Length")
+            value = int(raw) if raw and raw.isdigit() else 0
+            return value if value > 0 else None
+    except Exception:
+        return None
+
+
+def _estimate_hls_bytes(m3u8_url):
+    """Approximate total bytes from the master BANDWIDTH and media-playlist duration."""
+    try:
+        text = _fetch_text(m3u8_url)
+        if not text:
+            return None
+        bandwidth = None
+        variant = None
+        best_bw = -1
+        lines = text.splitlines()
+        pending_bw = None
+        for i, line in enumerate(lines):
+            if line.startswith("#EXT-X-STREAM-INF"):
+                match = re.search(r"BANDWIDTH=(\d+)", line)
+                pending_bw = int(match.group(1)) if match else None
+                for nxt in lines[i + 1:]:
+                    if nxt.strip() and not nxt.startswith("#"):
+                        # Prefer the highest-bandwidth (best quality) variant.
+                        if pending_bw and pending_bw > best_bw:
+                            best_bw = pending_bw
+                            variant = nxt.strip()
+                        break
+        if best_bw >= 0:
+            bandwidth = best_bw
+        if variant and not variant.lower().startswith("http"):
+            variant = urllib.parse.urljoin(m3u8_url, variant)
+        media = _fetch_text(variant) if variant else text
+        if not media:
+            return None
+        duration = 0.0
+        for line in media.splitlines():
+            if line.startswith("#EXTINF:"):
+                match = re.search(r"#EXTINF:([\d.]+)", line)
+                if match:
+                    duration += float(match.group(1))
+        if duration <= 0 or not bandwidth:
+            return None
+        return int(bandwidth / 8.0 * duration)
+    except Exception:
+        return None
 
 
 def _sniff(url, cause=None):
@@ -428,11 +501,15 @@ def _sniff(url, cause=None):
         # Prefer real video over preview/thumbnail clips, then the highest resolution.
         best = max(mp4s, key=lambda c: (0 if "preview" in c.lower() else 1, _height(c)))
         height = _HEIGHT_RE.search(best)
+        estimate = _content_length(best)
+        if not estimate or estimate < 1_000_000:
+            # The .mp4 URL may 302 to an HLS manifest; estimate from that instead.
+            estimate = _estimate_hls_bytes(best) or estimate
         fmt = {
             "id": "sniff-mp4:" + best,
             "resolution": (height.group(1) + "p") if height else "Unknown",
             "container": "mp4", "videoCodec": "unknown", "audioCodec": "unknown",
-            "estimatedBytes": None, "language": None, "languagePreference": None,
+            "estimatedBytes": estimate, "language": None, "languagePreference": None,
             "mergeRequired": False,
         }
     elif m3u8s:
@@ -440,7 +517,8 @@ def _sniff(url, cause=None):
             "id": "sniff-hls:" + m3u8s[0],
             "resolution": "Unknown",
             "container": "mp4", "videoCodec": "unknown", "audioCodec": "unknown",
-            "estimatedBytes": None, "language": None, "languagePreference": None,
+            "estimatedBytes": _estimate_hls_bytes(m3u8s[0]),
+            "language": None, "languagePreference": None,
             "mergeRequired": False,
         }
     else:
@@ -461,11 +539,27 @@ def _download_direct(media_url, output_path):
     part_path = output_path + ".part"
     try:
         _clear_outputs(output_path)
+        _write_total(output_path, _content_length(media_url))
         req = urllib.request.Request(media_url, headers={"User-Agent": _USER_AGENT})
         with _OPENER.open(req, timeout=30) as resp:
-            if "text/html" in (resp.headers.get("Content-Type") or "").lower():
+            ctype = (resp.headers.get("Content-Type") or "").lower()
+            final_url = resp.geturl()
+            first = resp.read(64)
+            # A ".mp4" link that 302s to an HLS manifest (content-type mpegurl, a .m3u8
+            # final URL, or a body starting with #EXTM3U) must go to the HLS downloader,
+            # not be saved as a tiny "mp4".
+            is_hls = (
+                "mpegurl" in ctype
+                or final_url.lower().split("?", 1)[0].endswith(".m3u8")
+                or first.lstrip().startswith(b"#EXTM3U")
+            )
+            if is_hls:
+                return _download_hls(final_url, output_path)
+            if "text/html" in ctype:
                 return json.dumps({"error": "SNIFF_FAILED"})
             with open(part_path, "wb") as handle:
+                if first:
+                    handle.write(first)
                 while True:
                     chunk = resp.read(1 << 16)
                     if not chunk:
@@ -498,17 +592,47 @@ def _download_hls(m3u8_url, output_path):
     except ImportError:
         return json.dumps({"error": "HLS_FAILED"})
     raw_path = output_path + ".ts"
+    progress_path = output_path + ".progress"
+    total_path = output_path + ".total"
+
+    def _on_progress(p):
+        # hlsfetch reports cumulative bytes after each segment; publish them so the Kotlin
+        # poller can show live progress/speed (the .ts file is only written at the end).
+        # Also grow the total to at least the downloaded amount so the bar never exceeds 100%
+        # (the bandwidth*duration estimate can undershoot the real size).
+        try:
+            done = getattr(p, "bytes", None)
+            if done is None:
+                return
+            done = int(done)
+            with open(progress_path, "w") as handle:
+                handle.write(str(done))
+            current = 0
+            try:
+                with open(total_path) as handle:
+                    current = int(handle.read().strip() or 0)
+            except (OSError, ValueError):
+                current = 0
+            if done > current:
+                with open(total_path, "w") as handle:
+                    handle.write(str(done))
+        except Exception:
+            pass
+
     try:
         _clear_outputs(raw_path)
+        _write_total(output_path, _estimate_hls_bytes(m3u8_url))
         try:
-            hlsfetch.download(
+            import asyncio
+            asyncio.run(hlsfetch.adownload(
                 m3u8_url,
                 raw_path,
                 remux=False,
                 headers={"User-Agent": _USER_AGENT},
-            )
+                progress=_on_progress,
+            ))
         except TypeError:
-            # Tolerate hlsfetch signatures that do not accept headers/remux kwargs.
+            # Tolerate hlsfetch signatures that do not accept headers/remux/progress kwargs.
             hlsfetch.download(m3u8_url, raw_path, remux=False)
     except Exception as exc:
         _safe_remove(raw_path)
@@ -612,10 +736,23 @@ def download(url, format_id, output_path, height=0):
                 else "best[vcodec!=none][acodec!=none]/best[acodec!=none]"
             )
             path = _download_format(url, fallback, output_path)
-        if not path:
-            return json.dumps({"error": "NO_OUTPUT"})
-        if not _has_audio(path):
-            return json.dumps({"error": "NO_AUDIO"})
-        return json.dumps({"path": path, "bytes": os.path.getsize(path)})
+        if path and _has_audio(path):
+            return json.dumps({"path": path, "bytes": os.path.getsize(path)})
+        # yt-dlp produced nothing usable (or no audio) — often a bogus "Unknown" format
+        # that resolves to an HTML page or an HLS manifest. Fall back to the sniffer.
+        if path:
+            _safe_remove(path)
+        sniffed = _sniff(url)
+        formats = sniffed.get("formats") or []
+        if formats:
+            fid = formats[0]["id"]
+            if fid.startswith("sniff-hls:"):
+                return _download_hls(fid[len("sniff-hls:"):], output_path)
+            if fid.startswith("sniff-mp4:"):
+                return _download_direct(fid[len("sniff-mp4:"):], output_path)
+        return json.dumps({
+            "error": "NO_OUTPUT" if not path else "NO_AUDIO",
+            "message": sniffed.get("message"),
+        })
     except Exception as exc:
         return json.dumps({"error": type(exc).__name__, "message": str(exc)[:200]})
