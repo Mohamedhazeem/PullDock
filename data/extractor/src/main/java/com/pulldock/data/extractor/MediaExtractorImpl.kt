@@ -159,7 +159,10 @@ class MediaExtractorImpl @Inject constructor(
             // which MediaMuxer cannot combine into either MP4 or WebM. When no
             // same-resolution combined stream exists, fall back to any combined stream so
             // the download succeeds instead of failing at the mux step.
-            sameResolution ?: formats.firstOrNull { it.videoCodec != null && it.audioCodec != null }
+            sameResolution ?: formats.firstOrNull {
+                it.videoCodec != null && it.audioCodec != null &&
+                    it.resolution?.removeSuffix("p")?.toIntOrNull() != null
+            }
         } else {
             null
         }

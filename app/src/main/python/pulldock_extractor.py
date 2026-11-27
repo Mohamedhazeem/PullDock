@@ -190,6 +190,12 @@ def probe(url):
         for fmt in info.get("formats") or []:
             if not fmt.get("url"):
                 continue
+            # Storyboards/thumbnails (YouTube "sb0".."sbN", mhtml) are contact sheets, not
+            # video. They carry no real codec, so the unknown-codec heuristic below would
+            # otherwise mark them as selectable video and they can win the default slot.
+            note = str(fmt.get("format_note") or "").lower()
+            if fmt.get("ext") == "mhtml" or "storyboard" in note or note == "images":
+                continue
             entry = _format_entry(fmt, duration)
             if not entry["id"]:
                 continue
@@ -197,6 +203,13 @@ def probe(url):
             # rotate or become unavailable between probe and download, so yt-dlp re-extraction
             # fails with "Requested format is not available"; reusing this URL avoids yt-dlp.
             _DIRECT_URLS[entry["id"]] = fmt["url"]
+            # A metadata-less "Unknown" entry (no resolution and no real codecs) is not a
+            # usable video — it is a stray audio/storyboard record. Drop it so it can never be
+            # selected as a "progressive combined" stream (which would yield audio-only output).
+            if (entry["resolution"] == "Unknown"
+                    and entry["videoCodec"] == "unknown"
+                    and entry["audioCodec"] == "unknown"):
+                continue
             # Video-only formats are valid choices: the Kotlin layer downloads a
             # separate audio stream and muxes them with Android MediaMuxer.
             if entry["resolution"] is None:
