@@ -1,10 +1,9 @@
 {
-  "ai": "zcode",
-  "ai_skills": true,
+  "ai": "kilocode",
   "allow_symlinks": false,
   "feature_numbering": "sequential",
   "here": true,
-  "integration": "zcode",
+  "integration": "kilocode",
   "script": "sh",
   "speckit_version": "1.4.0"
 }

@@ -3,7 +3,8 @@
   "integration_state_schema": 1,
   "installed_integrations": [
     "hermes",
-    "zcode"
+    "zcode",
+    "kilocode"
   ],
   "integration_settings": {
     "hermes": {
@@ -13,8 +14,12 @@
     "zcode": {
       "script": "sh",
       "invoke_separator": "-"
+    },
+    "kilocode": {
+      "script": "sh",
+      "invoke_separator": "."
     }
   },
-  "integration": "zcode",
-  "default_integration": "zcode"
+  "integration": "kilocode",
+  "default_integration": "kilocode"
 }
