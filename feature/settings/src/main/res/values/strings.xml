@@ -3,6 +3,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_subtitle">Make it yours.</string>
     <string name="settings_loading_title">Loading…</string>
+    <string name="settings_grant_all_files">Grant all files access (save to /PullDock)</string>
 
     <string name="settings_section_network">Network</string>
     <string name="settings_wifi_only">Wi-Fi only</string>

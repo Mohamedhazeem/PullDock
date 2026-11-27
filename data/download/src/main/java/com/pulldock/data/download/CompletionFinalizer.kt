@@ -33,12 +33,26 @@ class CompletionFinalizer @Inject constructor(
     private val storagePreferences: StoragePreferencesRepository,
 ) {
 
+    /**
+     * Resolve the download root. Prefers a top-level `/PullDock` on shared storage when the
+     * user granted "All files access"; otherwise falls back to app-specific storage so a
+     * download never fails just because the special permission is not granted.
+     */
+    private fun downloadRoot(): File? {
+        val shared = File(android.os.Environment.getExternalStorageDirectory(), "PullDock")
+        val sharedReady = android.os.Environment.isExternalStorageManager() &&
+            (shared.exists() || shared.mkdirs())
+        if (sharedReady) return shared
+        val base = context.getExternalFilesDir(null) ?: return null
+        return File(base, "PullDock").apply { mkdirs() }
+    }
+
     /** Returns the published file URI, or null when no verified output could be published. */
     suspend fun finalize(taskId: String): String? {
         val entity = taskDao.getById(taskId) ?: return null
         if (entity.state != DownloadState.VERIFYING.name) return null
 
-        val root = context.getExternalFilesDir(null) ?: return fail(entity)
+        val root = downloadRoot() ?: return fail(entity)
         val folder = storagePreferences.currentDownloadFolder()
         val saveRoot = if (folder.isNullOrBlank()) root else java.io.File(root, folder).takeIf { it.exists() || it.mkdirs() } ?: root
 
@@ -110,7 +124,7 @@ class CompletionFinalizer @Inject constructor(
         val temp = java.io.File(tempPath)
         if (!temp.isFile || temp.length() <= 0L) return fail(entity)
 
-        val root = context.getExternalFilesDir(null) ?: return fail(entity)
+        val root = downloadRoot() ?: return fail(entity)
         val folder = storagePreferences.currentDownloadFolder()
         val saveRoot = if (folder.isNullOrBlank()) root else java.io.File(root, folder).takeIf { it.exists() || it.mkdirs() } ?: root
         val extension = temp.extension.ifBlank { "mp4" }

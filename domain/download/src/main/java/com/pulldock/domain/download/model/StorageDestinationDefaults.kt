@@ -12,7 +12,7 @@ object StorageDestinationDefaults {
     fun appSpecific(): StorageDestination = StorageDestination(
         kind = StorageKind.APP_SPECIFIC,
         uri = null,
-        displayName = "App storage",
+        displayName = "PullDock",
         freeSpaceBytes = null,
     )
 }

@@ -1,5 +1,8 @@
 package com.pulldock.feature.settings
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -53,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -198,6 +202,31 @@ fun SettingsScreen(
                                     ?: stringResource(R.string.settings_folder_choose),
                                 modifier = Modifier.weight(1f),
                             )
+                        }
+                        val context = LocalContext.current
+                        OutlinedButton(
+                            onClick = {
+                                val grant = Intent(
+                                    Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                                    Uri.parse("package:" + context.packageName),
+                                )
+                                runCatching { context.startActivity(grant) }.onFailure {
+                                    context.startActivity(
+                                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = Uri.parse("package:" + context.packageName)
+                                        },
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.FolderOpen,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(tokens.spacing.sm))
+                            Text(text = stringResource(R.string.settings_grant_all_files))
                         }
                         Text(
                             text = stringResource(R.string.settings_quality_label),
