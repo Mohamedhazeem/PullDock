@@ -24,14 +24,14 @@ Requires **Android 8.0+ (API 26+)**.
 
 - **One queue for media and torrents** — Home shows every transfer with progress, speed, ETA, pause/resume, retry, and removal.
 - **Multiple input types** — Add an HTTP(S) media URL, magnet link, `.torrent` file, or share a link from another app.
-- **Media extraction** — Resolve public media pages through yt-dlp, choose a format, and download.
+- **Media extraction** — Resolve public media pages through yt-dlp, choose a format, and download. Sites yt-dlp can't extract fall back to a generic HTML sniffer (direct `.mp4`/`.m3u8`) and an on-device HLS downloader, with FFmpegKit remuxing to `.mp4`.
 - **Video with audio** — Video-only streams are paired with the original-language audio track and merged on-device with Android `MediaMuxer`.
 - **BitTorrent transfers** — libtorrent4j-backed engine with file selection and transfer limits.
 - **Durable state** — Room stores tasks and recovery data; DataStore stores preferences. Downloads are designed to survive process death and device restarts.
 - **Foreground execution** — A dataSync foreground service keeps active transfers alive while respecting Android background limits.
 - **Library** — Search, filter, sort, play, and delete completed media. Missing files are marked unavailable instead of silently disappearing.
 - **Playback** — AndroidX Media3 player with a dedicated player screen.
-- **Settings** — Light/dark/system theme, download folder, network policy, consent, and legal information.
+- **Settings** — Light/dark/system theme, download folder (defaults to a `PullDock` folder in app storage), network policy, consent, and legal information.
 - **Accessible adaptive UI** — Material 3, warm-paper design tokens, large-font support, TalkBack semantics, RTL, and adaptive layouts.
 - **CI** — Debug build, unit tests, Android lint, 64-bit ABI packaging check, and secret scanning.
 
@@ -46,7 +46,7 @@ Requires **Android 8.0+ (API 26+)**.
 | Persistence | Room, DataStore |
 | Async | Kotlin Coroutines, Flow |
 | Playback | AndroidX Media3 |
-| Media extraction | yt-dlp via Chaquopy |
+| Media extraction | yt-dlp + hlsfetch (HLS fallback) via Chaquopy; FFmpegKit remux |
 | Torrents | libtorrent4j 2.1.0-39 |
 | Build | Gradle 9.6, Android Gradle Plugin 9.4, version catalog |
 | Spec workflow | Spec Kit |
