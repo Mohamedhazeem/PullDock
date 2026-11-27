@@ -3,6 +3,8 @@ package com.pulldock.extractor
 import android.content.Context
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.ReturnCode
 import com.pulldock.core.model.DownloadError
 import com.pulldock.core.model.ProviderId
 import com.pulldock.domain.extractor.ExtractorResult
@@ -165,6 +167,9 @@ class ChaquopyExtractorRuntime @Inject constructor(
                     ExtractorResult.Failure(
                         DownloadError.ExtractorEngine(DownloadError.ExtractorReason.UNSUPPORTED, "no output"),
                     )
+                } else if (json.optBoolean("raw", false)) {
+                    // Fallback HLS path produced a raw .ts/.m4s; remux to .mp4 (ADR-0013).
+                    remuxToMp4(path, outputPath)
                 } else {
                     ExtractorResult.Success(path)
                 }
@@ -225,6 +230,49 @@ class ChaquopyExtractorRuntime @Inject constructor(
             poller?.cancel()
         }
     }
+
+    private suspend fun remuxToMp4(rawPath: String, outputPath: String): ExtractorResult<String> =
+        withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val raw = File(rawPath)
+            if (!raw.isFile || raw.length() <= 0L) {
+                runCatching { raw.delete() }
+                return@withContext ExtractorResult.Failure(
+                    DownloadError.ExtractorEngine(
+                        DownloadError.ExtractorReason.UNSUPPORTED,
+                        "no raw output",
+                    ),
+                )
+            }
+            try {
+                val session = FFmpegKit.execute(
+                    "-y -i \"$rawPath\" -c copy -movflags +faststart \"$outputPath\"",
+                )
+                runCatching { raw.delete() }
+                if (ReturnCode.isSuccess(session.returnCode)) {
+                    val out = File(outputPath)
+                    if (out.isFile && out.length() > 0L) {
+                        ExtractorResult.Success(outputPath)
+                    } else {
+                        ExtractorResult.Failure(
+                            DownloadError.ExtractorEngine(
+                                DownloadError.ExtractorReason.UNSUPPORTED,
+                                "remux produced no output",
+                            ),
+                        )
+                    }
+                } else {
+                    ExtractorResult.Failure(
+                        DownloadError.ExtractorEngine(
+                            DownloadError.ExtractorReason.UNSUPPORTED,
+                            "remux failed",
+                        ),
+                    )
+                }
+            } catch (t: Throwable) {
+                runCatching { raw.delete() }
+                ExtractorResult.Failure(mapThrowable(t))
+            }
+        }
 
     private fun mux(
         videoPath: String,
@@ -371,6 +419,14 @@ class ChaquopyExtractorRuntime @Inject constructor(
         code.contains("NO_AUDIO", true) -> DownloadError.ExtractorEngine(
             DownloadError.ExtractorReason.UNSUPPORTED,
             "no audio stream",
+        )
+        code.contains("SNIFF_FAILED", true) -> DownloadError.ExtractorEngine(
+            DownloadError.ExtractorReason.UNSUPPORTED,
+            "no media link found",
+        )
+        code.contains("HLS_FAILED", true) -> DownloadError.ExtractorEngine(
+            DownloadError.ExtractorReason.UNSUPPORTED,
+            "hls download failed",
         )
         else -> DownloadError.ExtractorEngine(DownloadError.ExtractorReason.PROVIDER_CHANGED)
     }

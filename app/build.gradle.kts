@@ -1,4 +1,5 @@
 import java.util.Properties
+import com.android.build.api.variant.FilterConfiguration
 
 plugins {
     alias(libs.plugins.android.application)
@@ -98,6 +99,24 @@ android {
     }
 }
 
+// Release APK file names start with "pulldock" (per-ABI + universal).
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            val abi = output.filters
+                .firstOrNull { it.filterType == FilterConfiguration.FilterType.ABI }
+                ?.identifier
+            output.outputFileName.set(
+                if (abi != null) {
+                    "pulldock-$abi-${variant.buildType}.apk"
+                } else {
+                    "pulldock-universal-${variant.buildType}.apk"
+                },
+            )
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
@@ -111,6 +130,9 @@ chaquopy {
         version = "3.12" // build machine has Python 3.12; 64-bit only, matching abiFilters
         pip {
             install("yt-dlp==${libs.versions.yt.dlp.get()}")
+            // HLS fallback downloader (pure Python; pulls cryptography from the Chaquopy
+            // repo and httpx from PyPI). Used by the extractor fallback layer (ADR-0013).
+            install("hlsfetch==${libs.versions.hlsfetch.get()}")
         }
     }
 }
@@ -183,6 +205,9 @@ dependencies {
     // Media playback (Media3)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
+
+    // HLS remux (extractor fallback layer, ADR-0013): ffmpeg-kit maintained fork, LGPL-3.0.
+    implementation(libs.ffmpeg.kit.full)
 
     // Unit testing
     testImplementation(libs.junit)

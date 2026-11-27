@@ -186,7 +186,9 @@ class MediaExtractorImpl @Inject constructor(
         // The runtime's progress poller only reports downloaded bytes, so a direct/unknown
         // format (no estimatedBytes) would show a blank total until completion. Probe the
         // HTTP Content-Length up front so the total is visible as soon as the download starts.
-        if (!needsMux && effectiveFormat.estimatedBytes == null) {
+        if (!needsMux && effectiveFormat.estimatedBytes == null &&
+            !effectiveFormat.id.startsWith("sniff-")
+        ) {
             withContext(Dispatchers.IO) { probeContentLength(descriptor.sourceUrl) }?.let { total ->
                 events.tryEmit(ExtractorEvent.Progress(taskId, 0L, total, 0L))
             }
@@ -290,7 +292,14 @@ class MediaExtractorImpl @Inject constructor(
             instanceFollowRedirects = true
         }
         try {
-            connection.contentLengthLong.takeIf { it > 0L }
+            // A webpage/redirect (text/html) is not a media resource; reporting its length
+            // would surface a misleading "110/110 complete" total before the download fails.
+            val type = connection.contentType?.lowercase().orEmpty()
+            if (type.contains("text/html") || type.contains("text/plain")) {
+                null
+            } else {
+                connection.contentLengthLong.takeIf { it > 0L }
+            }
         } finally {
             connection.disconnect()
         }

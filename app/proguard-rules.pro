@@ -51,3 +51,9 @@
 # by name; R8 must not rename or remove them.
 -keep class org.libtorrent4j.** { *; }
 -dontwarn org.libtorrent4j.**
+
+# FFmpegKit (extractor fallback remux, ADR-0013): keep the JNI-facing API and ignore
+# its optional smart-exception dependency, which is not bundled.
+-keep class com.arthenica.ffmpegkit.** { *; }
+-dontwarn com.arthenica.ffmpegkit.**
+-dontwarn com.arthenica.smartexception.**

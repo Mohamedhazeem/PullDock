@@ -122,9 +122,14 @@ Design and ADR-0008 for the module-boundary rules; the summary below is the oper
   Player (T156–T158/T165) landed 2026-11-24 along with the completion/library wiring
   (ADR-0011). Still open: streaming-bridge lifecycle owner (T160), thumbnails (T164),
   and device verification (T163).
-- libtorrent4j 2.1.0-39 is pinned (arm64-v8a/x86_64 jars, MIT wrapper). The
-  Chaquopy/yt-dlp and FFmpeg dependencies remain unpinned until the T080/D2 device
-  verifications.
+- libtorrent4j 2.1.0-39 is pinned (arm64-v8a/x86_64 jars, MIT wrapper). The extractor
+  runtime is pinned: `yt-dlp==2026.11.23` (Chaquopy pip), `hlsfetch==0.3.0` (HLS fallback),
+  and `dev.ffmpegkit-maintained:ffmpeg-kit-full:8.1.7` (LGPL-3.0, remux). See ADR-0012/0013.
+- Extractor fallback layer (ADR-0013): when yt-dlp cannot extract a URL, a pure-Python
+  sniffer (`app/src/main/python/pulldock_extractor.py`) extracts a direct `.mp4`/`.m3u8`;
+  `sniff-mp4:`/`sniff-hls:` format ids route to direct/HLS downloaders, and raw HLS is
+  remuxed to `.mp4` via FFmpegKit in `ChaquopyExtractorRuntime`. A size/HTML junk guard
+  prevents a webpage from ever being published as media.
 - Device-verified steps still open: torrent runtime PoC (T075/T060), extractor PoC
   (T080/T094), background-execution behavior (T114/T163), connected tests.
 - Static analysis (Detekt/ktlint), coverage tooling, dependency verification metadata —
