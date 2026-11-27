@@ -370,7 +370,7 @@ private fun FormatSelectionSheet(
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.heightIn(max = 420.dp),
+                    modifier = Modifier.heightIn(max = 240.dp),
                     verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
                 ) {
                     items(formats, key = { it.id }) { format ->

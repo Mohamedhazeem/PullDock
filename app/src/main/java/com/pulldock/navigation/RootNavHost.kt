@@ -70,7 +70,11 @@ fun RootNavHost(
         }
     }
 
-    MainScaffold(navController = navController, useRail = useRail) { contentModifier ->
+    MainScaffold(
+        navController = navController,
+        useRail = useRail,
+        showNavigation = resolved.isAcknowledged,
+    ) { contentModifier ->
         NavHost(
             navController = navController,
             startDestination = if (resolved.isAcknowledged) {

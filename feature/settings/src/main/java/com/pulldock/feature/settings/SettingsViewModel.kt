@@ -71,6 +71,10 @@ class SettingsViewModel @Inject constructor(
     private val saving = MutableStateFlow(false)
     private val usageRange = MutableStateFlow(UsageRange.WEEK)
 
+    // Provider health/runtime are effectively static for the process; snapshot them once
+    // instead of recomputing (and re-touching the extractor) on every state emission.
+    private val providerSnapshot by lazy { providerHealth.all() to providerHealth.runtimeInfo() }
+
     private val baseState = combine(
         policyRepository.observe(),
         appearanceRepository.observeTheme(),
@@ -84,8 +88,8 @@ class SettingsViewModel @Inject constructor(
             savingPolicy = savingPolicy,
             downloadFolder = folder,
             defaultQualityHeight = quality,
-            providers = providerHealth.all(),
-            runtime = providerHealth.runtimeInfo(),
+            providers = providerSnapshot.first,
+            runtime = providerSnapshot.second,
         )
     }
 

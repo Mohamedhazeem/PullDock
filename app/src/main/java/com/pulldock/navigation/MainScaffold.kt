@@ -39,6 +39,7 @@ import com.pulldock.R
 fun MainScaffold(
     navController: NavHostController,
     useRail: Boolean,
+    showNavigation: Boolean = true,
     content: @Composable (Modifier) -> Unit,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -47,6 +48,13 @@ fun MainScaffold(
 
     // The player is a full-screen surface: no nav bar/rail while it is open.
     if (currentRoute == com.pulldock.navigation.Routes.PLAYER) {
+        content(Modifier.fillMaxSize())
+        return
+    }
+
+    // Onboarding/consent gate: no navigation chrome until the user acknowledges it,
+    // so Home/Library/Settings cannot be reached (and onboarding cannot be skipped).
+    if (!showNavigation) {
         content(Modifier.fillMaxSize())
         return
     }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -318,6 +319,7 @@ fun PlayerScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .background(
                         Brush.verticalGradient(
                             listOf(Color.Black.copy(alpha = 0.72f), Color.Transparent),
@@ -412,6 +414,23 @@ fun PlayerScreen(
                         inactiveTrackColor = Color.White.copy(alpha = 0.22f),
                     ),
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = formatClock(position),
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    if (duration > 0) {
+                        Text(
+                            text = formatClock(duration),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -607,4 +626,12 @@ private fun setOrientation(context: Context, landscape: Boolean) {
     } else {
         android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     }
+}
+
+/** Formats a millisecond duration as m:ss (e.g. 3:07). */
+private fun formatClock(ms: Long): String {
+    val totalSeconds = (ms / 1000L).coerceAtLeast(0L)
+    val minutes = totalSeconds / 60L
+    val seconds = totalSeconds % 60L
+    return "%d:%02d".format(minutes, seconds)
 }
