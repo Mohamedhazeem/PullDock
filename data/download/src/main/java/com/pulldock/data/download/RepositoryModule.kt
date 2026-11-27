@@ -6,6 +6,7 @@ import com.pulldock.domain.download.repository.ConsentRepository
 import com.pulldock.domain.download.repository.DownloadRepository
 import com.pulldock.domain.download.repository.MediaLibraryRepository
 import com.pulldock.domain.download.repository.MediaPreferencesRepository
+import com.pulldock.domain.download.repository.MediaStorageDirectory
 import com.pulldock.domain.download.repository.NetworkPolicyRepository
 import com.pulldock.domain.download.repository.StoragePreferencesRepository
 import com.pulldock.domain.download.repository.UsageRepository
@@ -43,6 +44,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindMediaLibraryRepository(impl: MediaLibraryRepositoryImpl): MediaLibraryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMediaStorageDirectory(impl: MediaStorageDirectoryImpl): MediaStorageDirectory
 
     @Binds
     @Singleton

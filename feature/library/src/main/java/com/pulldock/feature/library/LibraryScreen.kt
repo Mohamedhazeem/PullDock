@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.OpenInBrowser
@@ -75,6 +76,7 @@ import com.pulldock.core.designsystem.components.ThumbnailImage
 import com.pulldock.core.designsystem.components.pdLibraryIcon
 import com.pulldock.core.designsystem.components.pdTypeIcon
 import com.pulldock.core.designsystem.theme.LocalPdTokens
+import com.pulldock.core.model.MediaKind
 import com.pulldock.core.model.formatBytes
 import com.pulldock.core.model.mediaKindOf
 import com.pulldock.domain.download.repository.LibraryItem
@@ -103,6 +105,9 @@ fun LibraryScreen(
 
     // Detect files removed outside the app (e.g. deleted from the gallery) on open.
     LaunchedEffect(Unit) { viewModel.reconcile() }
+    LaunchedEffect(Unit) {
+        viewModel.messages.collect { snackbar.showSnackbar(it) }
+    }
 
     PdScaffold(
         title = stringResource(R.string.library_title),
@@ -241,6 +246,7 @@ fun LibraryScreen(
                             item = item,
                             onPlay = { onPlay(item.id) },
                             onDelete = { viewModel.requestDelete(item.id) },
+                            onExtractAudio = { viewModel.extractAudio(item.id) },
                             modifier = Modifier.animateItem(),
                         )
                     }
@@ -349,6 +355,7 @@ private fun LibraryItemCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     flat: Boolean = false,
+    onExtractAudio: () -> Unit = {},
 ) {
     val tokens = LocalPdTokens.current
     val context = LocalContext.current
@@ -408,6 +415,7 @@ private fun LibraryItemCard(
                         primaryLabel = if (playable) playLabel else openLabel,
                         shareLabel = shareLabel,
                         playable = playable,
+                        onExtractAudio = onExtractAudio,
                     )
                 }
             } else {
@@ -429,6 +437,7 @@ private fun LibraryItemCard(
                         primaryLabel = if (playable) playLabel else openLabel,
                         shareLabel = shareLabel,
                         playable = playable,
+                        onExtractAudio = onExtractAudio,
                     )
                 }
             }
@@ -444,6 +453,7 @@ private fun CardActions(
     primaryLabel: String,
     shareLabel: String,
     playable: Boolean,
+    onExtractAudio: () -> Unit = {},
 ) {
     val context = LocalContext.current
     if (item.fileAvailable) {
@@ -460,6 +470,15 @@ private fun CardActions(
                 contentDescription = shareLabel,
                 tint = MaterialTheme.colorScheme.primary,
             )
+        }
+        if (mediaKindOf(item.fileUri) == MediaKind.VIDEO) {
+            IconButton(onClick = onExtractAudio) {
+                Icon(
+                    imageVector = Icons.Rounded.MusicNote,
+                    contentDescription = stringResource(R.string.library_extract_audio),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
     IconButton(onClick = onDelete) {

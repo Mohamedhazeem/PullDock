@@ -73,7 +73,7 @@ class TransferService : Service() {
                 return android.app.Service.START_NOT_STICKY
             }
         }
-        return START_NOT_STICKY
+        return android.app.Service.START_STICKY
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

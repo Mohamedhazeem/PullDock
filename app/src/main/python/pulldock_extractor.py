@@ -9,6 +9,7 @@ import os
 import re
 import socket
 import html as html_lib
+import http.cookiejar
 import ipaddress
 import urllib.parse
 import urllib.request
@@ -37,6 +38,9 @@ def _clean(value):
 # never be published as a "completed" download.
 _MIN_MEDIA_BYTES = 100 * 1024
 _HTML_MARKERS = (b"<!doctype html", b"<html", b"<head", b"<body", b"<?xml")
+# Format id -> direct media URL captured at probe. Download reuses it so a rotating/signed
+# HLS variant that yt-dlp can no longer re-extract at download time still resolves.
+_DIRECT_URLS = {}
 
 
 def _looks_like_html(path):
@@ -58,6 +62,11 @@ def _reject_if_junk(path):
     if _looks_like_html(path):
         return "html"
     return None
+
+
+def _height_of(resolution):
+    match = re.match(r"(\d{3,4})\s*p", str(resolution or ""), re.I)
+    return int(match.group(1)) if match else 0
 
 
 def _format_entry(fmt, duration=0):
@@ -94,8 +103,9 @@ def _format_entry(fmt, duration=0):
             resolution = "Unknown"
             vcodec = "unknown"
             acodec = "unknown"
+    format_id = _clean(fmt.get("format_id")) or ""
     return {
-        "id": _clean(fmt.get("format_id")) or "",
+        "id": format_id,
         "resolution": resolution,
         "container": _clean(fmt.get("ext")) or "mp4",
         "videoCodec": vcodec,
@@ -111,12 +121,17 @@ def _options_common():
     return {
         "quiet": True,
         "no_warnings": True,
+        "noprogress": True,
+        "nopart": True,
         "noplaylist": True,
         "skip_download": True,
-        "no_color": True,
-        "retries": 3,
+        "cachedir": False,
+        # Mobile networks drop connections mid-transfer; retry fragments and avoid
+        # parallel fragment fetches that amplify resets on flaky links.
+        "retries": 10,
+        "fragment_retries": 10,
+        "concurrent_fragment_downloads": 1,
         "socket_timeout": 30,
-        "fragment_retries": 3,
     }
 
 
@@ -178,6 +193,10 @@ def probe(url):
             entry = _format_entry(fmt, duration)
             if not entry["id"]:
                 continue
+            # Cache the direct URL for every format up front. HLS variants (e.g. hls-480p)
+            # rotate or become unavailable between probe and download, so yt-dlp re-extraction
+            # fails with "Requested format is not available"; reusing this URL avoids yt-dlp.
+            _DIRECT_URLS[entry["id"]] = fmt["url"]
             # Video-only formats are valid choices: the Kotlin layer downloads a
             # separate audio stream and muxes them with Android MediaMuxer.
             if entry["resolution"] is None:
@@ -198,7 +217,20 @@ def probe(url):
             entry = _format_entry(info, duration)
             if entry["id"] and not entry["mergeRequired"] and entry["resolution"] is not None:
                 formats.append(entry)
+            # Cache the direct URL for every format (even filtered ones) so download can
+            # reuse it and skip yt-dlp re-extraction, which fails for rotating HLS variants.
+            if entry["id"] and info.get("url"):
+                _DIRECT_URLS[entry["id"]] = info["url"]
 
+        # Fallback layer (ADR-0013): also scan the page for a higher-resolution direct
+        # stream the site exposes but yt-dlp's extractor omits (e.g. 1080p). Merge only
+        # results taller than the best yt-dlp format; skip when yt-dlp already has >=1080p.
+        if formats:
+            best_height = max((_height_of(f.get("resolution")) or 0) for f in formats)
+            if best_height < 1080:
+                for extra in _sniff(url).get("formats") or []:
+                    if (_height_of(extra.get("resolution")) or 0) > best_height:
+                        formats.append(extra)
         # yt-dlp produced nothing usable: try the generic HTML sniffer (ADR-0013).
         if not formats:
             return json.dumps(_sniff(url))
@@ -296,7 +328,7 @@ _USER_AGENT = (
     "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 _SNIFF_MAX_BYTES = 5 * 1024 * 1024
-_URL_RE = re.compile(r'(?:https?:)?//[^\s"\'<>\\]+?\.(?:mp4|m3u8)(?:\?[^\s"\'<>]*)?', re.I)
+_URL_RE = re.compile(r'(?:https?:)?//[^\s"\'<>\\]+?\.(?:mp4|m3u8)[^\s"\'<>\\]*', re.I)
 _OG_VIDEO_RE = re.compile(
     r'<meta[^>]+(?:property|name)=["\']og:video["\'][^>]+content=["\']([^"\']+)["\']', re.I
 )
@@ -345,7 +377,10 @@ class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-_OPENER = urllib.request.build_opener(_SafeRedirectHandler())
+_OPENER = urllib.request.build_opener(
+    urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()),
+    _SafeRedirectHandler(),
+)
 
 
 def _is_network_error(exc):
@@ -364,6 +399,9 @@ def _is_network_error(exc):
 
 def _normalize_url(raw):
     url = html_lib.unescape(raw).replace("\\/", "/").replace("\\u002F", "/").strip()
+    # The broader URL regex can capture a trailing sentence/JSON delimiter; drop it while
+    # keeping legitimate query values (which end in alphanumerics, '=' or '-').
+    url = url.rstrip(".,;")
     if url.startswith("//"):
         url = "https:" + url
     return url
@@ -531,16 +569,21 @@ def _sniff(url, cause=None):
     }
 
 
-def _download_direct(media_url, output_path):
+def _download_direct(media_url, output_path, referer=None):
     if _is_blocked_host(media_url):
         return json.dumps({"error": "SNIFF_FAILED"})
+    # Some CDNs (e.g. xhcdn "referer=force") reject requests without a Referer that
+    # matches the source page. Send the page URL when the caller knows it.
+    headers = {"User-Agent": _USER_AGENT}
+    if referer:
+        headers["Referer"] = referer
     # Stream to a .part sibling so the Kotlin progress poller (which matches "<name>.")
     # reports bytes, then atomically rename and validate.
     part_path = output_path + ".part"
     try:
         _clear_outputs(output_path)
         _write_total(output_path, _content_length(media_url))
-        req = urllib.request.Request(media_url, headers={"User-Agent": _USER_AGENT})
+        req = urllib.request.Request(media_url, headers=headers)
         with _OPENER.open(req, timeout=30) as resp:
             ctype = (resp.headers.get("Content-Type") or "").lower()
             final_url = resp.geturl()
@@ -554,7 +597,7 @@ def _download_direct(media_url, output_path):
                 or first.lstrip().startswith(b"#EXTM3U")
             )
             if is_hls:
-                return _download_hls(final_url, output_path)
+                return _download_hls(final_url, output_path, referer=referer)
             if "text/html" in ctype:
                 return json.dumps({"error": "SNIFF_FAILED"})
             with open(part_path, "wb") as handle:
@@ -584,7 +627,7 @@ def _download_direct(media_url, output_path):
     return json.dumps({"path": output_path, "bytes": os.path.getsize(output_path)})
 
 
-def _download_hls(m3u8_url, output_path):
+def _download_hls(m3u8_url, output_path, referer=None):
     if _is_blocked_host(m3u8_url):
         return json.dumps({"error": "HLS_FAILED"})
     try:
@@ -594,6 +637,9 @@ def _download_hls(m3u8_url, output_path):
     raw_path = output_path + ".ts"
     progress_path = output_path + ".progress"
     total_path = output_path + ".total"
+    hls_headers = {"User-Agent": _USER_AGENT}
+    if referer:
+        hls_headers["Referer"] = referer
 
     def _on_progress(p):
         # hlsfetch reports cumulative bytes after each segment; publish them so the Kotlin
@@ -628,7 +674,7 @@ def _download_hls(m3u8_url, output_path):
                 m3u8_url,
                 raw_path,
                 remux=False,
-                headers={"User-Agent": _USER_AGENT},
+                headers=hls_headers,
                 progress=_on_progress,
             ))
         except TypeError:
@@ -713,14 +759,25 @@ def download(url, format_id, output_path, height=0):
     """Download a format and verify the result actually contains audio."""
     # Fallback-layer synthetic ids carry the real media URL (ADR-0013).
     if format_id.startswith("sniff-hls:"):
-        return _download_hls(format_id[len("sniff-hls:"):], output_path)
+        return _download_hls(format_id[len("sniff-hls:"):], output_path, referer=url)
     if format_id.startswith("sniff-mp4:"):
-        return _download_direct(format_id[len("sniff-mp4:"):], output_path)
+        return _download_direct(format_id[len("sniff-mp4:"):], output_path, referer=url)
+    # Reuse the direct URL captured at probe (avoids yt-dlp re-extraction, which fails for
+    # rotating/signed HLS variants between resolve and download).
+    if format_id in _DIRECT_URLS:
+        direct = _DIRECT_URLS[format_id]
+        return _download_hls(direct, output_path, referer=url) if ".m3u8" in direct.lower() else _download_direct(direct, output_path, referer=url)
     try:
         # A repeated download of the same URL must never pick a stale video-only
         # file from a previous attempt. Start from a clean temp path.
         _clear_outputs(output_path)
-        path = _download_format(url, format_id, output_path)
+        # The site may rotate HLS variants between probe and download, making the exact
+        # format id unavailable; fall back to a height-based selector (or best).
+        try:
+            path = _download_format(url, format_id, output_path)
+        except Exception:
+            selector = f"best[height<={height}]/best" if height > 0 else "best"
+            path = _download_format(url, selector, output_path)
         if path and not _has_audio(path):
             # The selected id may have resolved to a video-only variant. Retry with
             # a muxed audio+video format at the same or lower height.
@@ -747,9 +804,9 @@ def download(url, format_id, output_path, height=0):
         if formats:
             fid = formats[0]["id"]
             if fid.startswith("sniff-hls:"):
-                return _download_hls(fid[len("sniff-hls:"):], output_path)
+                return _download_hls(fid[len("sniff-hls:"):], output_path, referer=url)
             if fid.startswith("sniff-mp4:"):
-                return _download_direct(fid[len("sniff-mp4:"):], output_path)
+                return _download_direct(fid[len("sniff-mp4:"):], output_path, referer=url)
         return json.dumps({
             "error": "NO_OUTPUT" if not path else "NO_AUDIO",
             "message": sniffed.get("message"),

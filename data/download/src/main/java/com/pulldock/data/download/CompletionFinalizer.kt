@@ -120,9 +120,13 @@ class CompletionFinalizer @Inject constructor(
     /** Publishes a verified extractor temp file, then completes the task. */
     suspend fun finalizeMedia(taskId: String, tempPath: String): String? {
         val entity = taskDao.getById(taskId) ?: return null
-        if (entity.state != DownloadState.RUNNING.name) return null
+        if (entity.state != DownloadState.RUNNING.name && entity.state != DownloadState.VERIFYING.name) {
+            return null
+        }
         val temp = java.io.File(tempPath)
-        if (!temp.isFile || temp.length() <= 0L) return fail(entity)
+        if (!temp.isFile || temp.length() <= 0L) {
+            return fail(entity)
+        }
 
         val root = downloadRoot() ?: return fail(entity)
         val folder = storagePreferences.currentDownloadFolder()
@@ -153,7 +157,9 @@ class CompletionFinalizer @Inject constructor(
                         thumbnailUri = thumbnail,
                     )
                     uri
-                } else null
+                } else {
+                    null
+                }
             }
             is FileFinalizer.Result.Rejected -> fail(entity)
         }
@@ -173,6 +179,9 @@ class CompletionFinalizer @Inject constructor(
     private fun thumbnailFor(path: String, taskId: String): String? {
         val file = File(path)
         if (!file.isFile || file.length() <= 0L) return null
+        // Thumbnail extraction (MediaMetadataRetriever) is slow on large files and blocks
+        // completion; skip it for big media — a missing thumbnail is cosmetic.
+        if (file.length() > 50L * 1024 * 1024) return null
         val imageSuffix = file.extension.lowercase()
         val bitmap: Bitmap? = when {
             imageSuffix in setOf("jpg", "jpeg", "png", "webp") ->

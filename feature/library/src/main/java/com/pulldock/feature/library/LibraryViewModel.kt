@@ -2,20 +2,26 @@ package com.pulldock.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pulldock.core.model.AudioFormat
 import com.pulldock.domain.download.model.DownloadGroup
 import com.pulldock.domain.download.repository.LibraryItem
 import com.pulldock.domain.download.repository.LibraryQuery
 import com.pulldock.domain.download.repository.LibrarySection
 import com.pulldock.domain.download.repository.LibrarySort
 import com.pulldock.domain.download.repository.MediaLibraryRepository
+import com.pulldock.domain.download.usecase.ExtractAudio
 import com.pulldock.domain.download.usecase.ObserveGroups
 import com.pulldock.domain.download.usecase.RemoveGroup
 import com.pulldock.domain.download.usecase.UseCaseResult
+import com.pulldock.domain.extractor.ExtractorResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -49,7 +55,21 @@ class LibraryViewModel @Inject constructor(
     private val library: MediaLibraryRepository,
     observeGroups: ObserveGroups,
     private val removeGroup: RemoveGroup,
+    private val extractAudio: ExtractAudio,
 ) : ViewModel() {
+
+    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val messages: SharedFlow<String> = _messages.asSharedFlow()
+
+    /** Extracts an audio-only file from a completed video item (torrent/direct/social). */
+    fun extractAudio(itemId: String) {
+        viewModelScope.launch {
+            when (val result = extractAudio(itemId, AudioFormat.DEFAULT)) {
+                is ExtractorResult.Success -> _messages.tryEmit("Audio extracted")
+                is ExtractorResult.Failure -> _messages.tryEmit("Audio extraction failed")
+            }
+        }
+    }
 
     private val query = MutableStateFlow(LibraryQuery())
     private val pendingDelete = MutableStateFlow<String?>(null)

@@ -139,8 +139,14 @@ fun AddDownloadScreen(
                 }
 
                 PdButton(
-                    label = stringResource(R.string.add_submit),
-                    onClick = viewModel::submit,
+                    label = if (state.resolvedDescriptor != null) {
+                        stringResource(R.string.add_choose_format)
+                    } else {
+                        stringResource(R.string.add_submit)
+                    },
+                    onClick = {
+                        if (state.resolvedDescriptor != null) viewModel.reopenSheet() else viewModel.submit()
+                    },
                     loading = state.submitting,
                     enabled = state.input.isNotBlank(),
                     modifier = Modifier.fillMaxWidth(),
@@ -189,15 +195,17 @@ fun AddDownloadScreen(
     }
 
     state.resolvedDescriptor?.let { descriptor ->
-        FormatSelectionSheet(
-            descriptor = descriptor,
-            formats = state.formats,
-            selected = state.selectedFormat,
-            submitting = state.submitting,
-            onSelect = viewModel::selectFormat,
-            onEnqueue = viewModel::enqueueMedia,
-            onDismiss = viewModel::dismissResolved,
-        )
+        if (state.sheetOpen) {
+            FormatSelectionSheet(
+                descriptor = descriptor,
+                formats = state.formats,
+                selected = state.selectedFormat,
+                submitting = state.submitting,
+                onSelect = viewModel::selectFormat,
+                onEnqueue = viewModel::enqueueMedia,
+                onDismiss = viewModel::dismissSheet,
+            )
+        }
     }
 
     state.playlist?.let { playlist ->
@@ -369,17 +377,33 @@ private fun FormatSelectionSheet(
                     message = stringResource(R.string.add_no_formats_body),
                 )
             } else {
+                val videoFormats = formats.filter { it.videoCodec != null || it.mergeRequired }
+                val audioFormats = formats.filter { it.videoCodec == null && it.audioCodec != null }
                 LazyColumn(
-                    modifier = Modifier.heightIn(max = 240.dp),
+                    modifier = Modifier.heightIn(max = 300.dp),
                     verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
                 ) {
-                    items(formats, key = { it.id }) { format ->
-                        FormatRow(
-                            format = format,
-                            selected = format.id == selected?.id,
-                            recommended = format.id == selected?.id,
-                            onSelect = { onSelect(format) },
-                        )
+                    if (videoFormats.isNotEmpty()) {
+                        item { SectionHeader(stringResource(R.string.add_section_video)) }
+                        items(videoFormats, key = { it.id }) { format ->
+                            FormatRow(
+                                format = format,
+                                selected = format.id == selected?.id,
+                                recommended = format.id == selected?.id,
+                                onSelect = { onSelect(format) },
+                            )
+                        }
+                    }
+                    if (audioFormats.isNotEmpty()) {
+                        item { SectionHeader(stringResource(R.string.add_section_audio)) }
+                        items(audioFormats, key = { it.id }) { format ->
+                            FormatRow(
+                                format = format,
+                                selected = format.id == selected?.id,
+                                recommended = format.id == selected?.id,
+                                onSelect = { onSelect(format) },
+                            )
+                        }
                     }
                 }
                 PdButton(
@@ -392,6 +416,16 @@ private fun FormatSelectionSheet(
             }
         }
     }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = LocalPdTokens.current.spacing.sm),
+    )
 }
 
 @Composable

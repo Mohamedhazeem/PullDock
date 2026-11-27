@@ -77,6 +77,34 @@ class MediaLibraryRepositoryImpl @Inject constructor(
     override suspend fun findBySourceHash(hash: String): LibraryItem? =
         dao.findBySourceHash(hash)?.let(::toDomain)
 
+    override suspend fun addAudioItem(
+        fileUri: String,
+        title: String,
+        sizeBytes: Long?,
+        groupId: String?,
+        sourceHash: String?,
+        source: String?,
+    ) {
+        val existing = dao.findByUri(fileUri)
+        dao.upsert(
+            LibraryItemEntity(
+                id = existing?.id ?: "audio-${fileUri.hashCode()}",
+                fileUri = fileUri,
+                type = com.pulldock.core.model.DownloadType.EXTRACTOR.name,
+                title = title,
+                sizeBytes = sizeBytes,
+                resolution = null,
+                durationSeconds = null,
+                source = source?.takeIf { it.length <= MAX_SOURCE_LENGTH }?.let(UriFileOps::sanitizeSource),
+                completedAt = Instant.now().toEpochMilli(),
+                thumbnailUri = null,
+                fileAvailable = true,
+                sourceHash = sourceHash,
+                groupId = groupId,
+            ),
+        )
+    }
+
     /** Marks records whose file no longer exists; never deletes them (FR-043). */
     override suspend fun reconcile(): ReconcileReport {
         val items = dao.observeAll().first().map(::toDomain)

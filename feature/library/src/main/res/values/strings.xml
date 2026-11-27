@@ -15,6 +15,7 @@
     <string name="library_open">Open %1$s</string>
     <string name="library_delete">Delete</string>
     <string name="library_share">Share</string>
+    <string name="library_extract_audio">Extract audio</string>
     <string name="library_share_title">Share with</string>
     <string name="library_delete_title">Delete from library?</string>
     <string name="library_delete_body">Removes the library entry and its file from this device. This cannot be undone.</string>

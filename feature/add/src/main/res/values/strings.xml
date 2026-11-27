@@ -14,6 +14,8 @@
     <string name="add_torrent_added">Added to queue.</string>
     <string name="add_resolving">Resolving media…</string>
     <string name="add_choose_format">Choose format</string>
+    <string name="add_section_video">Video</string>
+    <string name="add_section_audio">Audio only</string>
     <string name="add_format_hint">Select one. Video and audio are combined when needed.</string>
     <string name="add_download_selected">Download</string>
     <string name="add_recommended">Best</string>

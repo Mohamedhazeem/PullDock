@@ -10,11 +10,9 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.callbackFlow
 
 /**
  * ConnectivityManager-backed observation (T008 impl). Emits the current posture
@@ -29,7 +27,9 @@ class ConnectivityMonitorImpl @javax.inject.Inject constructor(
 
     private val latest = MutableStateFlow(currentNetworkStatus())
 
-    override val status: Flow<NetworkStatus> = callbackFlow {
+    // Register the platform callback exactly once (in init) and expose the sticky state.
+    // Re-registering per collector spammed the system with repeated NetworkRequest logs.
+    init {
         val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) = refresh()
@@ -41,11 +41,9 @@ class ConnectivityMonitorImpl @javax.inject.Inject constructor(
         } catch (_: Exception) {
             // Callback registration unsupported on this platform; the sticky value still works.
         }
-        trySend(latest.value)
-        awaitClose {
-            runCatching { manager.unregisterNetworkCallback(callback) }
-        }
     }
+
+    override val status: Flow<NetworkStatus> = latest.asStateFlow()
 
     override fun current(): NetworkStatus = latest.value.also { refresh() }
 

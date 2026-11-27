@@ -1,7 +1,9 @@
 package com.pulldock.di
 
+import com.pulldock.domain.extractor.AudioExtractor
 import com.pulldock.domain.extractor.ExtractorRuntime
 import com.pulldock.extractor.ChaquopyExtractorRuntime
+import com.pulldock.extractor.FfmpegAudioExtractor
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -15,4 +17,8 @@ abstract class ExtractorRuntimeModule {
     @Binds
     @Singleton
     abstract fun bindExtractorRuntime(impl: ChaquopyExtractorRuntime): ExtractorRuntime
+
+    @Binds
+    @Singleton
+    abstract fun bindAudioExtractor(impl: FfmpegAudioExtractor): AudioExtractor
 }

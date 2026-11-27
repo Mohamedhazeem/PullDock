@@ -3,6 +3,7 @@ package com.pulldock.feature.add
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pulldock.core.model.AudioFormat
 import com.pulldock.core.model.DownloadError
 import com.pulldock.domain.download.model.StorageDestinationDefaults
 import com.pulldock.domain.download.usecase.AddTorrent
@@ -45,6 +46,8 @@ data class AddDownloadUiState(
     /** Available formats for the resolved descriptor; typed-empty renders an error. */
     val formats: List<MediaFormat> = emptyList(),
     val selectedFormat: MediaFormat? = null,
+    /** Whether the format sheet is open (kept true after accidental dismiss until enqueue). */
+    val sheetOpen: Boolean = false,
     /** Flow-level failure (network/runtime) rendered as a full error state. */
     val failedError: DownloadError? = null,
     /** Resolved playlist awaiting per-entry selection; null for single media. */
@@ -194,6 +197,18 @@ class AddDownloadViewModel @Inject constructor(
         _uiState.update { it.copy(playlist = null, selectedPlaylistIndexes = emptySet()) }
     }
 
+    /** Closes the format sheet but keeps the resolved formats so it can be reopened. */
+    fun dismissSheet() {
+        _uiState.update { it.copy(sheetOpen = false) }
+    }
+
+    /** Reopens the format sheet for the already-resolved source (no re-resolution). */
+    fun reopenSheet() {
+        if (_uiState.value.resolvedDescriptor != null) {
+            _uiState.update { it.copy(sheetOpen = true) }
+        }
+    }
+
     /** Enqueues the media download for the chosen format; duplicates fail typed. */
     fun enqueueMedia() {
         val descriptor = _uiState.value.resolvedDescriptor ?: return
@@ -297,12 +312,37 @@ class AddDownloadViewModel @Inject constructor(
         when (val formatsResult = fetchAvailableFormats(descriptor)) {
             is ExtractorResult.Success -> {
                 val formats = formatsResult.value
-                val recommended = FormatFallback.select(formats, mediaPreferences.currentDefaultQuality())
+                val videoFormats = formats.filter { it.videoCodec != null || it.mergeRequired }
+                val nativeAudio = formats.filter { it.videoCodec == null && it.audioCodec != null }
+                val recommended = FormatFallback.select(videoFormats, mediaPreferences.currentDefaultQuality())
+                // Audio-only targets (MP3 default, plus M4A/Opus/OGG/WAV) derived from the
+                // native audio stream if present, else from the recommended muxed video.
+                val audioSourceId = nativeAudio.firstOrNull()?.id
+                    ?: recommended?.id
+                    ?: videoFormats.firstOrNull()?.id
+                val audioFormats = if (audioSourceId != null) {
+                    AudioFormat.entries.map { target ->
+                        MediaFormat(
+                            id = "audio:${target.id}:$audioSourceId",
+                            resolution = "Audio",
+                            container = target.extension,
+                            videoCodec = null,
+                            audioCodec = target.id,
+                            estimatedBytes = null,
+                            mergeRequired = false,
+                            processingEstimateSeconds = null,
+                        )
+                    }
+                } else {
+                    emptyList()
+                }
+                val all = videoFormats + audioFormats
                 _uiState.update {
                     it.copy(
                         resolvedDescriptor = descriptor,
-                        formats = formats,
-                        selectedFormat = recommended,
+                        formats = all,
+                        selectedFormat = recommended ?: all.firstOrNull(),
+                        sheetOpen = true,
                     )
                 }
             }

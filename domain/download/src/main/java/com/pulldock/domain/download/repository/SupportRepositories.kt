@@ -50,6 +50,16 @@ interface MediaLibraryRepository {
     suspend fun findBySourceHash(hash: String): LibraryItem?
     suspend fun reconcile(): ReconcileReport
     suspend fun delete(itemId: String, deleteFile: Boolean): Unit
+
+    /** Records a derived audio-only item (e.g. extracted from a completed video). */
+    suspend fun addAudioItem(
+        fileUri: String,
+        title: String,
+        sizeBytes: Long?,
+        groupId: String?,
+        sourceHash: String?,
+        source: String?,
+    ): Unit
 }
 
 /** User-selected destination (FR-038): a validated relative subfolder of app-specific storage. */
@@ -57,6 +67,11 @@ interface StoragePreferencesRepository {
     fun observeDownloadFolder(): Flow<String?>
     suspend fun currentDownloadFolder(): String?
     suspend fun setDownloadFolder(relativePath: String?)
+}
+
+/** Resolves the directory downloads/extractions are written to (shared /PullDock or app storage). */
+interface MediaStorageDirectory {
+    suspend fun downloadsDir(): String?
 }
 
 /** Preferred media quality (FR-016/US3): a height used to auto-select the closest format. */

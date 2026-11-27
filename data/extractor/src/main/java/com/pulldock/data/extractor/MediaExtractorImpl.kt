@@ -1,6 +1,7 @@
 package com.pulldock.data.extractor
 
 import android.content.Context
+import com.pulldock.core.model.AudioFormat
 import com.pulldock.core.model.DownloadError
 import com.pulldock.core.model.DownloadState
 import com.pulldock.core.model.ProviderId
@@ -181,13 +182,19 @@ class MediaExtractorImpl @Inject constructor(
                 muxVideo.videoCodec?.startsWith("vp9", true) == true -> "webm"
             else -> "mp4"
         }
-        val extension = if (needsMux) ".$targetContainer" else ".mp4"
+        val extension = when {
+            needsMux -> ".$targetContainer"
+            effectiveFormat.id.startsWith("audio:") ->
+                ".${AudioFormat.fromId(effectiveFormat.id.removePrefix("audio:").substringBefore(':')).extension}"
+            else -> ".mp4"
+        }
         val tempPath = File(tempDir, taskId + extension).absolutePath
         // The runtime's progress poller only reports downloaded bytes, so a direct/unknown
         // format (no estimatedBytes) would show a blank total until completion. Probe the
         // HTTP Content-Length up front so the total is visible as soon as the download starts.
         if (!needsMux && effectiveFormat.estimatedBytes == null &&
-            !effectiveFormat.id.startsWith("sniff-")
+            !effectiveFormat.id.startsWith("sniff-") &&
+            !effectiveFormat.id.startsWith("audio:")
         ) {
             withContext(Dispatchers.IO) { probeContentLength(descriptor.sourceUrl) }?.let { total ->
                 events.tryEmit(ExtractorEvent.Progress(taskId, 0L, total, 0L))
@@ -209,7 +216,7 @@ class MediaExtractorImpl @Inject constructor(
         } else {
             null
         }
-        if (needsMux && audioFormat == null) {
+        if (needsMux && audioFormat == null && effectiveFormat.audioCodec != null) {
             val error = DownloadError.ExtractorEngine(
                 DownloadError.ExtractorReason.UNSUPPORTED,
                 "no audio stream",
@@ -232,13 +239,13 @@ class MediaExtractorImpl @Inject constructor(
             events.tryEmit(ExtractorEvent.Progress(taskId, bytes, knownTotal ?: total, speed))
         }
 
-        val result = if (needsMux && audioFormat != null) {
+        val result = if (needsMux) {
             runtime.downloadMuxed(
                 url = descriptor.sourceUrl,
                 videoFormatId = muxVideo.id,
-                audioFormatId = audioFormat.id,
+                audioFormatId = audioFormat?.id ?: "bestaudio",
                 videoCodec = muxVideo.videoCodec,
-                audioCodec = audioFormat.audioCodec,
+                audioCodec = audioFormat?.audioCodec,
                 container = targetContainer,
                 outputPath = tempPath,
                 onProgress = { bytes, total -> reportProgress(bytes, total) },

@@ -8,6 +8,8 @@ import com.arthenica.ffmpegkit.ReturnCode
 import com.pulldock.core.model.DownloadError
 import com.pulldock.core.model.ProviderId
 import com.pulldock.domain.extractor.ExtractorResult
+import com.pulldock.core.model.AudioFormat
+import com.pulldock.domain.extractor.AudioExtractor
 import com.pulldock.domain.extractor.ExtractorRuntime
 import com.pulldock.domain.extractor.model.ExtractorRuntimeInfo
 import com.pulldock.domain.extractor.model.MediaFormat
@@ -35,6 +37,7 @@ import org.json.JSONObject
 @Singleton
 class ChaquopyExtractorRuntime @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val audioExtractor: AudioExtractor,
 ) : ExtractorRuntime {
 
     private val version = "2026.11.23"
@@ -46,18 +49,39 @@ class ChaquopyExtractorRuntime @Inject constructor(
         null
     }
 
+    /**
+     * The first call can race Chaquopy's one-time startup (the module is still loading), which
+     * otherwise surfaces as "Extractor runtime unavailable". Retry briefly until it is ready.
+     */
+    private fun moduleReady() = run {
+        var result = module()
+        var attempts = 0
+        while (result == null && attempts < 5) {
+            try {
+                Thread.sleep(200)
+            } catch (_: InterruptedException) {
+                break
+            }
+            result = module()
+            attempts++
+        }
+        result
+    }
+
     private fun JSONObject.stringOrNull(key: String): String? =
         optString(key).takeIf { it.isNotBlank() && it != "null" }
 
     override suspend fun info(url: String, providerId: ProviderId): ExtractorResult<ExtractorRuntime.MediaInfo> {
-        val mod = module() ?: return ExtractorResult.Failure(
+        val mod = withContext(kotlinx.coroutines.Dispatchers.IO) { moduleReady() } ?: return ExtractorResult.Failure(
             DownloadError.ExtractorEngine(DownloadError.ExtractorReason.RUNTIME_INCOMPATIBLE),
         )
         return try {
             val json = JSONObject(withContext(kotlinx.coroutines.Dispatchers.IO) {
                 mod.callAttr("probe", url).toString()
             })
-            if (json.has("error")) return ExtractorResult.Failure(mapError(json.optString("error", "")))
+            if (json.has("error")) {
+                return ExtractorResult.Failure(mapError(json.optString("error", "")))
+            }
             val formats = mutableListOf<MediaFormat>()
             val array = json.optJSONArray("formats")
             if (array != null) {
@@ -98,7 +122,7 @@ class ChaquopyExtractorRuntime @Inject constructor(
         url: String,
         providerId: ProviderId,
     ): ExtractorResult<ExtractorRuntime.PlaylistInfo> {
-        val mod = module() ?: return ExtractorResult.Failure(
+        val mod = withContext(kotlinx.coroutines.Dispatchers.IO) { moduleReady() } ?: return ExtractorResult.Failure(
             DownloadError.ExtractorEngine(DownloadError.ExtractorReason.RUNTIME_INCOMPATIBLE),
         )
         return try {
@@ -152,7 +176,10 @@ class ChaquopyExtractorRuntime @Inject constructor(
         onProgress: (Long, Long?) -> Unit,
         height: Int?,
     ): ExtractorResult<String> {
-        val mod = module() ?: return ExtractorResult.Failure(
+        if (formatId.startsWith("audio:")) {
+            return downloadAudio(url, formatId, outputPath, onProgress)
+        }
+        val mod = withContext(kotlinx.coroutines.Dispatchers.IO) { moduleReady() } ?: return ExtractorResult.Failure(
             DownloadError.ExtractorEngine(DownloadError.ExtractorReason.RUNTIME_INCOMPATIBLE),
         )
         val poller: Job? = launchPoller(outputPath, onProgress)
@@ -160,8 +187,10 @@ class ChaquopyExtractorRuntime @Inject constructor(
             val json = JSONObject(withContext(kotlinx.coroutines.Dispatchers.IO) {
                 mod.callAttr("download", url, formatId, outputPath, height ?: 0).toString()
             })
-            if (json.has("error")) ExtractorResult.Failure(mapError(json.optString("error", "")))
-            else {
+            if (json.has("error")) {
+                android.util.Log.i("PullDock", "dl err " + json.optString("error") + " fmt=" + formatId)
+                ExtractorResult.Failure(mapError(json.optString("error", "")))
+            } else {
                 val path = json.optString("path")
                 if (path.isBlank()) {
                     ExtractorResult.Failure(
@@ -192,7 +221,7 @@ class ChaquopyExtractorRuntime @Inject constructor(
         onProgress: (Long, Long?) -> Unit,
         height: Int?,
     ): ExtractorResult<String> {
-        val mod = module() ?: return ExtractorResult.Failure(
+        val mod = withContext(kotlinx.coroutines.Dispatchers.IO) { moduleReady() } ?: return ExtractorResult.Failure(
             DownloadError.ExtractorEngine(DownloadError.ExtractorReason.RUNTIME_INCOMPATIBLE),
         )
         val output = File(outputPath).absoluteFile
@@ -231,6 +260,56 @@ class ChaquopyExtractorRuntime @Inject constructor(
         }
     }
 
+    /**
+     * Audio-only download: id is `audio:<target>:<sourceId>`. Downloads the source (native
+     * audio format, or the muxed video for derived audio) to a temp, then extracts the target
+     * format with FFmpegKit and deletes the source temp.
+     */
+    private suspend fun downloadAudio(
+        url: String,
+        formatId: String,
+        outputPath: String,
+        onProgress: (Long, Long?) -> Unit,
+    ): ExtractorResult<String> {
+        val rest = formatId.removePrefix("audio:")
+        val split = rest.indexOf(':')
+        if (split <= 0 || split >= rest.length - 1) {
+            return ExtractorResult.Failure(
+                DownloadError.ExtractorEngine(
+                    DownloadError.ExtractorReason.UNSUPPORTED,
+                    "invalid audio format id",
+                ),
+            )
+        }
+        val target = AudioFormat.fromId(rest.substring(0, split))
+        val sourceId = rest.substring(split + 1)
+        val mod = withContext(kotlinx.coroutines.Dispatchers.IO) { moduleReady() } ?: return ExtractorResult.Failure(
+            DownloadError.ExtractorEngine(DownloadError.ExtractorReason.RUNTIME_INCOMPATIBLE),
+        )
+        val srcBase = outputPath + ".src"
+        val poller = launchPoller(listOf(srcBase), onProgress)
+        var sourcePath: String? = null
+        try {
+            val json = JSONObject(withContext(kotlinx.coroutines.Dispatchers.IO) {
+                mod.callAttr("download", url, sourceId, srcBase, 0).toString()
+            })
+            if (json.has("error")) return ExtractorResult.Failure(mapError(json.optString("error", "")))
+            sourcePath = json.optString("path").takeIf { it.isNotBlank() }
+                ?: return ExtractorResult.Failure(
+                    DownloadError.ExtractorEngine(
+                        DownloadError.ExtractorReason.UNSUPPORTED,
+                        "no source audio",
+                    ),
+                )
+            return audioExtractor.extract(sourcePath, target, outputPath)
+        } finally {
+            poller?.cancel()
+            sourcePath?.let { runCatching { File(it).delete() } }
+            runCatching { File(srcBase + ".total").delete() }
+            runCatching { File(srcBase + ".progress").delete() }
+        }
+    }
+
     private suspend fun remuxToMp4(rawPath: String, outputPath: String): ExtractorResult<String> =
         withContext(kotlinx.coroutines.Dispatchers.IO) {
             val raw = File(rawPath)
@@ -250,7 +329,7 @@ class ChaquopyExtractorRuntime @Inject constructor(
             try {
                 val session = FFmpegKit.execute(
                     "-y -fflags +genpts -i \"$rawPath\" -c copy " +
-                        "-avoid_negative_ts make_zero -movflags +faststart \"$outputPath\"",
+                        "-avoid_negative_ts make_zero \"$outputPath\"",
                 )
                 val out = File(outputPath)
                 val ok = ReturnCode.isSuccess(session.returnCode) && out.isFile && out.length() > 0L
@@ -273,96 +352,32 @@ class ChaquopyExtractorRuntime @Inject constructor(
         audioCodec: String?,
         container: String,
     ): ExtractorResult<String> {
-        val videoExtractor = android.media.MediaExtractor()
-        val audioExtractor = android.media.MediaExtractor()
-        var muxer: android.media.MediaMuxer? = null
-        try {
-            videoExtractor.setDataSource(videoPath)
-            audioExtractor.setDataSource(audioPath)
-            val videoTrack = firstTrack(videoExtractor, "video/")
-            val audioTrack = firstTrack(audioExtractor, "audio/")
-            if (videoTrack < 0 || audioTrack < 0) {
-                return ExtractorResult.Failure(
-                    DownloadError.ExtractorEngine(DownloadError.ExtractorReason.UNSUPPORTED, "missing stream"),
-                )
-            }
-            val videoFormat = videoExtractor.getTrackFormat(videoTrack)
-            val audioFormat = audioExtractor.getTrackFormat(audioTrack)
-            val videoMime = videoFormat.getString(android.media.MediaFormat.KEY_MIME) ?: ""
-            val audioMime = audioFormat.getString(android.media.MediaFormat.KEY_MIME) ?: ""
-            // The container is driven by the video codec: VP8/VP9 only live in WebM, while
-            // H.264/AV1 go in MP4. Audio must not force MP4 when the video is VP9 (that
-            // combination is invalid and MediaMuxer.addTrack would throw).
-            val videoIsVp = videoMime.contains("vp8", true) || videoMime.contains("vp9", true)
-            val mp4 = !videoIsVp && (
-                container.equals("mp4", true) ||
-                    videoMime.contains("avc", true) ||
-                    videoMime.contains("av01", true) ||
-                    audioMime.contains("mp4a", true)
-                )
-            android.util.Log.e("PullDockMux", "mux container=$container video=$videoMime audio=$audioMime")
-            muxer = android.media.MediaMuxer(
-                outputPath,
-                if (mp4) android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
-                else android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM,
-            )
-            val videoDestination = muxer.addTrack(videoFormat)
-            val audioDestination = muxer.addTrack(audioFormat)
-            muxer.start()
-            copyTrack(videoExtractor, videoTrack, videoDestination, muxer)
-            copyTrack(audioExtractor, audioTrack, audioDestination, muxer)
-            muxer.stop()
-            return ExtractorResult.Success(outputPath)
-        } catch (t: Throwable) {
-            android.util.Log.e("PullDockMux", "mux failed", t)
-            return ExtractorResult.Failure(mapThrowable(t))
-        } finally {
-            runCatching { muxer?.release() }
-            runCatching { videoExtractor.release() }
-            runCatching { audioExtractor.release() }
-        }
-    }
-
-    private fun firstTrack(extractor: android.media.MediaExtractor, mimePrefix: String): Int {
-        for (index in 0 until extractor.trackCount) {
-            val mime = extractor.getTrackFormat(index).getString(android.media.MediaFormat.KEY_MIME) ?: ""
-            if (mime.startsWith(mimePrefix)) return index
-        }
-        return -1
-    }
-
-    private fun copyTrack(
-        extractor: android.media.MediaExtractor,
-        trackIndex: Int,
-        destinationTrack: Int,
-        muxer: android.media.MediaMuxer,
-    ) {
-        val format = extractor.getTrackFormat(trackIndex)
-        val maxInput = if (format.containsKey(android.media.MediaFormat.KEY_MAX_INPUT_SIZE)) {
-            format.getInteger(android.media.MediaFormat.KEY_MAX_INPUT_SIZE)
+        // FFmpegKit mux (fast, native) replaces the slow MediaMuxer sample-copy loop, which
+        // could stall for minutes or throw on non-monotonic DTS for large DASH streams. VP8/VP9
+        // only live in WebM, so retarget .mp4 -> .webm if the data layer picked mp4 for a VP codec.
+        val vp = videoCodec?.contains("vp8", true) == true || videoCodec?.contains("vp9", true) == true
+        val target = if (vp && outputPath.endsWith(".mp4", true)) {
+            outputPath.substringBeforeLast('.') + ".webm"
         } else {
-            1_000_000
+            outputPath
         }
-        val buffer = ByteBuffer.allocate(maxInput.coerceAtLeast(1_000_000))
-        val info = android.media.MediaCodec.BufferInfo()
-        extractor.selectTrack(trackIndex)
-        while (true) {
-            val size = extractor.readSampleData(buffer, 0)
-            if (size < 0) break
-            info.offset = 0
-            info.size = size
-            info.presentationTimeUs = extractor.sampleTime
-            // MediaExtractor sample flags and MediaCodec.BufferInfo flags are distinct
-            // constant sets; map the only one MediaMuxer cares about (sync frames).
-            info.flags = if (extractor.sampleFlags and android.media.MediaExtractor.SAMPLE_FLAG_SYNC != 0) {
-                android.media.MediaCodec.BUFFER_FLAG_SYNC_FRAME
+        return try {
+            val session = FFmpegKit.execute(
+                "-y -i \"$videoPath\" -i \"$audioPath\" -map 0:v:0 -map 1:a:0 -c copy \"$target\"",
+            )
+            val out = File(target)
+            if (ReturnCode.isSuccess(session.returnCode) && out.isFile && out.length() > 0L) {
+                ExtractorResult.Success(target)
             } else {
-                0
+                ExtractorResult.Failure(
+                    DownloadError.ExtractorEngine(
+                        DownloadError.ExtractorReason.UNSUPPORTED,
+                        "mux failed",
+                    ),
+                )
             }
-            buffer.position(0)
-            buffer.limit(size)
-            muxer.writeSampleData(destinationTrack, buffer, info)
-            extractor.advance()
+        } catch (t: Throwable) {
+            ExtractorResult.Failure(mapThrowable(t))
         }
     }
 
