@@ -3,14 +3,15 @@ package com.pulldock.data.discovery.provider
 import com.pulldock.data.discovery.http.BoundedResponse
 import com.pulldock.data.discovery.http.HttpResult
 import com.pulldock.data.discovery.mapper.MagnetCheck
-import com.pulldock.domain.discovery.ApiCredentialStore
 import com.pulldock.data.discovery.provider.dto.BitSearchDetailResponse
 import com.pulldock.data.discovery.provider.dto.BitSearchResultDto
 import com.pulldock.data.discovery.provider.dto.BitSearchSearchResponse
+import com.pulldock.domain.discovery.ApiCredentialStore
 import com.pulldock.domain.discovery.ProviderPage
 import com.pulldock.domain.discovery.ProviderPageResult
 import com.pulldock.domain.discovery.TorrentSearchProvider
 import com.pulldock.domain.discovery.error.DiscoveryError
+import com.pulldock.domain.discovery.model.ContributingSource
 import com.pulldock.domain.discovery.model.DownloadDescriptor
 import com.pulldock.domain.discovery.model.DescriptorKind
 import com.pulldock.domain.discovery.model.ProviderCapabilities
@@ -29,9 +30,9 @@ import javax.inject.Inject
 import kotlinx.serialization.json.Json
 
 /**
- * BitSearch adapter (FR-010..FR-019). Documented REST only; detail is fetched only on demand;
- * the magnet is taken from the detail response and validated before handoff; the optional
- * `x-api-key` is session-only and never logged. No aggressive 401/403/429 retry.
+ * BitSearch adapter (FR-010..FR-019) for the documented REST schema. Detail is fetched only
+ * on demand; the magnet is taken from the detail response and validated before handoff; the
+ * optional `x-api-key` is session-only and never logged. No aggressive 401/403/429 retry.
  */
 class BitSearchProvider @Inject constructor(
     private val client: HttpClient,
@@ -84,7 +85,8 @@ class BitSearchProvider @Inject constructor(
         }
         val dto = runCatching { json.decodeFromString(BitSearchDetailResponse.serializer(), body) }
             .getOrElse { throw DiscoveryError.Parse("bitsearch detail") }
-        val magnet = dto.magnetUri
+        val t = dto.torrent ?: return null
+        val magnet = t.magnetUri
         val descriptor = if (MagnetCheck.isValid(magnet)) {
             DownloadDescriptor(DescriptorKind.MAGNET, magnetUri = magnet, torrentFileRef = null)
         } else null
@@ -92,19 +94,19 @@ class BitSearchProvider @Inject constructor(
             resultId = nativeId,
             providerId = id,
             providerName = displayName,
-            title = dto.title ?: nativeId,
+            title = t.title ?: nativeId,
             description = null,
-            category = categoryOf(dto.category),
-            infoHash = dto.infoHash ?: MagnetCheck.infoHash(magnet),
-            sizeBytes = dto.size,
-            seeders = dto.seeders,
-            leechers = dto.leechers,
-            publishedAt = dto.created?.let(::parseInstant),
+            category = categoryOf(t.category),
+            infoHash = t.infohash ?: MagnetCheck.infoHash(magnet),
+            sizeBytes = t.size,
+            seeders = t.swarm?.seeders,
+            leechers = t.swarm?.leechers,
+            publishedAt = t.createdAt?.let(::parseInstant),
             sourcePageUrl = "$BASE/torrent/$nativeId",
             rightsStatus = RightsStatus.UNKNOWN,
             licence = null,
             downloadDescriptor = descriptor,
-            availableActions = actions(hasMagnet = descriptor != null),
+            availableActions = actions(descriptor != null),
         )
     }
 
@@ -113,7 +115,7 @@ class BitSearchProvider @Inject constructor(
 
     private fun toResult(dto: BitSearchResultDto): TorrentSearchResult? {
         val title = dto.title?.takeIf { it.isNotBlank() } ?: return null
-        val nativeId = dto.id ?: dto.infoHash ?: return null
+        val nativeId = dto.id ?: dto.infohash ?: return null
         return TorrentSearchResult(
             resultId = nativeId,
             providerId = id,
@@ -122,19 +124,17 @@ class BitSearchProvider @Inject constructor(
             description = null,
             category = categoryOf(dto.category),
             originalProviderCategory = dto.category,
-            infoHash = dto.infoHash,
+            infoHash = dto.infohash,
             sizeBytes = dto.size,
             seeders = dto.seeders,
             leechers = dto.leechers,
-            publishedAt = dto.created?.let(::parseInstant),
+            publishedAt = dto.createdAt?.let(::parseInstant),
             providerVerificationClaim = dto.verified,
             sourcePageUrl = "$BASE/torrent/$nativeId",
             resultSourceType = ResultSourceType.MAGNET,
             rightsStatus = RightsStatus.UNKNOWN,
             availableActions = actions(hasMagnet = false),
-            contributingSources = listOf(
-                com.pulldock.domain.discovery.model.ContributingSource(id, displayName, "$BASE/torrent/$nativeId", nativeId),
-            ),
+            contributingSources = listOf(ContributingSource(id, displayName, "$BASE/torrent/$nativeId", nativeId)),
         )
     }
 
@@ -145,8 +145,19 @@ class BitSearchProvider @Inject constructor(
         add(ResultAction.SHARE)
     }
 
-    private fun categoryOf(raw: String?): SearchCategory =
-        CATEGORY_MAP.entries.firstOrNull { it.value == raw }?.key ?: SearchCategory.OTHER
+    private fun categoryOf(raw: String?): SearchCategory = when (raw?.lowercase()?.trim()) {
+        "movies", "movie" -> SearchCategory.MOVIES
+        "tv", "tv shows", "tvseries" -> SearchCategory.TV_SERIES
+        "anime" -> SearchCategory.ANIME
+        "software", "softwares", "apps" -> SearchCategory.SOFTWARE
+        "games", "game" -> SearchCategory.GAMES
+        "music" -> SearchCategory.MUSIC
+        "audiobook", "audiobooks" -> SearchCategory.AUDIOBOOKS
+        "ebook", "ebooks", "course", "courses" -> SearchCategory.EBOOKS
+        "xxx", "adult", "adult content" -> SearchCategory.ADULT
+        "document", "documents" -> SearchCategory.DOCUMENTS
+        else -> SearchCategory.OTHER
+    }
 
     private fun parseInstant(raw: String): Instant? = runCatching { Instant.parse(raw) }.getOrNull()
 
@@ -163,7 +174,7 @@ class BitSearchProvider @Inject constructor(
             SearchCategory.MUSIC to "7",
             SearchCategory.AUDIOBOOKS to "8",
             SearchCategory.EBOOKS to "9",
-            SearchCategory.DOCUMENTS to "9",
+            SearchCategory.DOCUMENTS to "1",
             SearchCategory.ADULT to "10",
         )
     }
