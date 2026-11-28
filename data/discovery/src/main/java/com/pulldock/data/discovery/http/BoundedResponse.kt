@@ -35,6 +35,9 @@ object BoundedResponse {
             client.get(url) {
                 build()
                 headers.forEach { (k, v) -> header(k, v) }
+                // Some providers (e.g. Internet Archive) reject the default client UA.
+                header("User-Agent", "PullDock/0.2 (Android)")
+                header("Accept", "application/json, application/xml, */*")
             }
         } catch (t: Throwable) {
             if (t is kotlinx.coroutines.CancellationException) throw t
