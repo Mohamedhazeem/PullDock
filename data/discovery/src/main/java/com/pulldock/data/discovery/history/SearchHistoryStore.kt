@@ -36,6 +36,7 @@ class SearchHistoryStore @Inject constructor(
         if (trimmed.isEmpty()) return
         dataStore.edit { prefs ->
             val current = prefs[KEY_HISTORY].orEmpty().toMutableSet()
+            current.removeAll { it.startsWith("$trimmed|") }
             current.add(encode(trimmed, category, Instant.now()))
             prefs[KEY_HISTORY] = current.toList().takeLast(MAX_ENTRIES).toSet()
         }
