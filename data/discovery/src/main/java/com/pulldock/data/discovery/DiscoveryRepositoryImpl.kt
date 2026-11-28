@@ -165,9 +165,11 @@ class DiscoveryRepositoryImpl @Inject constructor(
     } catch (t: TimeoutCancellationException) {
         ProviderOutcome(ProviderStatus(provider.id, provider.displayName, ProviderState.TIMEOUT, error = DiscoveryError.Timeout(provider.id)), emptyList(), false, null)
     } catch (e: DiscoveryError) {
+        System.err.println("Discovery provider ${provider.id} failed: ${e.javaClass.simpleName} ${e.message}")
         val state = if (e is DiscoveryError.RateLimited) ProviderState.RATE_LIMITED else ProviderState.FAILED
         ProviderOutcome(ProviderStatus(provider.id, provider.displayName, state, error = e), emptyList(), false, null)
     } catch (e: Exception) {
+        System.err.println("Discovery provider ${provider.id} error: ${e.javaClass.simpleName}")
         ProviderOutcome(
             ProviderStatus(provider.id, provider.displayName, ProviderState.FAILED, error = DiscoveryError.Provider(DiscoveryError.ProviderReason.SERVER_ERROR, "unexpected")),
             emptyList(), false, null,
