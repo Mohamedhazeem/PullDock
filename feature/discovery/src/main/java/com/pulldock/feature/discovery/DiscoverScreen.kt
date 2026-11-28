@@ -136,7 +136,32 @@ fun DiscoverScreen(
                         CenterState(icon = { Icon(Icons.Rounded.ErrorOutline, null, Modifier.size(40.dp)) }, title = "All providers failed", body = "Check connectivity and retry.", action = { TextButton(onClick = { onEvent(DiscoverUiEvent.Refresh) }) { Text("Retry") } })
                     OverallSearchState.OFFLINE ->
                         CenterState(icon = { Icon(Icons.Rounded.CloudOff, null, Modifier.size(40.dp)) }, title = "You're offline", body = "Reconnect and retry.")
-                    else -> ResultsList(state, onEvent)
+                    else -> LazyColumn(
+                        state = listState,
+                        verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = tokens.spacing.md, top = tokens.spacing.sm, end = tokens.spacing.md, bottom = 96.dp),
+                    ) {
+                        items(state.results, key = { it.resultId }) { result ->
+                            ResultCard(
+                                result = result,
+                                onOpen = { onEvent(DiscoverUiEvent.OpenDetails(result)) },
+                                onAdd = { onEvent(DiscoverUiEvent.AddToPullDock(result)) },
+                            )
+                        }
+                        if (state.hasMore) item {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                                FilterChip(selected = false, onClick = { onEvent(DiscoverUiEvent.LoadMore) }, label = { Text("Load more") })
+                            }
+                        }
+                    }
+                }
+                if (atBottom && state.results.isNotEmpty() && (state.overall == OverallSearchState.RESULTS || state.overall == OverallSearchState.PARTIAL)) {
+                    FloatingActionButton(
+                        onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ) { Icon(Icons.Rounded.ArrowUpward, contentDescription = "Scroll to top") }
                 }
             }
         }
@@ -148,9 +173,7 @@ fun DiscoverScreen(
             providers = state.perProvider,
             currentProviderIds = emptySet(),
             onApply = { sort, min, provs, minMb, maxMb, from, to ->
-                onEvent(DiscoverUiEvent.SortSelected(sort)); onEvent(DiscoverUiEvent.MinSeedersChanged(min))
-                onEvent(DiscoverUiEvent.ProviderSelectionChanged(provs)); onEvent(DiscoverUiEvent.SizeRangeChanged(minMb, maxMb))
-                onEvent(DiscoverUiEvent.DateRangeChanged(from, to)); showFilters = false
+                onEvent(DiscoverUiEvent.FiltersApplied(sort, min, provs, minMb, maxMb, from, to)); showFilters = false
             },
             onDismiss = { showFilters = false },
         )
@@ -158,27 +181,32 @@ fun DiscoverScreen(
 }
 
 @Composable
-private fun SearchBar(query: String, onEvent: (DiscoverUiEvent) -> Unit) {
+private fun SearchBar(query: String, onEvent: (DiscoverUiEvent) -> Unit, onFilters: () -> Unit, modifier: Modifier = Modifier) {
     val tokens = LocalPdTokens.current
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val submit: () -> Unit = {
+        onEvent(DiscoverUiEvent.Submit)
+        focus.clearFocus()
+        keyboard?.hide()
+        Unit
+    }
     OutlinedTextField(
         value = query,
         onValueChange = { onEvent(DiscoverUiEvent.QueryChanged(it)) },
-        placeholder = { Text("Search movies, shows, books…") },
-        leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+        placeholder = { Text("Search torrents…") },
         trailingIcon = {
-            IconButton(onClick = { onEvent(DiscoverUiEvent.Submit) }, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary)
+            Row {
+                IconButton(onClick = onFilters, modifier = Modifier.size(36.dp)) { Icon(Icons.Rounded.Tune, contentDescription = "Filters") }
+                IconButton(onClick = submit, modifier = Modifier.size(36.dp)) { Icon(Icons.Rounded.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary) }
             }
         },
         singleLine = true,
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { submit() }),
         shape = RoundedCornerShape(tokens.radius.lg),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-        TextButton(onClick = { onEvent(DiscoverUiEvent.Submit) }) { Text("Search") }
-        TextButton(onClick = { onEvent(DiscoverUiEvent.Refresh) }) { Icon(Icons.Rounded.Refresh, null, Modifier.size(18.dp)); Text(" Refresh") }
-        TextButton(onClick = { onEvent(DiscoverUiEvent.ClearHistory) }) { Text("Clear history") }
-    }
 }
 
 @Composable
@@ -195,27 +223,6 @@ private fun CategoryChips(selected: SearchCategory, adultEnabled: Boolean, onSel
                 label = { Text(category.label()) },
                 leadingIcon = if (selected == category) ({ Icon(category.icon(), null, Modifier.size(18.dp)) }) else null,
             )
-        }
-    }
-}
-
-@Composable
-private fun ResultsList(state: DiscoverUiState, onEvent: (DiscoverUiEvent) -> Unit) {
-    val tokens = LocalPdTokens.current
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm), contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = tokens.spacing.sm)) {
-        items(state.results, key = { it.resultId }) { result ->
-            ResultCard(
-                result = result,
-                onOpen = { onEvent(DiscoverUiEvent.OpenDetails(result)) },
-                onAdd = { onEvent(DiscoverUiEvent.AddToPullDock(result)) },
-                onHide = { onEvent(DiscoverUiEvent.HideResult(result.resultId)) },
-                onReport = { onEvent(DiscoverUiEvent.ReportResult(result.resultId)) },
-            )
-        }
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                if (state.hasMore) TextButton(onClick = { onEvent(DiscoverUiEvent.LoadMore) }) { Text("Load more") }
-            }
         }
     }
 }
@@ -240,4 +247,7 @@ private fun CenterState(
     }
 }
 
-private fun SearchCategory.label(): String = name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
+private fun SearchCategory.label(): String = when (this) {
+    SearchCategory.TV_SERIES -> "TV Series"
+    else -> name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
+}
