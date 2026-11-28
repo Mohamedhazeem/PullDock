@@ -46,6 +46,8 @@ class TorznabConfigStore @Inject constructor(
         dataStore.edit { it[KEY_CONFIG] = Json.encodeToString(ListSerializer(Dto.serializer()), dtos) }
     }
 
+    override suspend fun restoreDefaults() = replace(DEFAULT_CONFIGS)
+
     private fun decode(raw: String?): List<Dto> = raw?.let {
         runCatching { Json.decodeFromString(ListSerializer(Dto.serializer()), it) }.getOrDefault(emptyList())
     } ?: emptyList()
@@ -75,15 +77,14 @@ class TorznabConfigStore @Inject constructor(
         val KEY_CONFIG = stringPreferencesKey("discovery.torznab_config")
 
         /**
-         * Predefined public Torznab endpoints so the feature works without manual setup.
-         * Users can remove or replace them in Discovery settings. If an endpoint is offline
-         * the provider reports a typed failure and other providers still return results.
+         * Predefined public Torznab indexer (Torlock) so Torznab works without manual setup.
+         * Verified to return caps + search. Users can remove it or use Restore defaults.
          */
         val DEFAULT_CONFIGS = listOf(
             ProviderConfiguration(
-                providerId = "torznab-default-bitsearch",
-                displayName = "BitSearch (Torznab)",
-                endpoint = "https://bitsearch.eu/api/v1",
+                providerId = "torznab-default-torlock",
+                displayName = "Torlock",
+                endpoint = "https://www.torlock.com/torznab",
                 enabled = true,
             ),
         )
