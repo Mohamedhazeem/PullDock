@@ -81,6 +81,16 @@ data class TorrentResultDetails(
     val availableTorrentFiles: List<String> = emptyList(),
     /** Optional poster/thumbnail URL when the provider supplies one (never fabricated). */
     val thumbnailUrl: String? = null,
+    /** Files inside the torrent (path + size), when the provider supplies them. */
+    val files: List<TorrentFile> = emptyList(),
+    /** Provider-supplied image URLs (posters/screenshots), validated https only. */
+    val images: List<String> = emptyList(),
+)
+
+/** One file entry inside a torrent. */
+data class TorrentFile(
+    val path: String,
+    val sizeBytes: Long? = null,
 )
 
 enum class DescriptorKind { MAGNET, TORRENT_FILE }
