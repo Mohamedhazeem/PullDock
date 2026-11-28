@@ -89,7 +89,7 @@ class DiscoverViewModel @Inject constructor(
             DiscoverUiEvent.LoadMore -> loadMore()
             DiscoverUiEvent.Refresh -> refresh()
             is DiscoverUiEvent.OpenDetails -> openDetails(event.result)
-            DiscoverUiEvent.CloseDetails -> _state.update { it.copy(details = null, selectedResult = null, detailsLoading = false) }
+            DiscoverUiEvent.CloseDetails -> _state.update { it.copy(details = null, selectedResult = null, detailsLoading = false, detailsError = false) }
             is DiscoverUiEvent.AddToPullDock -> addToPullDock(event.result, event.fileName)
             is DiscoverUiEvent.RepeatSearch -> { _state.update { it.copy(query = event.query) }; submit() }
             is DiscoverUiEvent.DeleteHistory -> viewModelScope.launch { historyStore.delete(event.query.toEntry()) }
@@ -179,10 +179,22 @@ class DiscoverViewModel @Inject constructor(
     }
 
     private fun openDetails(result: TorrentSearchResult) {
-        _state.update { it.copy(detailsLoading = true, details = null, selectedResult = result) }
+        _state.update { it.copy(detailsLoading = true, details = null, detailsError = false, selectedResult = result) }
         viewModelScope.launch(dispatchers.io) {
-            val details = repository.getDetails(result)
-            _state.update { it.copy(details = details, detailsLoading = false) }
+            val details = try {
+                repository.getDetails(result)
+            } catch (e: Exception) {
+                System.err.println("Discovery getDetails failed for ${result.providerId}: ${e.javaClass.simpleName}")
+                null
+            }
+            _state.update {
+                it.copy(
+                    details = details,
+                    detailsLoading = false,
+                    detailsError = details == null,
+                    message = if (details == null) "Details unavailable." else null,
+                )
+            }
         }
     }
 

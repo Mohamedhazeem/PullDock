@@ -23,6 +23,7 @@ data class DiscoverUiState(
     val details: TorrentResultDetails? = null,
     val selectedResult: TorrentSearchResult? = null,
     val detailsLoading: Boolean = false,
+    val detailsError: Boolean = false,
     val message: String? = null,
     val hasMore: Boolean = false,
     val historyEnabled: Boolean = true,

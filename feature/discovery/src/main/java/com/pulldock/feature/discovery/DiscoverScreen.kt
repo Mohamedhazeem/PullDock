@@ -79,7 +79,7 @@ fun DiscoverRoute(
 ) {
     LaunchedEffect(Unit) { viewModel.addSource.collect { onAddSource(it) } }
     val state by viewModel.state.collectAsState()
-    val detailsOpen = state.details != null || state.detailsLoading
+    val detailsOpen = state.details != null || state.detailsLoading || state.detailsError
     BackHandler(enabled = detailsOpen) { viewModel.onEvent(DiscoverUiEvent.CloseDetails) }
     if (detailsOpen) {
         ResultDetailsScreen(
