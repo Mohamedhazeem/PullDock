@@ -33,7 +33,7 @@ fun ProviderStatusRow(
 ) {
     val tokens = LocalPdTokens.current
     Row(
-        modifier = modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = tokens.spacing.xs),
+        modifier = modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         statuses.forEach { status ->

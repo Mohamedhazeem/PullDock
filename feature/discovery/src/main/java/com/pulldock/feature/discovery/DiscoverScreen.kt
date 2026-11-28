@@ -6,11 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,12 +20,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Inbox
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,12 +40,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,6 +60,7 @@ import com.pulldock.feature.discovery.details.ResultDetailsScreen
 import com.pulldock.feature.discovery.filters.FilterSheet
 import com.pulldock.feature.discovery.history.SearchHistoryRow
 import com.pulldock.feature.discovery.settings.DiscoverySettingsScreen
+import kotlinx.coroutines.launch
 
 /** Route wrapper: obtains the ViewModel, forwards Add sources, and closes details on back. */
 @Composable
@@ -94,11 +97,12 @@ fun DiscoverScreen(
     val tokens = LocalPdTokens.current
     var showFilters by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(state.overall) { if (state.overall == OverallSearchState.LOADING) listState.scrollToItem(0) }
 
     Scaffold(modifier = modifier) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding), verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
+        Column(Modifier.fillMaxSize().padding(padding)) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = tokens.spacing.md, vertical = tokens.spacing.xs),
                 verticalAlignment = Alignment.CenterVertically,
@@ -106,15 +110,7 @@ fun DiscoverScreen(
                 SearchBar(state.query, onEvent, { showFilters = true }, Modifier.weight(1f))
                 IconButton(onClick = onOpenSettings) { Icon(Icons.Rounded.Settings, contentDescription = "Discovery settings") }
             }
-            CategoryChips(state.category) { onEvent(DiscoverUiEvent.CategorySelected(it)) }
-            if (state.perProvider.isNotEmpty()) ProviderStatusRow(state.perProvider, state.selectedProviderIds, onToggle = { onEvent(DiscoverUiEvent.ToggleProvider(it)) }, modifier = Modifier.padding(horizontal = tokens.spacing.md))
-            if (state.history.isNotEmpty()) {
-                SearchHistoryRow(state.history, onRepeat = { onEvent(DiscoverUiEvent.RepeatSearch(it)) }, onClear = { onEvent(DiscoverUiEvent.ClearHistory) }, modifier = Modifier.padding(horizontal = tokens.spacing.md))
-            }
-            if (state.results.isNotEmpty()) {
-                Text("${state.results.size} results", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = tokens.spacing.md))
-            }
-            Box(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxWidth().weight(1f)) {
                 when (state.overall) {
                     OverallSearchState.LOADING, OverallSearchState.REFRESHING ->
                         CenterState { CircularProgressIndicator(); Text("Searching…", style = MaterialTheme.typography.bodyMedium) }
@@ -127,14 +123,20 @@ fun DiscoverScreen(
                     else -> LazyColumn(
                         state = listState,
                         verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = tokens.spacing.md, end = tokens.spacing.md, bottom = 96.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = tokens.spacing.md, end = tokens.spacing.md, top = tokens.spacing.xs, bottom = 96.dp),
                     ) {
+                        item { CategoryChips(state.category) { onEvent(DiscoverUiEvent.CategorySelected(it)) } }
+                        if (state.perProvider.isNotEmpty()) item {
+                            ProviderStatusRow(state.perProvider, state.selectedProviderIds, onToggle = { onEvent(DiscoverUiEvent.ToggleProvider(it)) })
+                        }
+                        if (state.history.isNotEmpty()) item {
+                            SearchHistoryRow(state.history, onRepeat = { onEvent(DiscoverUiEvent.RepeatSearch(it)) }, onClear = { onEvent(DiscoverUiEvent.ClearHistory) })
+                        }
+                        if (state.results.isNotEmpty()) item {
+                            Text("${state.results.size} results", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                         items(state.results, key = { it.resultId }) { result ->
-                            ResultCard(
-                                result = result,
-                                onOpen = { onEvent(DiscoverUiEvent.OpenDetails(result)) },
-                                onAdd = { onEvent(DiscoverUiEvent.AddToPullDock(result)) },
-                            )
+                            ResultCard(result, onOpen = { onEvent(DiscoverUiEvent.OpenDetails(result)) }, onAdd = { onEvent(DiscoverUiEvent.AddToPullDock(result)) })
                         }
                         if (state.hasMore) item {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
@@ -142,6 +144,17 @@ fun DiscoverScreen(
                             }
                         }
                     }
+                }
+
+                val total = listState.layoutInfo.totalItemsCount
+                val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+                if (total > 0 && last == total - 1 && listState.firstVisibleItemIndex > 0 && (state.overall == OverallSearchState.RESULTS || state.overall == OverallSearchState.PARTIAL)) {
+                    FloatingActionButton(
+                        onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ) { Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = "Scroll to top") }
                 }
             }
         }
@@ -186,7 +199,7 @@ private fun SearchBar(query: String, onEvent: (DiscoverUiEvent) -> Unit, onFilte
 private fun CategoryChips(selected: SearchCategory, onSelect: (SearchCategory) -> Unit) {
     val tokens = LocalPdTokens.current
     Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = tokens.spacing.md),
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         SearchCategory.entries.forEach { category ->
