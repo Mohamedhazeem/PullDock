@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.domain.discovery.model.TorrentResultDetails
 import com.pulldock.feature.discovery.components.formatBytes
@@ -56,6 +58,7 @@ fun ResultDetailsScreen(
     onBack: () -> Unit,
     onAdd: (fileName: String?) -> Unit,
     modifier: Modifier = Modifier,
+    adultEnabled: Boolean = false,
 ) {
     val tokens = LocalPdTokens.current
     val context = LocalContext.current
@@ -80,6 +83,15 @@ fun ResultDetailsScreen(
                         }
                     }
                     MetadataCard(details)
+                    if (details.images.isNotEmpty() && (adultEnabled || details.category != com.pulldock.domain.discovery.model.SearchCategory.ADULT)) {
+                        ImageRow(details.images.take(4))
+                    }
+                    if (details.files.isNotEmpty()) {
+                        Text("Files", style = MaterialTheme.typography.titleSmall)
+                        details.files.take(50).forEach { file ->
+                            DetailRow(file.path, file.sizeBytes?.let { formatBytes(it) ?: "$it bytes" } ?: "—")
+                        }
+                    }
                     if (details.availableTorrentFiles.size > 1) {
                         Text("Choose a torrent file", style = MaterialTheme.typography.titleSmall)
                         details.availableTorrentFiles.forEach { name ->
@@ -160,5 +172,30 @@ private fun RowSelect(label: String, selected: Boolean, onSelect: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         RadioButton(selected = selected, onClick = onSelect)
         Text(label, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun ImageRow(images: List<String>) {
+    val tokens = LocalPdTokens.current
+    Row(
+        Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+    ) {
+        images.forEach { url ->
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.size(120.dp).clip(RoundedCornerShape(tokens.radius.md)),
+            )
+        }
+    }
+}
+@Composable
+private fun DetailRow(label: String, value: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Text(value, style = MaterialTheme.typography.bodyMedium)
     }
 }
