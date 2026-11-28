@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 /** Knaben Database API v2 (`/v2/search`). */
 @Serializable
 data class KnabenResponse(
-    val hits: List<KnabenHit> = emptyList(),
+    val hits: List<KnabenHit>? = null,
 )
 
 @Serializable
@@ -17,7 +17,7 @@ data class KnabenHit(
     val seeders: Int? = null,
     val peers: Int? = null,
     val bytes: Long? = null,
-    val category: Int? = null,
+    val category: String? = null,
     val added: String? = null,
     val verified: Boolean? = null,
 )

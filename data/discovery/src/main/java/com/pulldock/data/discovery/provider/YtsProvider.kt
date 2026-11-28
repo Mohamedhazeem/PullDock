@@ -53,7 +53,7 @@ class YtsProvider @Inject constructor(
             is HttpResult.Ok -> r.body
         }
         val parsed = runCatching { json.decodeFromString(YtsResponse.serializer(), body) }
-            .getOrElse { throw DiscoveryError.Parse("yts search") }
+            .getOrElse { throw DiscoveryError.Parse("yts search: ${it.message}") }
         val movies = parsed.data?.movies.orEmpty()
         val results = movies.mapNotNull(::toResult)
         val count = parsed.data?.movie_count ?: 0
@@ -67,7 +67,7 @@ class YtsProvider @Inject constructor(
 
     private fun toResult(m: YtsMovie): TorrentSearchResult? {
         val title = m.title?.takeIf { it.isNotBlank() } ?: return null
-        val hash = m.hash ?: m.torrents.firstOrNull()?.hash ?: return null
+        val hash = m.hash ?: m.torrents.orEmpty().firstOrNull()?.hash ?: return null
         val nativeId = m.id?.toString() ?: hash
         val magnet = magnetFor(hash, title)?.magnetUri
         return TorrentSearchResult(
@@ -79,9 +79,9 @@ class YtsProvider @Inject constructor(
             category = SearchCategory.MOVIES,
             originalProviderCategory = "movies",
             infoHash = hash,
-            sizeBytes = m.size ?: m.torrents.firstOrNull()?.size,
-            seeders = m.seeds ?: m.torrents.firstOrNull()?.seeds,
-            leechers = m.peers ?: m.torrents.firstOrNull()?.peers,
+            sizeBytes = m.size ?: m.torrents.orEmpty().firstOrNull()?.size,
+            seeders = m.seeds ?: m.torrents.orEmpty().firstOrNull()?.seeds,
+            leechers = m.peers ?: m.torrents.orEmpty().firstOrNull()?.peers,
             publishedAt = m.date_added?.let(::parseInstant),
             providerVerificationClaim = null,
             sourcePageUrl = "https://yts.mx/movies/$nativeId",

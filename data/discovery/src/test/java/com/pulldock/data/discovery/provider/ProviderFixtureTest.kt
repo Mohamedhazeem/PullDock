@@ -78,7 +78,7 @@ class ProviderFixtureTest {
     @Test
     fun `knaben fixture parses documented fields`() {
         val parsed = json.decodeFromString(KnabenResponse.serializer(), fixture("knaben_search.json"))
-        assertEquals(1, parsed.hits.size)
-        assertEquals("0123456789abcdef0123456789abcdef01234567", parsed.hits[0].hash)
+        assertEquals(1, parsed.hits?.size)
+        assertEquals("0123456789abcdef0123456789abcdef01234567", parsed.hits?.first()?.hash)
     }
 }

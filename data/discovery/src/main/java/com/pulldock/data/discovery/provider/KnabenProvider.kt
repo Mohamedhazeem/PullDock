@@ -60,8 +60,8 @@ class KnabenProvider @Inject constructor(
             is HttpResult.Ok -> r.body
         }
         val parsed = runCatching { json.decodeFromString(KnabenResponse.serializer(), body) }
-            .getOrElse { throw DiscoveryError.Parse("knaben search") }
-        val results = parsed.hits.mapNotNull(::toResult)
+            .getOrElse { throw DiscoveryError.Parse("knaben search: ${it.message}") }
+        val results = parsed.hits.orEmpty().mapNotNull(::toResult)
         return ProviderPageResult(results, results.size == PAGE_SIZE, if (results.size == PAGE_SIZE) page.copy(number = page.number + 1) else null)
     }
 

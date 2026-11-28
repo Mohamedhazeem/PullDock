@@ -15,7 +15,7 @@ data class YtsData(
     val movie_count: Int? = null,
     val limit: Int? = null,
     val page_number: Int? = null,
-    val movies: List<YtsMovie> = emptyList(),
+    val movies: List<YtsMovie>? = null,
 )
 
 @Serializable
@@ -29,7 +29,7 @@ data class YtsMovie(
     val peers: Int? = null,
     val date_added: String? = null,
     val cover: String? = null,
-    val torrents: List<YtsTorrent> = emptyList(),
+    val torrents: List<YtsTorrent>? = null,
 )
 
 @Serializable
