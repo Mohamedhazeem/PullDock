@@ -29,7 +29,9 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -121,32 +123,51 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .padding(horizontal = tokens.spacing.lg),
             verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
+            userScrollEnabled = !state.isEmpty,
         ) {
             item {
-                PdFilterChips(
-                    options = filterOptions,
-                    selected = selectedFilterLabel,
-                    onSelect = { selected ->
-                        val index = filterOptions.indexOf(selected)
-                        viewModel.setFilter(
-                            QueueFilter.entries.getOrNull(index) ?: state.filter,
-                        )
-                    },
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.5.dp)) {
+                    filterOptions.chunked(3).forEach { rowOptions ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(
+                                tokens.spacing.xs,
+                                Alignment.CenterHorizontally,
+                            ),
+                        ) {
+                            rowOptions.forEach { option ->
+                                FilterChip(
+                                    selected = option == selectedFilterLabel,
+                                    onClick = {
+                                        val index = filterOptions.indexOf(option)
+                                        viewModel.setFilter(
+                                            QueueFilter.entries.getOrNull(index) ?: state.filter,
+                                        )
+                                    },
+                                    modifier = Modifier.height(32.dp),
+                                    label = { Text(option) },
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             if (state.loading) {
                 items(3) { LoadingTransferCard() }
             } else if (state.isEmpty) {
                 item {
-                    PdEmptyState(
-                        title = stringResource(R.string.home_empty_title),
-                        message = stringResource(R.string.home_empty_body),
-                        icon = Icons.Rounded.CloudDownload,
-                        actionLabel = stringResource(R.string.home_add),
-                        onAction = onAddDownload,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    Box(
+                        modifier = Modifier.fillParentMaxHeight(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        PdEmptyState(
+                            title = stringResource(R.string.home_empty_title),
+                            message = stringResource(R.string.home_empty_body),
+                            icon = Icons.Rounded.CloudDownload,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             } else {
                 items(
