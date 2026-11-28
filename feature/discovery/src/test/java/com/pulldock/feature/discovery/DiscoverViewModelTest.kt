@@ -3,6 +3,7 @@ package com.pulldock.feature.discovery
 import com.pulldock.core.common.dispatchers.AppDispatchers
 import com.pulldock.domain.discovery.ApiCredentialStore
 import com.pulldock.domain.discovery.DiscoveryCache
+import com.pulldock.domain.discovery.ProviderToggleRepository
 import com.pulldock.domain.discovery.SearchHistoryRepository
 import com.pulldock.domain.discovery.TorrentSearchRepository
 import com.pulldock.domain.discovery.TorznabConfigRepository
@@ -88,8 +89,13 @@ class DiscoverViewModelTest {
         override fun set(providerId: String, key: String?) = Unit
     }
 
+    private class FakeToggle : ProviderToggleRepository {
+        override val tpbEnabled = MutableStateFlow(false)
+        override suspend fun setTpbEnabled(enabled: Boolean) { tpbEnabled.value = enabled }
+    }
+
     private fun newVm(repo: TorrentSearchRepository) = DiscoverViewModel(
-        repo, FakeHistory(), FakeCache(), FakeTorznabConfig(), FakeCredentials(), dispatchers,
+        repo, FakeHistory(), FakeCache(), FakeTorznabConfig(), FakeCredentials(), FakeToggle(), dispatchers,
     )
 
     private fun result(infoHash: String? = "h", sourceType: com.pulldock.domain.discovery.model.ResultSourceType = com.pulldock.domain.discovery.model.ResultSourceType.MAGNET) = TorrentSearchResult(
