@@ -26,10 +26,10 @@ Tests MUST be written and FAIL before the corresponding implementation.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Create `:domain:discovery`, `:data:discovery`, `:feature:discovery` modules and register them in `settings.gradle.kts`; add each module `build.gradle.kts` per plan.md (domain = `kotlin.jvm`; data = `android.library` + `ksp` + `hilt`; feature = `android.library` + `kotlin.compose` + `ksp` + `hilt`; all JVM 17, compileSdk 37, minSdk 26).
-- [ ] T002 [P] Add Ktor Client + OkHttp engine + kotlinx-serialization JSON + ContentNegotiation (and the Kotlin serialization plugin) to `gradle/libs.versions.toml`, pinned to latest stable compatible with Kotlin 2.4.20 / AGP 9.4.1 / minSdk 26.
-- [ ] T003 [P] Record ADR-0014 (discovery modules & provider-adapter architecture) and ADR-0015 (HTTP client: Ktor + OkHttp + kotlinx-serialization) under `specs/001-production-android-app/adr/`, and update `specs/001-production-android-app/adr/index.md`.
-- [ ] T004 [P] Update `AGENTS.md` §2 module map (add the three modules) and `docs/THIRD_PARTY_LICENSES.md` (Ktor/kotlinx, Apache-2.0).
+- [x] T001 Create `:domain:discovery`, `:data:discovery`, `:feature:discovery` modules and register them in `settings.gradle.kts`; add each module `build.gradle.kts` per plan.md (domain = `kotlin.jvm`; data = `android.library` + `ksp` + `hilt`; feature = `android.library` + `kotlin.compose` + `ksp` + `hilt`; all JVM 17, compileSdk 37, minSdk 26).
+- [x] T002 [P] Add Ktor Client + OkHttp engine + kotlinx-serialization JSON + ContentNegotiation (and the Kotlin serialization plugin) to `gradle/libs.versions.toml`, pinned to latest stable compatible with Kotlin 2.4.20 / AGP 9.4.1 / minSdk 26.
+- [x] T003 [P] Record ADR-0014 (discovery modules & provider-adapter architecture) and ADR-0015 (HTTP client: Ktor + OkHttp + kotlinx-serialization) under `specs/001-production-android-app/adr/`, and update `specs/001-production-android-app/adr/index.md`.
+- [x] T004 [P] Update `AGENTS.md` §2 module map (add the three modules) and `docs/THIRD_PARTY_LICENSES.md` (Ktor/kotlinx, Apache-2.0).
 
 ---
 
@@ -37,13 +37,13 @@ Tests MUST be written and FAIL before the corresponding implementation.
 
 **⚠️ No user story work begins until this phase is complete.**
 
-- [ ] T005 [P] Create domain models in `domain/discovery/src/main/java/com/pulldock/domain/discovery/model/` per data-model.md: `TorrentSearchResult`, `ContributingSource`, `TorrentResultDetails`, `DownloadDescriptor`, `SearchCategory`, `SearchFilters`, `SortOrder`, `ProviderCapabilities`, `ProviderStatus`, `SearchPageState`, `RightsStatus`, `ResultSourceType`, `SearchHistoryEntry`, `ProviderConfiguration`, `TorrentSearchQuery`. All optional fields nullable; missing metadata stays null (never 0/now).
-- [ ] T006 [P] Create `DiscoveryError` sealed hierarchy in `domain/discovery/src/main/java/com/pulldock/domain/discovery/error/DiscoveryError.kt` (Input, Network/Offline, Provider, RateLimited, Parse, Timeout, Disabled, NoSupportedProviders) with sanitized `detail`; distinct from `DownloadError`.
-- [ ] T007 Create domain contracts in `domain/discovery/src/main/java/com/pulldock/domain/discovery/`: `TorrentSearchRepository.kt`, `TorrentSearchProvider.kt`, `ProviderRegistry.kt` per contracts/.
-- [ ] T008 Create Ktor client provider + bounded response handling in `data/discovery/src/main/java/com/pulldock/data/discovery/http/` (`HttpClientProvider.kt`, `BoundedResponse.kt`): per-request timeout, max response size, content-type check.
-- [ ] T009 [P] Create in-memory TTL cache `data/discovery/src/main/java/com/pulldock/data/discovery/cache/SearchResultCache.kt` (key = normalized query + category; provider results separate; no caching of auth/rate-limit failures).
-- [ ] T010 [P] Create DataStore-backed `data/discovery/src/main/java/com/pulldock/data/discovery/history/SearchHistoryStore.kt` and `.../config/TorznabConfigStore.kt` (Torznab config persisted; API keys NEVER persisted — session-only).
-- [ ] T011 Create `data/discovery/src/main/java/com/pulldock/data/discovery/DiscoveryModule.kt` (Hilt) and `DiscoveryRepositoryImpl.kt` skeleton with `search/loadMore/refresh/getDetails` orchestration (structured concurrency, `AppDispatchers.io`, per-provider ~8s timeout, overall deadline, cancellation) per contracts/torrent-search-repository.md.
+- [x] T005 [P] Create domain models in `domain/discovery/src/main/java/com/pulldock/domain/discovery/model/` per data-model.md: `TorrentSearchResult`, `ContributingSource`, `TorrentResultDetails`, `DownloadDescriptor`, `SearchCategory`, `SearchFilters`, `SortOrder`, `ProviderCapabilities`, `ProviderStatus`, `SearchPageState`, `RightsStatus`, `ResultSourceType`, `SearchHistoryEntry`, `ProviderConfiguration`, `TorrentSearchQuery`. All optional fields nullable; missing metadata stays null (never 0/now).
+- [x] T006 [P] Create `DiscoveryError` sealed hierarchy in `domain/discovery/src/main/java/com/pulldock/domain/discovery/error/DiscoveryError.kt` (Input, Network/Offline, Provider, RateLimited, Parse, Timeout, Disabled, NoSupportedProviders) with sanitized `detail`; distinct from `DownloadError`.
+- [x] T007 Create domain contracts in `domain/discovery/src/main/java/com/pulldock/domain/discovery/`: `TorrentSearchRepository.kt`, `TorrentSearchProvider.kt`, `ProviderRegistry.kt` per contracts/.
+- [x] T008 Create Ktor client provider + bounded response handling in `data/discovery/src/main/java/com/pulldock/data/discovery/http/` (`HttpClientProvider.kt`, `BoundedResponse.kt`): per-request timeout, max response size, content-type check.
+- [x] T009 [P] Create in-memory TTL cache `data/discovery/src/main/java/com/pulldock/data/discovery/cache/SearchResultCache.kt` (key = normalized query + category; provider results separate; no caching of auth/rate-limit failures).
+- [x] T010 [P] Create DataStore-backed `data/discovery/src/main/java/com/pulldock/data/discovery/history/SearchHistoryStore.kt` and `.../config/TorznabConfigStore.kt` (Torznab config persisted; API keys NEVER persisted — session-only).
+- [x] T011 Create `data/discovery/src/main/java/com/pulldock/data/discovery/DiscoveryModule.kt` (Hilt) and `DiscoveryRepositoryImpl.kt` skeleton with `search/loadMore/refresh/getDetails` orchestration (structured concurrency, `AppDispatchers.io`, per-provider ~8s timeout, overall deadline, cancellation) per contracts/torrent-search-repository.md.
 
 **Checkpoint**: Foundation ready — user stories can proceed.
 
@@ -57,16 +57,16 @@ de-duplicated, provider-attributed list with partial-failure isolation.
 **Independent Test**: With BitSearch + Archive mocked, submit one query → both queried,
 results combined/attributed, one provider failing still shows the other's results.
 
-- [ ] T012 [P] [US1] BitSearch provider tests (Ktor MockEngine) in `data/discovery/src/test/java/com/pulldock/data/discovery/provider/BitSearchProviderTest.kt`: valid search/categories/detail, empty, missing optional fields, malformed JSON, invalid infohash, invalid magnet, HTTP 429/401/403/500, rate-limit header parsing, pagination.
-- [ ] T013 [P] [US1] Internet Archive provider tests in `data/discovery/src/test/java/com/pulldock/data/discovery/provider/InternetArchiveProviderTest.kt`: advanced search, Archive-BitTorrent-only filtering, one/no/multiple torrents, missing file metadata, missing licence (→ UNKNOWN), invalid download URL, encoded filenames, HTML/invalid response, torrent-file transfer failure.
-- [ ] T014 [P] [US1] Domain tests in `domain/discovery/src/test/java/com/pulldock/domain/discovery/`: category mapping, normalization, dedupe by infohash, different infohashes with same title stay distinct, ranking, unknown metadata (not zero), provider-failure mapping.
-- [ ] T015 [P] [US1] Orchestration tests in `data/discovery/src/test/java/com/pulldock/data/discovery/DiscoveryRepositoryImplTest.kt`: all succeed; one fails; one times out; all empty; all fail; identical infohashes across providers; new search cancels old; global timeout.
-- [ ] T016 [P] [US1] Implement `BitSearchProvider.kt` (+ DTOs/mapper) in `data/discovery/src/main/java/com/pulldock/data/discovery/provider/` per FR-010..FR-019 (documented REST only; detail on demand; magnet from detail validated; optional session-only `x-api-key`; no aggressive 401/403/429 retry).
-- [ ] T017 [P] [US1] Implement `InternetArchiveProvider.kt` (+ DTOs/mapper) in `data/discovery/src/main/java/com/pulldock/data/discovery/provider/` per FR-020..FR-028 (`format:"Archive BitTorrent"`; real `.torrent` from metadata `files`; licence→rights, absent=UNKNOWN).
-- [ ] T018 [US1] Implement `ProviderRegistry` registration + `DiscoveryRepositoryImpl.search()` fan-out/normalize/dedupe/rank in `data/discovery/src/main/java/com/pulldock/data/discovery/` (depends T011, T016, T017).
-- [ ] T019 [US1] Implement `DiscoverScreen.kt`, `DiscoverViewModel.kt`, `DiscoverUiState.kt`, `DiscoverUiEvent.kt` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/` using `PdSearchField`/`PdCard`/`PdFilterChips`/`PdStatusBadge`/`PdStates` (submit on submit, not per keystroke).
-- [ ] T020 [US1] Wire Discover as a primary destination + routes in `app/src/main/java/com/pulldock/navigation/PullDockDestination.kt` and `RootNavHost.kt` (one-tap reachable; existing destinations unchanged).
-- [ ] T021 [US1] Compose UI tests in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`: search input/submit, category, loading/empty/partial/error, result cards, provider attribution, a11y semantics.
+- [x] T012 [P] [US1] BitSearch provider tests (Ktor MockEngine) in `data/discovery/src/test/java/com/pulldock/data/discovery/provider/BitSearchProviderTest.kt`: valid search/categories/detail, empty, missing optional fields, malformed JSON, invalid infohash, invalid magnet, HTTP 429/401/403/500, rate-limit header parsing, pagination.
+- [x] T013 [P] [US1] Internet Archive provider tests in `data/discovery/src/test/java/com/pulldock/data/discovery/provider/InternetArchiveProviderTest.kt`: advanced search, Archive-BitTorrent-only filtering, one/no/multiple torrents, missing file metadata, missing licence (→ UNKNOWN), invalid download URL, encoded filenames, HTML/invalid response, torrent-file transfer failure.
+- [x] T014 [P] [US1] Domain tests in `domain/discovery/src/test/java/com/pulldock/domain/discovery/`: category mapping, normalization, dedupe by infohash, different infohashes with same title stay distinct, ranking, unknown metadata (not zero), provider-failure mapping.
+- [x] T015 [P] [US1] Orchestration tests in `data/discovery/src/test/java/com/pulldock/data/discovery/DiscoveryRepositoryImplTest.kt`: all succeed; one fails; one times out; all empty; all fail; identical infohashes across providers; new search cancels old; global timeout.
+- [x] T016 [P] [US1] Implement `BitSearchProvider.kt` (+ DTOs/mapper) in `data/discovery/src/main/java/com/pulldock/data/discovery/provider/` per FR-010..FR-019 (documented REST only; detail on demand; magnet from detail validated; optional session-only `x-api-key`; no aggressive 401/403/429 retry).
+- [x] T017 [P] [US1] Implement `InternetArchiveProvider.kt` (+ DTOs/mapper) in `data/discovery/src/main/java/com/pulldock/data/discovery/provider/` per FR-020..FR-028 (`format:"Archive BitTorrent"`; real `.torrent` from metadata `files`; licence→rights, absent=UNKNOWN).
+- [x] T018 [US1] Implement `ProviderRegistry` registration + `DiscoveryRepositoryImpl.search()` fan-out/normalize/dedupe/rank in `data/discovery/src/main/java/com/pulldock/data/discovery/` (depends T011, T016, T017).
+- [x] T019 [US1] Implement `DiscoverScreen.kt`, `DiscoverViewModel.kt`, `DiscoverUiState.kt`, `DiscoverUiEvent.kt` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/` using `PdSearchField`/`PdCard`/`PdFilterChips`/`PdStatusBadge`/`PdStates` (submit on submit, not per keystroke).
+- [x] T020 [US1] Wire Discover as a primary destination + routes in `app/src/main/java/com/pulldock/navigation/PullDockDestination.kt` and `RootNavHost.kt` (one-tap reachable; existing destinations unchanged).
+- [x] T021 [US1] Compose UI tests in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`: search input/submit, category, loading/empty/partial/error, result cards, provider attribution, a11y semantics.
 
 **Checkpoint**: US1 independently functional — MVP.
 
@@ -80,13 +80,13 @@ results combined/attributed, one provider failing still shows the other's result
 **Independent Test**: From mocked results, Add opens the existing Add flow (magnet pre-filled;
 Archive temp file), no transfer until start, duplicate reused.
 
-- [ ] T022 [P] [US2] Handoff integration test in `feature/discovery/src/test/java/com/pulldock/feature/discovery/DiscoveryHandoffTest.kt` (existing Add-flow fake): magnet → add `source`; Archive → `file://` uri; no transfer until start; duplicate reuse.
-- [ ] T023 [P] [US2] Temp torrent lifecycle test in `data/discovery/src/test/java/com/pulldock/data/discovery/provider/TemporaryTorrentFileTest.kt`: bounded size, HTML rejection, https origin, cleanup on success/back.
-- [ ] T024 [US2] Implement `details/ResultDetailsScreen.kt` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/` (full details, rights/licence, actions; no Add when no usable torrent).
-- [ ] T025 [US2] Implement `resolveDownloadDescriptor()` + magnet validation (btih hex/base32) in `data/discovery/src/main/java/com/pulldock/data/discovery/DiscoveryRepositoryImpl.kt` (depends T018).
-- [ ] T026 [US2] Implement `TemporaryTorrentFile` (download via `core:storage` `StorageRepository.createTempFile`, bounded size, real-torrent check, `file://` uri, idempotent `cleanup()`) in `data/discovery/src/main/java/com/pulldock/data/discovery/provider/` per FR-055/FR-056.
-- [ ] T027 [US2] Implement `DiscoverViewModel.onAddClicked()` → emit `AddToPullDock(source)`; app navigates via existing `Routes.addSource(source)`; trigger temp cleanup on leaving Add (success/back/cancel) (depends T024, T025, T026).
-- [ ] T028 [US2] Compose UI tests in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`: details, Add-to-PullDock action, no-torrent-no-action, multiple-torrent choice.
+- [x] T022 [P] [US2] Handoff integration test in `feature/discovery/src/test/java/com/pulldock/feature/discovery/DiscoveryHandoffTest.kt` (existing Add-flow fake): magnet → add `source`; Archive → `file://` uri; no transfer until start; duplicate reuse.
+- [x] T023 [P] [US2] Temp torrent lifecycle test in `data/discovery/src/test/java/com/pulldock/data/discovery/provider/TemporaryTorrentFileTest.kt`: bounded size, HTML rejection, https origin, cleanup on success/back.
+- [x] T024 [US2] Implement `details/ResultDetailsScreen.kt` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/` (full details, rights/licence, actions; no Add when no usable torrent).
+- [x] T025 [US2] Implement `resolveDownloadDescriptor()` + magnet validation (btih hex/base32) in `data/discovery/src/main/java/com/pulldock/data/discovery/DiscoveryRepositoryImpl.kt` (depends T018).
+- [x] T026 [US2] Implement `TemporaryTorrentFile` (download via `core:storage` `StorageRepository.createTempFile`, bounded size, real-torrent check, `file://` uri, idempotent `cleanup()`) in `data/discovery/src/main/java/com/pulldock/data/discovery/provider/` per FR-055/FR-056.
+- [x] T027 [US2] Implement `DiscoverViewModel.onAddClicked()` → emit `AddToPullDock(source)`; app navigates via existing `Routes.addSource(source)`; trigger temp cleanup on leaving Add (success/back/cancel) (depends T024, T025, T026).
+- [x] T028 [US2] Compose UI tests in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`: details, Add-to-PullDock action, no-torrent-no-action, multiple-torrent choice.
 
 **Checkpoint**: US1 + US2 independently functional.
 
@@ -100,10 +100,10 @@ per-provider load-more; unsupported filters labeled client-side.
 **Independent Test**: Multi-page mocks → per-provider advance, no repeats, upstream vs client
 filter labeling, sort respected.
 
-- [ ] T029 [P] [US3] Pagination/filter/sort tests in `data/discovery/src/test/java/com/pulldock/data/discovery/`: per-provider advance, no repeated results, upstream vs client filter labeling, sort orders.
-- [ ] T030 [US3] Implement `SearchFilters` application + per-provider pagination state in `DiscoveryRepositoryImpl.loadMore()` in `data/discovery/src/main/java/com/pulldock/data/discovery/DiscoveryRepositoryImpl.kt` (depends T018).
-- [ ] T031 [US3] Implement `filters/FilterSheet.kt`, sort controls, and load-more in `feature/discovery/src/main/java/com/pulldock/feature/discovery/results/ResultsScreen.kt` (distinguish applied-upstream vs client-side).
-- [ ] T032 [US3] Compose UI tests in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`: filters, sort, load-more.
+- [x] T029 [P] [US3] Pagination/filter/sort tests in `data/discovery/src/test/java/com/pulldock/data/discovery/`: per-provider advance, no repeated results, upstream vs client filter labeling, sort orders.
+- [x] T030 [US3] Implement `SearchFilters` application + per-provider pagination state in `DiscoveryRepositoryImpl.loadMore()` in `data/discovery/src/main/java/com/pulldock/data/discovery/DiscoveryRepositoryImpl.kt` (depends T018).
+- [x] T031 [US3] Implement `filters/FilterSheet.kt`, sort controls, and load-more in `feature/discovery/src/main/java/com/pulldock/feature/discovery/results/ResultsScreen.kt` (distinguish applied-upstream vs client-side).
+- [x] T032 [US3] Compose UI tests in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`: filters, sort, load-more.
 
 **Checkpoint**: US1–US3 independently functional.
 
@@ -117,13 +117,13 @@ settings (providers, Torznab endpoints, adult opt-in, clear history/cache, priva
 **Independent Test**: No Torznab → search works, no error; enable Torznab → caps checked;
 adult default-off; clear history removes it locally.
 
-- [ ] T033 [P] [US4] Torznab provider tests in `data/discovery/src/test/java/com/pulldock/data/discovery/provider/TorznabProviderTest.kt`: capabilities, general RSS, category parsing, supported/unsupported types, XML namespaces, seeders/peers, magnet, missing optional attrs, malformed XML, oversized XML, auth failure, timeout.
-- [ ] T034 [P] [US4] Config/history store tests in `data/discovery/src/test/java/com/pulldock/data/discovery/`: no secrets persisted, clear history, config round-trip.
-- [ ] T035 [P] [US4] Implement `TorznabProvider.kt` (`XmlPullParser`, caps-before-use, https-only, bounded size) in `data/discovery/src/main/java/com/pulldock/data/discovery/provider/` per FR-029..FR-034.
-- [ ] T036 [US4] Implement `TorznabConfigStore` wiring + `settings/DiscoverySettingsScreen.kt` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/settings/` (enable providers, Torznab endpoint mgmt, adult opt-in, clear history, clear cache, privacy) (depends T010, T035).
-- [ ] T037 [US4] Implement a per-result "Hide" / "Report source" action (persist hidden result ids in the DataStore-backed store; exclude hidden results from result lists) in feature/discovery/src/main/java/com/pulldock/feature/discovery/components/ per FR-065.
-- [ ] T038 [US4] Implement `components/ProviderStatusRow.kt` + availability/degraded UI + `history/SearchHistoryUi.kt` (repeat/delete-one/clear-all) in `feature/discovery/src/main/java/com/pulldock/feature/discovery/`.
-- [ ] T039 [US4] Compose UI tests in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`: no-Torznab success, adult default-off, history clear.
+- [x] T033 [P] [US4] Torznab provider tests in `data/discovery/src/test/java/com/pulldock/data/discovery/provider/TorznabProviderTest.kt`: capabilities, general RSS, category parsing, supported/unsupported types, XML namespaces, seeders/peers, magnet, missing optional attrs, malformed XML, oversized XML, auth failure, timeout.
+- [x] T034 [P] [US4] Config/history store tests in `data/discovery/src/test/java/com/pulldock/data/discovery/`: no secrets persisted, clear history, config round-trip.
+- [x] T035 [P] [US4] Implement `TorznabProvider.kt` (`XmlPullParser`, caps-before-use, https-only, bounded size) in `data/discovery/src/main/java/com/pulldock/data/discovery/provider/` per FR-029..FR-034.
+- [x] T036 [US4] Implement `TorznabConfigStore` wiring + `settings/DiscoverySettingsScreen.kt` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/settings/` (enable providers, Torznab endpoint mgmt, adult opt-in, clear history, clear cache, privacy) (depends T010, T035).
+- [x] T037 [US4] Implement a per-result "Hide" / "Report source" action (persist hidden result ids in the DataStore-backed store; exclude hidden results from result lists) in feature/discovery/src/main/java/com/pulldock/feature/discovery/components/ per FR-065.
+- [x] T038 [US4] Implement `components/ProviderStatusRow.kt` + availability/degraded UI + `history/SearchHistoryUi.kt` (repeat/delete-one/clear-all) in `feature/discovery/src/main/java/com/pulldock/feature/discovery/`.
+- [x] T039 [US4] Compose UI tests in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`: no-Torznab success, adult default-off, history clear.
 
 **Checkpoint**: US1–US4 independently functional.
 
@@ -137,10 +137,10 @@ TalkBack, large fonts, RTL, adaptive layouts, light/dark.
 **Independent Test**: Simulate each provider state → distinct accurate message, partial never
 replaced by fatal; TalkBack + large fonts → semantics/layout intact.
 
-- [ ] T040 [US5] Map `DiscoveryError` → user messages and cover all states (initial, empty query, loading, results, empty, partial, one/all provider failed, rate-limited, disabled, offline, timeout, no-supported-providers, loading-more, refreshing, cancelled) in `feature/discovery/src/main/java/com/pulldock/feature/discovery/DiscoverUiState.kt`; retry respects rate limits (FR-067..FR-069).
-- [ ] T041 [US5] Accessibility + light/dark + RTL + large-font + adaptive pass across Discover/results/details (semantics, 48dp targets) in `feature/discovery/src/main/java/com/pulldock/feature/discovery/`.
-- [ ] T042 [P] [US5] Compose UI tests for all states + a11y semantics in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`.
-- [ ] T043 [US5] Offline/timeout/cancel tests in `data/discovery/src/test/java/com/pulldock/data/discovery/` and `feature/discovery/src/test/java/com/pulldock/feature/discovery/`: no request offline; bounded timeout; new query cancels old.
+- [x] T040 [US5] Map `DiscoveryError` → user messages and cover all states (initial, empty query, loading, results, empty, partial, one/all provider failed, rate-limited, disabled, offline, timeout, no-supported-providers, loading-more, refreshing, cancelled) in `feature/discovery/src/main/java/com/pulldock/feature/discovery/DiscoverUiState.kt`; retry respects rate limits (FR-067..FR-069).
+- [x] T041 [US5] Accessibility + light/dark + RTL + large-font + adaptive pass across Discover/results/details (semantics, 48dp targets) in `feature/discovery/src/main/java/com/pulldock/feature/discovery/`.
+- [x] T042 [P] [US5] Compose UI tests for all states + a11y semantics in `feature/discovery/src/androidTest/java/com/pulldock/feature/discovery/`.
+- [x] T043 [US5] Offline/timeout/cancel tests in `data/discovery/src/test/java/com/pulldock/data/discovery/` and `feature/discovery/src/test/java/com/pulldock/feature/discovery/`: no request offline; bounded timeout; new query cancels old.
 
 **Checkpoint**: All user stories independently functional.
 
@@ -148,11 +148,11 @@ replaced by fatal; TalkBack + large fonts → semantics/layout intact.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T044 [P] Finalize `docs/THIRD_PARTY_LICENSES.md` + dependency assessment for Ktor/kotlinx (if not completed in T004).
-- [ ] T045 [P] Update `AGENTS.md` §2.3 status and `docs/KNOWN_LIMITATIONS.md` (track on-device torrent verification as a discovery risk; no second engine/queue).
-- [ ] T046 Run `quickstart.md` scenarios S1–S10 on a device/emulator; record actual results.
-- [ ] T047 Run regression + build + lint: `./gradlew :app:assembleDebug`, the new module tests, existing torrent/download/add/nav/queue/storage tests, and `./gradlew :app:lintDebug`; fix issues (do not weaken existing tests).
-- [ ] T048 [P] Final cross-check: ADR index updated; confirm no second queue/engine, no scraping/backend deps, no embedded key, credentials not logged, adult off by default, FR-065 hide/report action present, and FR-066 content-safety (no CSAM/CSAM-adjacent or non-consensual content surfaced).
+- [x] T044 [P] Finalize `docs/THIRD_PARTY_LICENSES.md` + dependency assessment for Ktor/kotlinx (if not completed in T004).
+- [x] T045 [P] Update `AGENTS.md` §2.3 status and `docs/KNOWN_LIMITATIONS.md` (track on-device torrent verification as a discovery risk; no second engine/queue).
+- [ ] T046 Run `quickstart.md` scenarios S1–S10 on a device/emulator; record actual results. (Automated device tests pass on RMX3430/Android 13: `:feature:discovery:connectedDebugAndroidTest` and `:data:discovery:connectedDebugAndroidTest` green; app installs and launches with no crash. Manual live-provider/swarm S1–S10 steps still require human interaction.)
+- [x] T047 Run regression + build + lint: `./gradlew :app:assembleDebug`, the new module tests, existing torrent/download/add/nav/queue/storage tests, and `./gradlew :app:lintDebug`; fix issues (do not weaken existing tests).
+- [x] T048 [P] Final cross-check: ADR index updated; confirm no second queue/engine, no scraping/backend deps, no embedded key, credentials not logged, adult off by default, FR-065 hide/report action present, and FR-066 content-safety (no CSAM/CSAM-adjacent or non-consensual content surfaced).
 
 ---
 
@@ -218,3 +218,28 @@ Task: "Implement InternetArchiveProvider.kt"
 - [P] = different files, no incomplete dependency.
 - Each story is independently completable and testable; stop at checkpoints to validate.
 - Never weaken existing tests; never introduce a second queue/engine; never persist/log secrets.
+
+---
+
+## Phase 9: Convergence
+
+- [x] T049 Add Torznab endpoint management UI (add/edit/enable, capability check, HTTPS validation) wired to `TorznabConfigStore` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/settings/` per FR-029..FR-034 (missing)
+- [x] T050 Implement a per-file picker for Archive items with multiple `.torrent` files so the user chooses before Add in `feature/discovery/src/main/java/com/pulldock/feature/discovery/details/ResultDetailsScreen.kt` + `DiscoverViewModel` per FR-024 (partial)
+- [x] T051 Add provider-selection filter chips that set `SearchFilters.providerIds` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/filters/FilterSheet.kt` per FR-048 (partial)
+- [x] T052 Expose minimum/maximum size and date-range filters in `feature/discovery/src/main/java/com/pulldock/feature/discovery/filters/FilterSheet.kt` per FR-048 (partial)
+- [x] T053 Add a load-more affordance (scroll trigger or button) that calls `DiscoverUiEvent.LoadMore` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/DiscoverScreen.kt` per FR-046 (partial)
+- [x] T054 Wire Open Source / Copy infohash / Share actions in `feature/discovery/src/main/java/com/pulldock/feature/discovery/details/ResultDetailsScreen.kt` per FR-049 (partial)
+- [x] T055 Detect offline and set `OverallSearchState.OFFLINE` (distinct from FAILED) in `data/discovery/src/main/java/com/pulldock/data/discovery/DiscoveryRepositoryImpl.kt` + `feature/discovery/.../DiscoverViewModel.kt` per FR-067 (partial)
+- [x] T056 Add a session-only optional API-key entry field (never persisted) for BitSearch/Torznab in `feature/discovery/src/main/java/com/pulldock/feature/discovery/settings/` per FR-017/FR-034 (partial)
+- [x] T057 Confirm provider field names, rate-limit headers, and Archive download-URL construction against live docs and encode fixtures in `data/discovery/src/test/.../provider/` per research D15 (partial)
+- [x] T058 Add a refresh action that calls `DiscoverUiEvent.Refresh` in `feature/discovery/src/main/java/com/pulldock/feature/discovery/DiscoverScreen.kt` per FR-067 (partial)
+- [x] T059 Expose a search-history enable/disable toggle wired to `SearchHistoryRepository.setEnabled` in `feature/discovery/.../settings/DiscoverySettingsScreen.kt` per FR-061 (partial)
+- [x] T060 Emit per-provider results progressively as providers complete in `data/discovery/src/main/java/com/pulldock/data/discovery/DiscoveryRepositoryImpl.kt` per FR-040 (partial)
+- [x] T061 Add a report-problematic-source action alongside Hide in `feature/discovery/.../components/ResultCard.kt` per FR-065 (partial)
+
+---
+
+## Phase 10: Convergence
+
+- [x] T062 Enforce provider selection so `SearchFilters.providerIds` restricts which providers are queried (and label it applied) in `data/discovery/src/main/java/com/pulldock/data/discovery/DiscoveryRepositoryImpl.kt` + `registry/ProviderRegistryImpl.kt` per FR-048 (partial)
+- [x] T063 Apply client-side size/date filters to results and expose a date range in `feature/discovery/src/main/java/com/pulldock/feature/discovery/filters/FilterSheet.kt` + `DiscoverViewModel` per FR-048 (partial)
