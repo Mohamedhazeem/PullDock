@@ -68,6 +68,7 @@ class DiscoverViewModelTest {
         override fun observe(): Flow<List<ProviderConfiguration>> = emptyFlow()
         override suspend fun current(): List<ProviderConfiguration> = emptyList()
         override suspend fun replace(configs: List<ProviderConfiguration>) = Unit
+        override suspend fun restoreDefaults() = Unit
     }
 
     private class FakeCredentials : ApiCredentialStore {
