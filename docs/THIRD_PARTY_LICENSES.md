@@ -15,6 +15,8 @@ and redistribution terms verified so far.
 | yt-dlp (planned, T080) | to be pinned at PoC | Unlicense | Bundled inside signed app releases only |
 | Chaquopy CPython runtime (planned, T080) | to be pinned at PoC | PSF/MIT per component | Verification pending |
 | FFmpeg/FFprobe build (planned, D2) | to be pinned | LGPL-2.1+ (build configuration to be recorded) | Verification pending |
+| Ktor Client (core, okhttp, content-negotiation, serialization) | 3.4.0 | Apache 2.0 | Discovery HTTP client (ADR-0015); pure JVM/Kotlin, no ABI impact |
+| kotlinx-serialization JSON | 1.9.0 | Apache 2.0 | JSON for provider DTOs |
 
 **Policy**: no dependency ships without its license being checked for redistribution
 (AGENTS.md §17). This file is updated whenever the catalog changes.
