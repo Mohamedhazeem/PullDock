@@ -66,11 +66,11 @@ Design and ADR-0008 for the module-boundary rules; the summary below is the oper
 │   ├── datastore/                 # DataStore: SettingsDataStore, DataStoreModule
 │   ├── storage/                   # StorageRepository contract (platform-facing)
 │   └── network/                   # ConnectivityMonitor contract (NetworkStatus)
-├── domain/{download,torrent,extractor}/   # pure Kotlin; content arrives in Slice 1
-├── data/{download,torrent,extractor}/     # repo impls/adapters; content in Slices 1,3,4,5
+├── domain/{download,torrent,extractor,discovery}/   # pure Kotlin; content arrives in Slice 1
+├── data/{download,torrent,extractor,discovery}/     # repo impls/adapters; content in Slices 1,3,4,5
 ├── engines/{torrent-libtorrent,extractor-ytdlp,media-ffmpeg}/  # native runtime modules;
 │                               # engine dependencies are pinned only after T060/T080 PoCs
-├── feature/{onboarding,home,add,queue,download-detail,library,player,settings,legal}/
+├── feature/{onboarding,home,add,queue,download-detail,library,player,settings,legal,discovery}/
 │                               # screen modules; content arrives in Slice 2+
 ├── gradle/libs.versions.toml  # version catalog (single source of truth)
 ├── gradle/wrapper/            # Gradle 9.6.0 wrapper
@@ -110,6 +110,12 @@ Design and ADR-0008 for the module-boundary rules; the summary below is the oper
   use cases arrive in Slice 1.
 - `:data:*` — implements domain contracts; the only layer allowed to touch `:core:*`
   infrastructure and `:engines:*`.
+- `:domain:discovery` / `:data:discovery` / `:feature:discovery` — Torrent Discovery
+  (feature 002, ADR-0014): API-only multi-provider search (BitSearch, Internet Archive,
+  user-configured Torznab) that hands a selected source into the existing Add flow. The data
+  layer is the only place that performs HTTP (Ktor + OkHttp + kotlinx-serialization,
+  ADR-0015); the feature never touches the engine, Room, or storage directly and adds no
+  second queue. `:feature:queue` remains unused.
 - `:engines:*` — native/runtime integration. Engine dependencies are intentionally
   absent until the feasibility PoCs (T060 torrent, T080 extractor) verify version, ABI,
   and license (AGENTS.md §17).
@@ -118,6 +124,11 @@ Design and ADR-0008 for the module-boundary rules; the summary below is the oper
 
 ### 2.3 Not yet present (status after Slices 0–5 + lifecycle/storage cores)
 
+- Torrent Discovery (feature 002, ADR-0014/0015) is implemented (2026-11-28): `:domain:discovery`,
+  `:data:discovery` (Ktor client; BitSearch/Internet Archive/Torznab adapters), and
+  `:feature:discovery` (Discover/results/details/settings) with a `DISCOVER` primary destination.
+  Unit tests (providers via MockEngine, orchestration, dedupe/rank, ViewModel) and lint pass;
+  Compose UI tests are in `androidTest` and on-device search-to-download verification is pending.
 - Domain/data/feature module **sources are now present** for Slices 1–6: Library and
   Player (T156–T158/T165) landed 2026-11-24 along with the completion/library wiring
   (ADR-0011). Still open: streaming-bridge lifecycle owner (T160), thumbnails (T164),
