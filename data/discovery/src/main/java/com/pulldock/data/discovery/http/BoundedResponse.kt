@@ -44,6 +44,9 @@ object BoundedResponse {
             return HttpResult.Failure(DiscoveryError.Network(DiscoveryError.NetworkReason.TIMEOUT, "request failed"))
         }
 
+        if (response.status != HttpStatusCode.OK) {
+            System.err.println("Discovery http ${response.status.value} for ${runCatching { io.ktor.http.Url(url).host }.getOrNull()}")
+        }
         return when (response.status) {
             HttpStatusCode.OK -> {
                 val length = response.headers["Content-Length"]?.toLongOrNull()
