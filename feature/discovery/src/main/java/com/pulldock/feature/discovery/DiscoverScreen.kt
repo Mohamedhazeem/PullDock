@@ -87,6 +87,7 @@ fun DiscoverRoute(
             loading = state.detailsLoading,
             onBack = { viewModel.onEvent(DiscoverUiEvent.CloseDetails) },
             onAdd = { fileName -> state.selectedResult?.let { viewModel.onEvent(DiscoverUiEvent.AddToPullDock(it, fileName)) } },
+            adultEnabled = state.adultEnabled,
         )
     } else {
         DiscoverScreen(state = state, onEvent = viewModel::onEvent, onOpenSettings = onOpenSettings, modifier = modifier)
