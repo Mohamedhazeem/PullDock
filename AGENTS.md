@@ -129,6 +129,10 @@ Design and ADR-0008 for the module-boundary rules; the summary below is the oper
   `:feature:discovery` (Discover/results/details/settings) with a `DISCOVER` primary destination.
   Unit tests (providers via MockEngine, orchestration, dedupe/rank, ViewModel) and lint pass;
   Compose UI tests are in `androidTest` and on-device search-to-download verification is pending.
+- Additional discovery providers (ADR-0016, 2026-11-28): YourBittorrent (JSON), EZTV (JSON, TV),
+  AniBT (built-in Torznab), YTS (official JSON), Knaben (official JSON, throttled), and The Pirate
+  Bay via apibay (default-off, unofficial). Result details now include files + description + images
+  (Coil, https-allowlisted, adult-gated). TorrentFunk/1337x/RuTracker excluded (no no-key API).
 - Domain/data/feature module **sources are now present** for Slices 1–6: Library and
   Player (T156–T158/T165) landed 2026-11-24 along with the completion/library wiring
   (ADR-0011). Still open: streaming-bridge lifecycle owner (T160), thumbnails (T164),
