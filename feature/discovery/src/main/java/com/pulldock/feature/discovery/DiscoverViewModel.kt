@@ -76,9 +76,12 @@ class DiscoverViewModel @Inject constructor(
     fun onEvent(event: DiscoverUiEvent) {
         when (event) {
             is DiscoverUiEvent.QueryChanged -> _state.update { it.copy(query = event.value) }
-            is DiscoverUiEvent.CategorySelected -> _state.update { it.copy(category = event.category) }
-            is DiscoverUiEvent.SortSelected -> _state.update { it.copy(sort = event.sort) }
-            is DiscoverUiEvent.MinSeedersChanged -> _state.update { it.copy(minSeeders = event.value) }
+            is DiscoverUiEvent.CategorySelected -> {
+                _state.update { it.copy(category = event.category) }
+                if (lastQuery != null) submit()
+            }
+            is DiscoverUiEvent.SortSelected -> { _state.update { it.copy(sort = event.sort) }; if (lastQuery != null) submit() }
+            is DiscoverUiEvent.MinSeedersChanged -> { _state.update { it.copy(minSeeders = event.value) }; if (lastQuery != null) submit() }
             DiscoverUiEvent.Submit -> submit()
             DiscoverUiEvent.LoadMore -> loadMore()
             DiscoverUiEvent.Refresh -> refresh()
@@ -107,15 +110,27 @@ class DiscoverViewModel @Inject constructor(
                 credentials.set(event.providerId, null)
                 torznabConfig.replace(_state.value.torznabConfigs.filterNot { it.providerId == event.providerId })
             }
+            DiscoverUiEvent.RestoreTorznabDefaults -> viewModelScope.launch { torznabConfig.restoreDefaults() }
             is DiscoverUiEvent.SetApiKey -> credentials.set(event.providerId, event.key)
-            is DiscoverUiEvent.ProviderSelectionChanged -> providerIds = event.providerIds
+            is DiscoverUiEvent.ProviderSelectionChanged -> { providerIds = event.providerIds; if (lastQuery != null) submit() }
             is DiscoverUiEvent.SizeRangeChanged -> {
                 minSizeBytes = event.minMb?.toLong()?.times(1_000_000L)
                 maxSizeBytes = event.maxMb?.toLong()?.times(1_000_000L)
+                if (lastQuery != null) submit()
             }
             is DiscoverUiEvent.DateRangeChanged -> {
                 dateFrom = event.from?.let(::parseDate)
                 dateTo = event.to?.let(::parseDate)
+                if (lastQuery != null) submit()
+            }
+            is DiscoverUiEvent.FiltersApplied -> {
+                _state.update { it.copy(sort = event.sort, minSeeders = event.minSeeders) }
+                providerIds = event.providerIds
+                minSizeBytes = event.minMb?.toLong()?.times(1_000_000L)
+                maxSizeBytes = event.maxMb?.toLong()?.times(1_000_000L)
+                dateFrom = event.from?.let(::parseDate)
+                dateTo = event.to?.let(::parseDate)
+                if (lastQuery != null) submit()
             }
         }
     }
@@ -170,8 +185,11 @@ class DiscoverViewModel @Inject constructor(
 
     private fun addToPullDock(result: TorrentSearchResult, fileName: String?) {
         viewModelScope.launch(dispatchers.io) {
-            val details = repository.getDetails(result)
-            val descriptor = repository.resolveDownloadDescriptor(details, fileName)
+            val descriptor = try {
+                repository.resolveDownloadDescriptor(repository.getDetails(result), fileName)
+            } catch (e: Exception) {
+                null
+            }
             val source = when (descriptor?.kind) {
                 DescriptorKind.MAGNET -> descriptor.magnetUri
                 DescriptorKind.TORRENT_FILE -> descriptor.torrentFileRef
@@ -197,7 +215,19 @@ class DiscoverViewModel @Inject constructor(
     }
 
     private fun visible(results: List<TorrentSearchResult>): List<TorrentSearchResult> =
-        results.filterNot { it.resultId in hiddenIds || (!adultEnabled && it.category == SearchCategory.ADULT) }
+        results.filterNot { it.resultId in hiddenIds || (!adultEnabled && isAdult(it)) }
+
+    private fun isAdult(result: TorrentSearchResult): Boolean =
+        result.category == SearchCategory.ADULT ||
+            ADULT_MARKERS.any { result.title.contains(it, ignoreCase = true) }
+
+    private companion object {
+        val ADULT_MARKERS = listOf(
+            "xxx", "porn", "brazzers", "naughty", "erotic", "hentai", "milf",
+            "creampie", "onlyfans", "nsfw", "adult video", "wank", "bangbros",
+            "mofos", "team skeet", "digital playground", "rabbit pro",
+        )
+    }
 
     private fun DiscoverUiState.toQuery(): TorrentSearchQuery = TorrentSearchQuery(
         text = query.trim(),
