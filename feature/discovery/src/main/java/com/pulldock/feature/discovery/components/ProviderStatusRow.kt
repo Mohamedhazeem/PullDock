@@ -4,6 +4,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -33,7 +34,7 @@ fun ProviderStatusRow(
 ) {
     val tokens = LocalPdTokens.current
     Row(
-        modifier = modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        modifier = modifier.fillMaxWidth().height(36.dp).horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         statuses.forEach { status ->

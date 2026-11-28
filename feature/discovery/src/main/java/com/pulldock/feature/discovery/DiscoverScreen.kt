@@ -125,15 +125,19 @@ fun DiscoverScreen(
                         verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = tokens.spacing.md, end = tokens.spacing.md, top = tokens.spacing.xs, bottom = 96.dp),
                     ) {
-                        item { CategoryChips(state.category) { onEvent(DiscoverUiEvent.CategorySelected(it)) } }
-                        if (state.perProvider.isNotEmpty()) item {
-                            ProviderStatusRow(state.perProvider, state.selectedProviderIds, onToggle = { onEvent(DiscoverUiEvent.ToggleProvider(it)) })
-                        }
-                        if (state.history.isNotEmpty()) item {
-                            SearchHistoryRow(state.history, onRepeat = { onEvent(DiscoverUiEvent.RepeatSearch(it)) }, onClear = { onEvent(DiscoverUiEvent.ClearHistory) })
-                        }
-                        if (state.results.isNotEmpty()) item {
-                            Text("${state.results.size} results", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        item {
+                            Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                                CategoryChips(state.category) { onEvent(DiscoverUiEvent.CategorySelected(it)) }
+                                if (state.perProvider.isNotEmpty()) {
+                                    ProviderStatusRow(state.perProvider, state.selectedProviderIds, onToggle = { onEvent(DiscoverUiEvent.ToggleProvider(it)) })
+                                }
+                                if (state.history.isNotEmpty()) {
+                                    SearchHistoryRow(state.history, onRepeat = { onEvent(DiscoverUiEvent.RepeatSearch(it)) }, onClear = { onEvent(DiscoverUiEvent.ClearHistory) })
+                                }
+                                if (state.results.isNotEmpty()) {
+                                    Text("${state.results.size} results", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                         }
                         items(state.results, key = { it.resultId }) { result ->
                             ResultCard(result, onOpen = { onEvent(DiscoverUiEvent.OpenDetails(result)) }, onAdd = { onEvent(DiscoverUiEvent.AddToPullDock(result)) })
@@ -199,7 +203,7 @@ private fun SearchBar(query: String, onEvent: (DiscoverUiEvent) -> Unit, onFilte
 private fun CategoryChips(selected: SearchCategory, onSelect: (SearchCategory) -> Unit) {
     val tokens = LocalPdTokens.current
     Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        Modifier.fillMaxWidth().height(36.dp).horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
         SearchCategory.entries.forEach { category ->
