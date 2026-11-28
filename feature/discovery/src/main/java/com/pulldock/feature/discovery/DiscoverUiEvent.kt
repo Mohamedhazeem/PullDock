@@ -28,6 +28,7 @@ sealed interface DiscoverUiEvent {
     data class AddTorznab(val config: ProviderConfiguration, val apiKey: String?) : DiscoverUiEvent
     data class RemoveTorznab(val providerId: String) : DiscoverUiEvent
     data object RestoreTorznabDefaults : DiscoverUiEvent
+    data object ToggleTpb : DiscoverUiEvent
     data class SetApiKey(val providerId: String, val key: String?) : DiscoverUiEvent
     data class ProviderSelectionChanged(val providerIds: Set<String>) : DiscoverUiEvent
     data class SizeRangeChanged(val minMb: Int?, val maxMb: Int?) : DiscoverUiEvent
