@@ -35,7 +35,7 @@ data class YtsMovie(
 @Serializable
 data class YtsTorrent(
     val hash: String? = null,
-    val size: Long? = null,
+    val size: String? = null,
     val seeds: Int? = null,
     val peers: Int? = null,
     val quality: String? = null,

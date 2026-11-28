@@ -79,7 +79,7 @@ class YtsProvider @Inject constructor(
             category = SearchCategory.MOVIES,
             originalProviderCategory = "movies",
             infoHash = hash,
-            sizeBytes = m.size ?: m.torrents.orEmpty().firstOrNull()?.size,
+            sizeBytes = m.size,
             seeders = m.seeds ?: m.torrents.orEmpty().firstOrNull()?.seeds,
             leechers = m.peers ?: m.torrents.orEmpty().firstOrNull()?.peers,
             publishedAt = m.date_added?.let(::parseInstant),
