@@ -36,8 +36,8 @@ android {
         applicationId = "com.pulldock"
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // PullDock ships 64-bit only (spec FR-076): arm64-v8a and x86_64. 32-bit ABIs
