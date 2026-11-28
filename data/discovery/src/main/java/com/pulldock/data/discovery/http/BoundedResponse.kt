@@ -35,8 +35,8 @@ object BoundedResponse {
             client.get(url) {
                 build()
                 headers.forEach { (k, v) -> header(k, v) }
-                // Some providers (e.g. Internet Archive) reject the default client UA.
-                header("User-Agent", "PullDock/0.2 (Android)")
+                // Some providers (e.g. Internet Archive, YTS, Knaben) reject the default client UA.
+                header("User-Agent", "Mozilla/5.0 (Linux; Android 13) PullDock/0.2")
                 header("Accept", "application/json, application/xml, */*")
             }
         } catch (t: Throwable) {

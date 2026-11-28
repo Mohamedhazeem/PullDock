@@ -20,7 +20,6 @@ sealed interface DiscoverUiEvent {
     data class RepeatSearch(val query: String) : DiscoverUiEvent
     data class DeleteHistory(val query: String) : DiscoverUiEvent
     data object ClearHistory : DiscoverUiEvent
-    data object ToggleAdult : DiscoverUiEvent
     data class SetHistoryEnabled(val enabled: Boolean) : DiscoverUiEvent
     data object ClearCache : DiscoverUiEvent
     data class HideResult(val resultId: String) : DiscoverUiEvent

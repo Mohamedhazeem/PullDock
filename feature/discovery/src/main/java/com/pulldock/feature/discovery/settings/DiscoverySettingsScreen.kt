@@ -51,7 +51,6 @@ fun DiscoverySettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val tokens = LocalPdTokens.current
-    var showNsfwConfirm by remember { mutableStateOf(false) }
     Scaffold(
         modifier = modifier,
         topBar = { TopAppBar(title = { Text("Discovery settings") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") } }) },
@@ -86,31 +85,7 @@ fun DiscoverySettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            GroupCard(null) {
-                SwitchRow("NSFW", state.adultEnabled) { enable ->
-                    if (enable) showNsfwConfirm = true else onEvent(DiscoverUiEvent.ToggleAdult)
-                }
-                Text(
-                    "Off by default. Enabling shows adult results and requires confirmation each time.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
-    }
-
-    if (showNsfwConfirm) {
-        AlertDialog(
-            onDismissRequest = { showNsfwConfirm = false },
-            title = { Text("Enable NSFW results?") },
-            text = { Text("Adult content will be shown in search results. You can turn it off at any time.") },
-            confirmButton = {
-                TextButton(onClick = { onEvent(DiscoverUiEvent.ToggleAdult); showNsfwConfirm = false }) { Text("Enable") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNsfwConfirm = false }) { Text("Cancel") }
-            },
-        )
     }
 }
 

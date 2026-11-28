@@ -58,7 +58,6 @@ fun ResultDetailsScreen(
     onBack: () -> Unit,
     onAdd: (fileName: String?) -> Unit,
     modifier: Modifier = Modifier,
-    adultEnabled: Boolean = false,
 ) {
     val tokens = LocalPdTokens.current
     val context = LocalContext.current
@@ -83,7 +82,7 @@ fun ResultDetailsScreen(
                         }
                     }
                     MetadataCard(details)
-                    if (details.images.isNotEmpty() && (adultEnabled || details.category != com.pulldock.domain.discovery.model.SearchCategory.ADULT)) {
+                    if (details.images.isNotEmpty()) {
                         ImageRow(details.images.take(4))
                     }
                     if (details.files.isNotEmpty()) {

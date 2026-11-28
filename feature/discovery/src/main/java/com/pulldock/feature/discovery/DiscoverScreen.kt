@@ -87,7 +87,6 @@ fun DiscoverRoute(
             loading = state.detailsLoading,
             onBack = { viewModel.onEvent(DiscoverUiEvent.CloseDetails) },
             onAdd = { fileName -> state.selectedResult?.let { viewModel.onEvent(DiscoverUiEvent.AddToPullDock(it, fileName)) } },
-            adultEnabled = state.adultEnabled,
         )
     } else {
         DiscoverScreen(state = state, onEvent = viewModel::onEvent, onOpenSettings = onOpenSettings, modifier = modifier)
@@ -112,6 +111,11 @@ fun DiscoverScreen(
     val scrolled = listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
     val atBottom = total > 0 && lastVisible == total - 1 && scrolled
 
+    // A new search (category/query) starts at the top instead of leaving the user at the bottom.
+    LaunchedEffect(state.overall) {
+        if (state.overall == OverallSearchState.LOADING) listState.scrollToItem(0)
+    }
+
     Scaffold(modifier = modifier) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             Row(
@@ -123,7 +127,7 @@ fun DiscoverScreen(
             }
             Column(Modifier.animateContentSize().padding(horizontal = tokens.spacing.md)) {
                 if (atTop) {
-                    CategoryChips(state.category, state.adultEnabled) { onEvent(DiscoverUiEvent.CategorySelected(it)) }
+                    CategoryChips(state.category) { onEvent(DiscoverUiEvent.CategorySelected(it)) }
                     if (state.perProvider.isNotEmpty()) ProviderStatusRow(state.perProvider)
                     if (state.history.isNotEmpty()) {
                         SearchHistoryRow(state.history, onRepeat = { onEvent(DiscoverUiEvent.RepeatSearch(it)) }, onClear = { onEvent(DiscoverUiEvent.ClearHistory) })
@@ -236,13 +240,13 @@ private fun SearchBar(query: String, onEvent: (DiscoverUiEvent) -> Unit, onFilte
 }
 
 @Composable
-private fun CategoryChips(selected: SearchCategory, adultEnabled: Boolean, onSelect: (SearchCategory) -> Unit) {
+private fun CategoryChips(selected: SearchCategory, onSelect: (SearchCategory) -> Unit) {
     val tokens = LocalPdTokens.current
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs),
     ) {
-        SearchCategory.entries.filter { it != SearchCategory.ADULT || adultEnabled }.forEach { category ->
+        SearchCategory.entries.forEach { category ->
             FilterChip(
                 selected = selected == category,
                 onClick = { onSelect(category) },

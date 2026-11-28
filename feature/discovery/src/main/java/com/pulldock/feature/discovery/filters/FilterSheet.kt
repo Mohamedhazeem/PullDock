@@ -9,12 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,7 +26,7 @@ import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.domain.discovery.model.ProviderStatus
 import com.pulldock.domain.discovery.model.SortOrder
 
-/** Filter sheet: sort, providers, and value buttons (seeders/size/date) with input dialogs. */
+/** Filter sheet: sort, providers, min seeders, and From/To year chips. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FilterSheet(
@@ -41,12 +39,11 @@ fun FilterSheet(
 ) {
     val tokens = LocalPdTokens.current
     var sort by remember { mutableStateOf(currentSort) }
-    var minSeeders by remember { mutableStateOf(currentMinSeeders) }
+    var minSeeders by remember { mutableStateOf(currentMinSeeders?.toString().orEmpty()) }
     var selectedProviders by remember { mutableStateOf(currentProviderIds) }
-    var minMb by remember { mutableStateOf<Int?>(null) }
-    var maxMb by remember { mutableStateOf<Int?>(null) }
-    var from by remember { mutableStateOf<String?>(null) }
-    var to by remember { mutableStateOf<String?>(null) }
+    var fromYear by remember { mutableStateOf<String?>(null) }
+    var toYear by remember { mutableStateOf<String?>(null) }
+    val years = remember { (java.time.Year.now().value downTo 1990).toList() }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -59,6 +56,7 @@ fun FilterSheet(
                     FilterChip(selected = order == sort, onClick = { sort = order }, label = { Text(order.name.lowercase().replaceFirstChar { it.uppercase() }) })
                 }
             }
+
             if (providers.isNotEmpty()) {
                 Text("Providers", style = MaterialTheme.typography.titleMedium)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
@@ -71,51 +69,29 @@ fun FilterSheet(
                     }
                 }
             }
-            ValueButton("Minimum seeders", minSeeders?.toString(), numeric = true) { minSeeders = it?.toIntOrNull() }
-            Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                ValueButton("Min MB", minMb?.toString(), numeric = true, modifier = Modifier.weight(1f)) { minMb = it?.toIntOrNull() }
-                ValueButton("Max MB", maxMb?.toString(), numeric = true, modifier = Modifier.weight(1f)) { maxMb = it?.toIntOrNull() }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                ValueButton("From", from, modifier = Modifier.weight(1f)) { from = it?.ifBlank { null } }
-                ValueButton("To", to, modifier = Modifier.weight(1f)) { to = it?.ifBlank { null } }
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+
+            OutlinedTextField(minSeeders, { minSeeders = it.filter { c -> c.isDigit() } }, label = { Text("Minimum seeders") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+
+            Text("From year", style = MaterialTheme.typography.titleSmall)
+            YearChips(years, fromYear) { fromYear = it }
+            Text("To year", style = MaterialTheme.typography.titleSmall)
+            YearChips(years, toYear) { toYear = it }
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 TextButton(onClick = onDismiss) { Text("Cancel") }
-                TextButton(onClick = { onApply(sort, minSeeders, selectedProviders, minMb, maxMb, from, to) }) { Text("Apply") }
+                TextButton(onClick = { onApply(sort, minSeeders.toIntOrNull(), selectedProviders, null, null, fromYear, toYear) }) { Text("Apply") }
             }
         }
     }
 }
 
-/** A button that opens a small input dialog; shows the current value inline. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ValueButton(
-    label: String,
-    value: String?,
-    numeric: Boolean = false,
-    modifier: Modifier = Modifier,
-    onValue: (String?) -> Unit,
-) {
-    var open by remember { mutableStateOf(false) }
-    var text by remember(value) { mutableStateOf(value.orEmpty()) }
-    OutlinedButton(onClick = { open = true }, modifier = modifier) {
-        Text(if (value.isNullOrBlank()) label else "$label: $value", style = MaterialTheme.typography.labelLarge)
-    }
-    if (open) {
-        AlertDialog(
-            onDismissRequest = { open = false },
-            title = { Text(label) },
-            text = {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = if (numeric) it.filter { c -> c.isDigit() } else it },
-                    label = { Text(if (numeric) "Number" else "YYYY-MM-DD") },
-                    singleLine = true,
-                )
-            },
-            confirmButton = { TextButton(onClick = { onValue(text); open = false }) { Text("OK") } },
-            dismissButton = { TextButton(onClick = { open = false }) { Text("Cancel") } },
-        )
+private fun YearChips(years: List<Int>, selected: String?, onSelect: (String?) -> Unit) {
+    val tokens = LocalPdTokens.current
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
+        years.forEach { y ->
+            FilterChip(selected = selected == y.toString(), onClick = { onSelect(if (selected == y.toString()) null else y.toString()) }, label = { Text(y.toString()) })
+        }
     }
 }

@@ -61,7 +61,6 @@ class DiscoverViewModel @Inject constructor(
     private var searchJob: Job? = null
     private var lastQuery: TorrentSearchQuery? = null
     private val hiddenIds = mutableSetOf<String>()
-    private var adultEnabled = false
 
     // Filter state not yet applied upstream (client-side until submit).
     private var providerIds: Set<String> = emptySet()
@@ -95,7 +94,6 @@ class DiscoverViewModel @Inject constructor(
             is DiscoverUiEvent.RepeatSearch -> { _state.update { it.copy(query = event.query) }; submit() }
             is DiscoverUiEvent.DeleteHistory -> viewModelScope.launch { historyStore.delete(event.query.toEntry()) }
             DiscoverUiEvent.ClearHistory -> viewModelScope.launch { historyStore.clear() }
-            DiscoverUiEvent.ToggleAdult -> { adultEnabled = !adultEnabled; _state.update { it.copy(adultEnabled = adultEnabled) } }
             is DiscoverUiEvent.SetHistoryEnabled -> viewModelScope.launch {
                 historyStore.setEnabled(event.enabled)
                 _state.update { it.copy(historyEnabled = event.enabled) }
@@ -124,8 +122,8 @@ class DiscoverViewModel @Inject constructor(
                 if (lastQuery != null) submit()
             }
             is DiscoverUiEvent.DateRangeChanged -> {
-                dateFrom = event.from?.let(::parseDate)
-                dateTo = event.to?.let(::parseDate)
+                dateFrom = event.from?.let(::parseYearStart)
+                dateTo = event.to?.let(::parseYearEnd)
                 if (lastQuery != null) submit()
             }
             is DiscoverUiEvent.FiltersApplied -> {
@@ -133,8 +131,8 @@ class DiscoverViewModel @Inject constructor(
                 providerIds = event.providerIds
                 minSizeBytes = event.minMb?.toLong()?.times(1_000_000L)
                 maxSizeBytes = event.maxMb?.toLong()?.times(1_000_000L)
-                dateFrom = event.from?.let(::parseDate)
-                dateTo = event.to?.let(::parseDate)
+                dateFrom = event.from?.let(::parseYearStart)
+                dateTo = event.to?.let(::parseYearEnd)
                 if (lastQuery != null) submit()
             }
         }
@@ -220,19 +218,7 @@ class DiscoverViewModel @Inject constructor(
     }
 
     private fun visible(results: List<TorrentSearchResult>): List<TorrentSearchResult> =
-        results.filterNot { it.resultId in hiddenIds || (!adultEnabled && isAdult(it)) }
-
-    private fun isAdult(result: TorrentSearchResult): Boolean =
-        result.category == SearchCategory.ADULT ||
-            ADULT_MARKERS.any { result.title.contains(it, ignoreCase = true) }
-
-    private companion object {
-        val ADULT_MARKERS = listOf(
-            "xxx", "porn", "brazzers", "naughty", "erotic", "hentai", "milf",
-            "creampie", "onlyfans", "nsfw", "adult video", "wank", "bangbros",
-            "mofos", "team skeet", "digital playground", "rabbit pro",
-        )
-    }
+        results.filterNot { it.resultId in hiddenIds }
 
     private fun DiscoverUiState.toQuery(): TorrentSearchQuery = TorrentSearchQuery(
         text = query.trim(),
@@ -250,9 +236,13 @@ class DiscoverViewModel @Inject constructor(
 
     private fun String.toEntry() = SearchHistoryEntry(this, null, Instant.now())
 
-    private fun parseDate(raw: String): Instant? = runCatching { Instant.parse(raw) }
-        .recoverCatching { LocalDate.parse(raw).atStartOfDay(ZoneOffset.UTC).toInstant() }
-        .getOrNull()
+    private fun parseYearStart(raw: String): Instant? = raw.toIntOrNull()?.let {
+        LocalDate.of(it, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant()
+    }
+
+    private fun parseYearEnd(raw: String): Instant? = raw.toIntOrNull()?.let {
+        LocalDate.of(it + 1, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant().minusMillis(1)
+    }
 
     private fun <T> kotlinx.coroutines.flow.Flow<T>.collectSafely(action: suspend (T) -> Unit) {
         viewModelScope.launch(dispatchers.io) { this@collectSafely.collect { action(it) } }
