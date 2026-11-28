@@ -19,6 +19,7 @@ import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Tv
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,18 +46,16 @@ fun ResultCard(
     result: TorrentSearchResult,
     onOpen: () -> Unit,
     onAdd: () -> Unit,
-    onHide: () -> Unit,
-    onReport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val tokens = LocalPdTokens.current
     Card(modifier = modifier.fillMaxWidth(), onClick = onOpen, shape = RoundedCornerShape(tokens.radius.lg)) {
         Column {
-            Row(Modifier.padding(tokens.spacing.md), verticalAlignment = Alignment.Top) {
+            Row(Modifier.padding(tokens.spacing.sm), verticalAlignment = Alignment.Top) {
                 Poster(result.category)
-                Spacer(Modifier.width(tokens.spacing.md))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
-                    Text(result.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.width(tokens.spacing.sm))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(result.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
                         ProviderBadge(result.providerName)
                         if (result.providerVerificationClaim == true) {
@@ -72,9 +71,7 @@ fun ResultCard(
                 Modifier.fillMaxWidth().padding(end = tokens.spacing.sm, bottom = tokens.spacing.xs),
                 horizontalArrangement = Arrangement.End,
             ) {
-                TextButton(onClick = onHide) { Text("Hide") }
-                TextButton(onClick = onReport) { Text("Report") }
-                TextButton(onClick = onAdd) { Text("Add") }
+                Button(onClick = onAdd, shape = RoundedCornerShape(tokens.radius.md), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp)) { Text("Add to PullDock", style = MaterialTheme.typography.labelLarge) }
             }
         }
     }
@@ -84,10 +81,10 @@ fun ResultCard(
 private fun Poster(category: SearchCategory) {
     val tokens = LocalPdTokens.current
     Box(
-        Modifier.size(64.dp).clip(RoundedCornerShape(tokens.radius.md)).background(MaterialTheme.colorScheme.primaryContainer),
+        Modifier.size(48.dp).clip(RoundedCornerShape(tokens.radius.md)).background(MaterialTheme.colorScheme.primaryContainer),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(category.icon(), contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(30.dp))
+        Icon(category.icon(), contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(24.dp))
     }
 }
 
