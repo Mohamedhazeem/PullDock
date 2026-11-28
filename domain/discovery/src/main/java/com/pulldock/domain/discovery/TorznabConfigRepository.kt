@@ -14,4 +14,7 @@ interface TorznabConfigRepository {
     suspend fun current(): List<ProviderConfiguration>
 
     suspend fun replace(configs: List<ProviderConfiguration>)
+
+    /** Restores the predefined default indexers (e.g. after the user removed them). */
+    suspend fun restoreDefaults()
 }
