@@ -16,3 +16,4 @@
 | [ADR-0012](ADR-0012-extractor-runtime.md) | Bundled extractor runtime (T080) | Accepted |
 | [ADR-0014](ADR-0014-discovery-modules.md) | Discovery modules and provider-adapter architecture | Accepted |
 | [ADR-0015](ADR-0015-http-client.md) | HTTP client for discovery providers (Ktor) | Accepted |
+| [ADR-0016](ADR-0016-additional-providers-rich-details.md) | Additional discovery providers + rich details (Coil) | Accepted |
