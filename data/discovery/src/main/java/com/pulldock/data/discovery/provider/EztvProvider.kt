@@ -45,25 +45,40 @@ class EztvProvider @Inject constructor(
 
     override suspend fun capabilities(): ProviderCapabilities = ProviderCapabilities(
         providerId = id,
-        searchTypes = setOf(SearchType.TV, SearchType.GENERAL),
+        searchTypes = setOf(SearchType.TV),
         categories = mapOf(SearchCategory.TV_SERIES to "tv"),
         supportsPagination = true,
         requiresAuth = false,
     )
 
     override suspend fun search(query: TorrentSearchQuery, page: ProviderPage): ProviderPageResult {
-        val url = "$BASE/api/get-torrents?limit=$PAGE_SIZE&page=${page.number}"
+        val term = query.text.lowercase()
+        val collected = mutableListOf<EztvTorrent>()
+        var lastSize = 0
+        // Widen the recent window: fetch up to 3 pages (3x100) since EZTV has no title search.
+        for (p in page.number until page.number + RECENT_PAGES) {
+            val parsed = fetchPage(p)
+            lastSize = parsed.torrents.size
+            collected += parsed.torrents
+            if (lastSize < PAGE_SIZE) break
+        }
+        val seen = HashSet<String>()
+        val results = collected
+            .filter { (it.title ?: it.filename)?.lowercase()?.contains(term) == true }
+            .mapNotNull(::toResult)
+            .filter { seen.add(it.resultId) }
+        val hasMore = lastSize == PAGE_SIZE
+        return ProviderPageResult(results, hasMore, if (hasMore) page.copy(number = page.number + RECENT_PAGES) else null)
+    }
+
+    private suspend fun fetchPage(pageNumber: Int): EztvResponse {
+        val url = "$BASE/api/get-torrents?limit=$PAGE_SIZE&page=$pageNumber"
         val body = when (val r = BoundedResponse.fetch(client, url)) {
             is HttpResult.Failure -> throw r.error
             is HttpResult.Ok -> r.body
         }
-        val parsed = runCatching { json.decodeFromString(EztvResponse.serializer(), body) }
+        return runCatching { json.decodeFromString(EztvResponse.serializer(), body) }
             .getOrElse { throw DiscoveryError.Parse("eztv search") }
-        val term = query.text.lowercase()
-        val results = parsed.torrents
-            .filter { (it.title ?: it.filename)?.lowercase()?.contains(term) == true }
-            .mapNotNull(::toResult)
-        return ProviderPageResult(results, parsed.torrents.size == PAGE_SIZE, if (parsed.torrents.size == PAGE_SIZE) page.copy(number = page.number + 1) else null)
     }
 
     override suspend fun details(nativeId: String): TorrentResultDetails? {
@@ -128,5 +143,6 @@ class EztvProvider @Inject constructor(
     private companion object {
         const val BASE = "https://eztv.re"
         const val PAGE_SIZE = 100
+        const val RECENT_PAGES = 3
     }
 }
