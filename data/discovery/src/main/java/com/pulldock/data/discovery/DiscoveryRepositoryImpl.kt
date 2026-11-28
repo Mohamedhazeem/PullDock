@@ -185,8 +185,11 @@ class DiscoveryRepositoryImpl @Inject constructor(
         val cat = filters.category
         // Enforce category client-side so providers that ignore/loose-map it (e.g. Archive)
         // cannot leak off-category results. ALL = no filter; DOCUMENTARIES has no provider
-        // category (served by terms), so it is not enforced here.
-        if (cat != SearchCategory.ALL && cat != SearchCategory.DOCUMENTARIES && result.category != cat) return false
+        // category (served by terms). OTHER is a wildcard (providers often misclassify), so a
+        // movie labelled Other still shows under Movies; clearly different categories are dropped.
+        if (cat != SearchCategory.ALL && cat != SearchCategory.DOCUMENTARIES &&
+            result.category != cat && result.category != SearchCategory.OTHER
+        ) return false
         val size = result.sizeBytes
         val published = result.publishedAt
         val minSize = filters.minSizeBytes
