@@ -12,6 +12,7 @@ import com.pulldock.domain.discovery.model.DownloadDescriptor
 import com.pulldock.domain.discovery.model.OverallSearchState
 import com.pulldock.domain.discovery.model.ProviderState
 import com.pulldock.domain.discovery.model.ProviderStatus
+import com.pulldock.domain.discovery.model.SearchCategory
 import com.pulldock.domain.discovery.model.SearchFilters
 import com.pulldock.domain.discovery.model.SearchPageState
 import com.pulldock.domain.discovery.model.TorrentResultDetails
@@ -181,6 +182,11 @@ class DiscoveryRepositoryImpl @Inject constructor(
     )
 
     private fun matchesFilters(result: TorrentSearchResult, filters: SearchFilters): Boolean {
+        val cat = filters.category
+        // Enforce category client-side so providers that ignore/loose-map it (e.g. Archive)
+        // cannot leak off-category results. ALL = no filter; DOCUMENTARIES has no provider
+        // category (served by terms), so it is not enforced here.
+        if (cat != SearchCategory.ALL && cat != SearchCategory.DOCUMENTARIES && result.category != cat) return false
         val size = result.sizeBytes
         val published = result.publishedAt
         val minSize = filters.minSizeBytes
