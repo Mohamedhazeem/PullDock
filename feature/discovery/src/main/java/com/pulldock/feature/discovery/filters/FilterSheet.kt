@@ -1,17 +1,20 @@
 package com.pulldock.feature.discovery.filters
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -25,8 +28,8 @@ import com.pulldock.core.designsystem.theme.LocalPdTokens
 import com.pulldock.domain.discovery.model.ProviderStatus
 import com.pulldock.domain.discovery.model.SortOrder
 
-/** Filter sheet: sort, provider selection, min seeders, size range (FR-045/FR-048). */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Filter sheet: sort, providers, and value buttons (seeders/size/date) with input dialogs. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FilterSheet(
     currentSort: SortOrder,
@@ -38,28 +41,27 @@ fun FilterSheet(
 ) {
     val tokens = LocalPdTokens.current
     var sort by remember { mutableStateOf(currentSort) }
-    var minSeeders by remember { mutableStateOf(currentMinSeeders?.toString().orEmpty()) }
+    var minSeeders by remember { mutableStateOf(currentMinSeeders) }
     var selectedProviders by remember { mutableStateOf(currentProviderIds) }
-    var minMb by remember { mutableStateOf("") }
-    var maxMb by remember { mutableStateOf("") }
-    var from by remember { mutableStateOf("") }
-    var to by remember { mutableStateOf("") }
+    var minMb by remember { mutableStateOf<Int?>(null) }
+    var maxMb by remember { mutableStateOf<Int?>(null) }
+    var from by remember { mutableStateOf<String?>(null) }
+    var to by remember { mutableStateOf<String?>(null) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             Modifier.padding(tokens.spacing.md).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
         ) {
-            Text("Sort", style = MaterialTheme.typography.titleMedium)
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
+            Text("Sort by", style = MaterialTheme.typography.titleMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
                 SortOrder.entries.forEach { order ->
                     FilterChip(selected = order == sort, onClick = { sort = order }, label = { Text(order.name.lowercase().replaceFirstChar { it.uppercase() }) })
                 }
             }
-
             if (providers.isNotEmpty()) {
                 Text("Providers", style = MaterialTheme.typography.titleMedium)
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.xs)) {
                     providers.forEach { p ->
                         FilterChip(
                             selected = p.providerId in selectedProviders,
@@ -69,18 +71,51 @@ fun FilterSheet(
                     }
                 }
             }
-
-            OutlinedTextField(minSeeders, { minSeeders = it.filter { c -> c.isDigit() } }, label = { Text("Minimum seeders") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            ValueButton("Minimum seeders", minSeeders?.toString(), numeric = true) { minSeeders = it?.toIntOrNull() }
             Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                OutlinedTextField(minMb, { minMb = it.filter { c -> c.isDigit() } }, label = { Text("Min MB") }, singleLine = true, modifier = Modifier.fillMaxWidth().weight(1f))
-                OutlinedTextField(maxMb, { maxMb = it.filter { c -> c.isDigit() } }, label = { Text("Max MB") }, singleLine = true, modifier = Modifier.fillMaxWidth().weight(1f))
+                ValueButton("Min MB", minMb?.toString(), numeric = true, modifier = Modifier.weight(1f)) { minMb = it?.toIntOrNull() }
+                ValueButton("Max MB", maxMb?.toString(), numeric = true, modifier = Modifier.weight(1f)) { maxMb = it?.toIntOrNull() }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-                OutlinedTextField(from, { from = it }, label = { Text("From (YYYY-MM-DD)") }, singleLine = true, modifier = Modifier.fillMaxWidth().weight(1f))
-                OutlinedTextField(to, { to = it }, label = { Text("To (YYYY-MM-DD)") }, singleLine = true, modifier = Modifier.fillMaxWidth().weight(1f))
+                ValueButton("From", from, modifier = Modifier.weight(1f)) { from = it?.ifBlank { null } }
+                ValueButton("To", to, modifier = Modifier.weight(1f)) { to = it?.ifBlank { null } }
             }
-
-            TextButton(onClick = { onApply(sort, minSeeders.toIntOrNull(), selectedProviders, minMb.toIntOrNull(), maxMb.toIntOrNull(), from.ifBlank { null }, to.ifBlank { null }) }) { Text("Apply") }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = { onApply(sort, minSeeders, selectedProviders, minMb, maxMb, from, to) }) { Text("Apply") }
+            }
         }
+    }
+}
+
+/** A button that opens a small input dialog; shows the current value inline. */
+@Composable
+private fun ValueButton(
+    label: String,
+    value: String?,
+    numeric: Boolean = false,
+    modifier: Modifier = Modifier,
+    onValue: (String?) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    var text by remember(value) { mutableStateOf(value.orEmpty()) }
+    OutlinedButton(onClick = { open = true }, modifier = modifier) {
+        Text(if (value.isNullOrBlank()) label else "$label: $value", style = MaterialTheme.typography.labelLarge)
+    }
+    if (open) {
+        AlertDialog(
+            onDismissRequest = { open = false },
+            title = { Text(label) },
+            text = {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = if (numeric) it.filter { c -> c.isDigit() } else it },
+                    label = { Text(if (numeric) "Number" else "YYYY-MM-DD") },
+                    singleLine = true,
+                )
+            },
+            confirmButton = { TextButton(onClick = { onValue(text); open = false }) { Text("OK") } },
+            dismissButton = { TextButton(onClick = { open = false }) { Text("Cancel") } },
+        )
     }
 }
