@@ -215,7 +215,6 @@ private fun SearchBar(query: String, onEvent: (DiscoverUiEvent) -> Unit, onFilte
         onEvent(DiscoverUiEvent.Submit)
         focus.clearFocus()
         keyboard?.hide()
-        Unit
     }
     OutlinedTextField(
         value = query,
