@@ -20,6 +20,7 @@ import com.pulldock.domain.discovery.model.ResultSourceType
 import com.pulldock.domain.discovery.model.RightsStatus
 import com.pulldock.domain.discovery.model.SearchCategory
 import com.pulldock.domain.discovery.model.SearchType
+import com.pulldock.domain.discovery.model.TorrentFile
 import com.pulldock.domain.discovery.model.TorrentResultDetails
 import com.pulldock.domain.discovery.model.TorrentSearchQuery
 import com.pulldock.domain.discovery.model.TorrentSearchResult
@@ -107,6 +108,7 @@ class BitSearchProvider @Inject constructor(
             licence = null,
             downloadDescriptor = descriptor,
             availableActions = actions(descriptor != null),
+            files = t.files.map { TorrentFile(it.path ?: "", it.size) },
         )
     }
 
