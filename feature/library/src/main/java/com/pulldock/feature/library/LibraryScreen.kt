@@ -129,6 +129,7 @@ fun LibraryScreen(
                     value = state.query.searchText.orEmpty(),
                     onValueChange = viewModel::setSearch,
                     placeholder = stringResource(R.string.library_search),
+                    onSearch = { },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
