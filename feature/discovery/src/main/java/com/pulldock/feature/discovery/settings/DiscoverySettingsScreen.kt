@@ -62,6 +62,7 @@ fun DiscoverySettingsScreen(
         ) {
             GroupCard("Content") {
                 SwitchRow("Save search history", state.historyEnabled) { onEvent(DiscoverUiEvent.SetHistoryEnabled(it)) }
+                SwitchRow("The Pirate Bay (unofficial)", state.tpbEnabled) { onEvent(DiscoverUiEvent.ToggleTpb) }
                 Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
                     TextButton(onClick = { onEvent(DiscoverUiEvent.ClearHistory) }) { Text("Clear history") }
                     TextButton(onClick = { onEvent(DiscoverUiEvent.ClearCache) }) { Text("Clear cache") }
