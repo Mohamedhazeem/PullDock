@@ -127,6 +127,21 @@ class DiscoveryRepositoryImplTest {
         assertEquals("a", state.results[0].providerId)
     }
 
+    @Test
+    fun `category filter keeps only the selected category`() = runTest {
+        fun r(id: String, cat: SearchCategory) = TorrentSearchResult(
+            resultId = id, providerId = "p", providerName = "p", title = "T$id", description = null,
+            category = cat, originalProviderCategory = null, infoHash = id, sizeBytes = null, seeders = 1,
+            leechers = null, publishedAt = null, providerVerificationClaim = null, sourcePageUrl = null,
+            resultSourceType = ResultSourceType.MAGNET, rightsStatus = RightsStatus.UNKNOWN,
+            availableActions = emptySet(), contributingSources = emptyList(),
+        )
+        val p = FakeProvider("p") { ProviderPageResult(listOf(r("1", SearchCategory.MOVIES), r("2", SearchCategory.MUSIC)), false, null) }
+        val state = repo(listOf(p)).search(query.copy(filters = SearchFilters(category = SearchCategory.MOVIES)))
+        assertEquals(1, state.results.size)
+        assertEquals(SearchCategory.MOVIES, state.results[0].category)
+    }
+
     private fun titled(id: String, provider: String, title: String) = TorrentSearchResult(
         resultId = id, providerId = provider, providerName = provider, title = title,
         description = null, category = SearchCategory.MOVIES, originalProviderCategory = null,
