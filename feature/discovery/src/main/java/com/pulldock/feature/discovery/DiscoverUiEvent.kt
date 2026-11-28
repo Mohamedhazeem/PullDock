@@ -30,6 +30,7 @@ sealed interface DiscoverUiEvent {
     data object ToggleTpb : DiscoverUiEvent
     data class SetApiKey(val providerId: String, val key: String?) : DiscoverUiEvent
     data class ProviderSelectionChanged(val providerIds: Set<String>) : DiscoverUiEvent
+    data class ToggleProvider(val providerId: String) : DiscoverUiEvent
     data class SizeRangeChanged(val minMb: Int?, val maxMb: Int?) : DiscoverUiEvent
     data class DateRangeChanged(val from: String?, val to: String?) : DiscoverUiEvent
     data class FiltersApplied(

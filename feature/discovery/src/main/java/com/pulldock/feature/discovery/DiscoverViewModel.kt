@@ -115,7 +115,12 @@ class DiscoverViewModel @Inject constructor(
             DiscoverUiEvent.RestoreTorznabDefaults -> viewModelScope.launch { torznabConfig.restoreDefaults() }
             DiscoverUiEvent.ToggleTpb -> viewModelScope.launch { toggleRepo.setTpbEnabled(!_state.value.tpbEnabled) }
             is DiscoverUiEvent.SetApiKey -> credentials.set(event.providerId, event.key)
-            is DiscoverUiEvent.ProviderSelectionChanged -> { providerIds = event.providerIds; if (lastQuery != null) submit() }
+            is DiscoverUiEvent.ProviderSelectionChanged -> { providerIds = event.providerIds; _state.update { it.copy(selectedProviderIds = event.providerIds) }; if (lastQuery != null) submit() }
+            is DiscoverUiEvent.ToggleProvider -> {
+                providerIds = if (event.providerId in providerIds) providerIds - event.providerId else providerIds + event.providerId
+                _state.update { it.copy(selectedProviderIds = providerIds) }
+                submit()
+            }
             is DiscoverUiEvent.SizeRangeChanged -> {
                 minSizeBytes = event.minMb?.toLong()?.times(1_000_000L)
                 maxSizeBytes = event.maxMb?.toLong()?.times(1_000_000L)
@@ -129,6 +134,7 @@ class DiscoverViewModel @Inject constructor(
             is DiscoverUiEvent.FiltersApplied -> {
                 _state.update { it.copy(sort = event.sort, minSeeders = event.minSeeders) }
                 providerIds = event.providerIds
+                _state.update { it.copy(selectedProviderIds = event.providerIds) }
                 minSizeBytes = event.minMb?.toLong()?.times(1_000_000L)
                 maxSizeBytes = event.maxMb?.toLong()?.times(1_000_000L)
                 dateFrom = event.from?.let(::parseYearStart)

@@ -18,6 +18,7 @@ data class DiscoverUiState(
     val overall: OverallSearchState = OverallSearchState.IDLE,
     val results: List<TorrentSearchResult> = emptyList(),
     val perProvider: List<ProviderStatus> = emptyList(),
+    val selectedProviderIds: Set<String> = emptySet(),
     val history: List<SearchHistoryEntry> = emptyList(),
     val isLoadingMore: Boolean = false,
     val details: TorrentResultDetails? = null,
