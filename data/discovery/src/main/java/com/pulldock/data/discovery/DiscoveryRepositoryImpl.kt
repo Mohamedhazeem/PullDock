@@ -132,7 +132,7 @@ class DiscoveryRepositoryImpl @Inject constructor(
             }
         }
 
-        val ranked = ResultMerger.combineAndRank(collected, query.filters.sort)
+        val ranked = ResultMerger.combineAndRank(collected, query.filters.sort, query.text)
             .filter { matchesFilters(it, query.filters) }
         val state = SearchPageState(
             query = query.text,
