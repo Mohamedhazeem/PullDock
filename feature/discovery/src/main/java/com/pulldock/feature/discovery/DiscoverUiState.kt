@@ -27,6 +27,7 @@ data class DiscoverUiState(
     val message: String? = null,
     val hasMore: Boolean = false,
     val historyEnabled: Boolean = true,
+    val tpbEnabled: Boolean = false,
     val torznabConfigs: List<ProviderConfiguration> = emptyList(),
 ) {
     val isSearching: Boolean get() = overall == OverallSearchState.LOADING || overall == OverallSearchState.REFRESHING
