@@ -32,11 +32,13 @@ include(":core:network")
 include(":domain:download")
 include(":domain:torrent")
 include(":domain:extractor")
+include(":domain:discovery")
 
 // Data (repository implementations, adapters, coordinator)
 include(":data:download")
 include(":data:torrent")
 include(":data:extractor")
+include(":data:discovery")
 
 // Native/runtime engines
 include(":engines:torrent-libtorrent")
@@ -53,3 +55,4 @@ include(":feature:library")
 include(":feature:player")
 include(":feature:settings")
 include(":feature:legal")
+include(":feature:discovery")
