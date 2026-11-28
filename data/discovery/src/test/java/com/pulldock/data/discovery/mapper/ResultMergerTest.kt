@@ -77,4 +77,87 @@ class ResultMergerTest {
         )
         assertEquals(listOf("b", "c", "a"), merged.map { it.resultId })
     }
+
+    @Test
+    fun `relevance with misspelled query orders the correct title first`() {
+        val merged = ResultMerger.combineAndRank(
+            listOf(
+                result("a", "p", "A1", title = "Microsoft Windows 11"),
+                result("b", "p", "B2", title = "Samsung Galaxy S24"),
+            ),
+            SortOrder.RELEVANCE,
+            query = "samsng",
+        )
+        assertEquals(listOf("b", "a"), merged.map { it.resultId })
+    }
+
+    @Test
+    fun `relevance multi-word query ranks closer title above unrelated`() {
+        val merged = ResultMerger.combineAndRank(
+            listOf(
+                result("a", "p", "A1", title = "Completely Unrelated Movie"),
+                result("b", "p", "B2", title = "The Dark Knight"),
+            ),
+            SortOrder.RELEVANCE,
+            query = "dark knight",
+        )
+        assertEquals("b", merged.first().resultId)
+    }
+
+    @Test
+    fun `relevance blank query matches null query ordering`() {
+        val results = listOf(
+            result("a", "p", "A1", title = "Alpha", seeders = 1),
+            result("b", "p", "B2", title = "Beta", seeders = 9),
+        )
+        val withNull = ResultMerger.combineAndRank(results, SortOrder.RELEVANCE, null)
+        val withBlank = ResultMerger.combineAndRank(results, SortOrder.RELEVANCE, "   ")
+        assertEquals(withNull.map { it.resultId }, withBlank.map { it.resultId })
+    }
+
+    @Test
+    fun `non-relevance sorts ignore the query`() {
+        val results = listOf(
+            result("a", "p", "A1", title = "Samsung", seeders = 1),
+            result("b", "p", "B2", title = "Microsoft", seeders = 9),
+        )
+        val merged = ResultMerger.combineAndRank(results, SortOrder.SEEDERS, query = "samsng")
+        assertEquals(listOf("b", "a"), merged.map { it.resultId })
+    }
+
+    @Test
+    fun `reorder only never drops results`() {
+        val results = listOf(
+            result("a", "p", "A1", title = "Alpha"),
+            result("b", "p", "B2", title = "Beta"),
+            result("c", "p", "C3", title = "Gamma"),
+        )
+        val merged = ResultMerger.combineAndRank(results, SortOrder.RELEVANCE, query = "alpha")
+        assertEquals(results.size, merged.size)
+    }
+
+    @Test
+    fun `equal fuzzy scores keep seeders tie-break order`() {
+        val merged = ResultMerger.combineAndRank(
+            listOf(
+                result("a", "p", "A1", title = "Same", seeders = 5),
+                result("b", "p", "B2", title = "Same", seeders = 9),
+            ),
+            SortOrder.RELEVANCE,
+            query = "same",
+        )
+        assertEquals(listOf("b", "a"), merged.map { it.resultId })
+    }
+
+    @Test
+    fun `ranking is deterministic across repeated calls`() {
+        val results = listOf(
+            result("a", "p", "A1", title = "Samsung Galaxy"),
+            result("b", "p", "B2", title = "Microsoft Windows"),
+            result("c", "p", "C3", title = "Samsung Notes"),
+        )
+        val first = ResultMerger.combineAndRank(results, SortOrder.RELEVANCE, "samsng")
+        val second = ResultMerger.combineAndRank(results, SortOrder.RELEVANCE, "samsng")
+        assertEquals(first.map { it.resultId }, second.map { it.resultId })
+    }
 }
