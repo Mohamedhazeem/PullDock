@@ -19,6 +19,7 @@ import com.pulldock.domain.discovery.model.ResultSourceType
 import com.pulldock.domain.discovery.model.RightsStatus
 import com.pulldock.domain.discovery.model.SearchCategory
 import com.pulldock.domain.discovery.model.SearchType
+import com.pulldock.domain.discovery.model.TorrentFile
 import com.pulldock.domain.discovery.model.TorrentResultDetails
 import com.pulldock.domain.discovery.model.TorrentSearchQuery
 import com.pulldock.domain.discovery.model.TorrentSearchResult
@@ -52,7 +53,15 @@ class InternetArchiveProvider @Inject constructor(
     )
 
     override suspend fun search(query: TorrentSearchQuery, page: ProviderPage): ProviderPageResult {
-        val q = "${URLEncoder.encode(query.text, "UTF-8")} AND format:\"Archive BitTorrent\""
+        val catTerm = when (query.filters.category) {
+            SearchCategory.MOVIES -> "mediatype:movies"
+            SearchCategory.MUSIC -> "mediatype:audio"
+            SearchCategory.BOOKS, SearchCategory.EBOOKS -> "mediatype:texts"
+            SearchCategory.SOFTWARE -> "mediatype:software"
+            else -> null
+        }
+        val q = "${URLEncoder.encode(query.text, "UTF-8")} AND format:\"Archive BitTorrent\"" +
+            (catTerm?.let { " AND $it" } ?: "")
         val url = buildString {
             append("$ADVANCED_SEARCH?q=").append(q)
             append("&fl=").append(FL)
@@ -96,6 +105,7 @@ class InternetArchiveProvider @Inject constructor(
             downloadDescriptor = null,
             availableActions = if (torrents.isEmpty()) emptySet() else setOf(ResultAction.ADD, ResultAction.OPEN_SOURCE, ResultAction.SHARE),
             availableTorrentFiles = torrents.mapNotNull { it.name },
+            files = meta.files.map { TorrentFile(it.name ?: "", it.size) },
         )
     }
 
