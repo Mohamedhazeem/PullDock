@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.pulldock.core.common.dispatchers.AppDispatchers
 import com.pulldock.domain.discovery.ApiCredentialStore
 import com.pulldock.domain.discovery.DiscoveryCache
+import com.pulldock.domain.discovery.ProviderRegistry
+import com.pulldock.domain.discovery.ProviderToggleRepository
 import com.pulldock.domain.discovery.SearchHistoryRepository
 import com.pulldock.domain.discovery.TorrentSearchRepository
 import com.pulldock.domain.discovery.TorznabConfigRepository
@@ -46,6 +48,7 @@ class DiscoverViewModel @Inject constructor(
     private val searchResultCache: DiscoveryCache,
     private val torznabConfig: TorznabConfigRepository,
     private val credentials: ApiCredentialStore,
+    private val toggleRepo: ProviderToggleRepository,
     private val dispatchers: AppDispatchers,
 ) : ViewModel() {
 
@@ -71,6 +74,7 @@ class DiscoverViewModel @Inject constructor(
         historyStore.observe().collectSafely { history -> _state.update { it.copy(history = history) } }
         historyStore.enabled.collectSafely { enabled -> _state.update { it.copy(historyEnabled = enabled) } }
         torznabConfig.observe().collectSafely { configs -> _state.update { it.copy(torznabConfigs = configs) } }
+        toggleRepo.tpbEnabled.collectSafely { enabled -> _state.update { it.copy(tpbEnabled = enabled) } }
     }
 
     fun onEvent(event: DiscoverUiEvent) {
@@ -111,6 +115,7 @@ class DiscoverViewModel @Inject constructor(
                 torznabConfig.replace(_state.value.torznabConfigs.filterNot { it.providerId == event.providerId })
             }
             DiscoverUiEvent.RestoreTorznabDefaults -> viewModelScope.launch { torznabConfig.restoreDefaults() }
+            DiscoverUiEvent.ToggleTpb -> viewModelScope.launch { toggleRepo.setTpbEnabled(!_state.value.tpbEnabled) }
             is DiscoverUiEvent.SetApiKey -> credentials.set(event.providerId, event.key)
             is DiscoverUiEvent.ProviderSelectionChanged -> { providerIds = event.providerIds; if (lastQuery != null) submit() }
             is DiscoverUiEvent.SizeRangeChanged -> {
