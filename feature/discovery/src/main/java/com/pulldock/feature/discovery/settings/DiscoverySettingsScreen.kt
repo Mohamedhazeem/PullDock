@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -19,6 +22,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,7 +41,7 @@ import com.pulldock.feature.discovery.DiscoverUiEvent
 import com.pulldock.feature.discovery.DiscoverUiState
 import com.pulldock.feature.discovery.DiscoverViewModel
 
-/** Discovery settings: adult opt-in, Torznab endpoints, history/cache, privacy. */
+/** Discovery settings: history/cache, Torznab endpoints, and a guarded NSFW opt-in. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoverySettingsScreen(
@@ -46,16 +51,16 @@ fun DiscoverySettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val tokens = LocalPdTokens.current
+    var showNsfwConfirm by remember { mutableStateOf(false) }
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Discovery settings") }, navigationIcon = { TextButton(onClick = onBack) { Text("Back") } }) },
+        topBar = { TopAppBar(title = { Text("Discovery settings") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") } }) },
     ) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(tokens.spacing.md),
             verticalArrangement = Arrangement.spacedBy(tokens.spacing.md),
         ) {
             GroupCard("Content") {
-                SwitchRow("Show adult results", state.adultEnabled) { onEvent(DiscoverUiEvent.ToggleAdult) }
                 SwitchRow("Save search history", state.historyEnabled) { onEvent(DiscoverUiEvent.SetHistoryEnabled(it)) }
                 Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
                     TextButton(onClick = { onEvent(DiscoverUiEvent.ClearHistory) }) { Text("Clear history") }
@@ -66,7 +71,12 @@ fun DiscoverySettingsScreen(
             GroupCard("Torznab indexers") {
                 Text("Predefined and custom indexers. Remove any you don't want.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 state.torznabConfigs.forEach { config -> TorznabRow(config) { onEvent(DiscoverUiEvent.RemoveTorznab(config.providerId)) } }
-                AddTorznabForm(onEvent)
+                var showAdd by remember { mutableStateOf(false) }
+                Row(horizontalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
+                    TextButton(onClick = { onEvent(DiscoverUiEvent.RestoreTorznabDefaults) }) { Text("Restore defaults") }
+                    TextButton(onClick = { showAdd = !showAdd }) { Text(if (showAdd) "Close" else "Add indexer") }
+                }
+                if (showAdd) AddTorznabForm(onEvent)
             }
 
             Text(
@@ -74,16 +84,41 @@ fun DiscoverySettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            GroupCard(null) {
+                SwitchRow("NSFW", state.adultEnabled) { enable ->
+                    if (enable) showNsfwConfirm = true else onEvent(DiscoverUiEvent.ToggleAdult)
+                }
+                Text(
+                    "Off by default. Enabling shows adult results and requires confirmation each time.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
+    }
+
+    if (showNsfwConfirm) {
+        AlertDialog(
+            onDismissRequest = { showNsfwConfirm = false },
+            title = { Text("Enable NSFW results?") },
+            text = { Text("Adult content will be shown in search results. You can turn it off at any time.") },
+            confirmButton = {
+                TextButton(onClick = { onEvent(DiscoverUiEvent.ToggleAdult); showNsfwConfirm = false }) { Text("Enable") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNsfwConfirm = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 
 @Composable
-private fun GroupCard(title: String, content: @Composable () -> Unit) {
+private fun GroupCard(title: String?, content: @Composable () -> Unit) {
     val tokens = LocalPdTokens.current
     Surface(shape = RoundedCornerShape(tokens.radius.lg), tonalElevation = 1.dp) {
         Column(Modifier.padding(tokens.spacing.md), verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            if (title != null) Text(title, style = MaterialTheme.typography.titleMedium)
             content()
         }
     }
