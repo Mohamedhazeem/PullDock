@@ -43,6 +43,7 @@ class PirateBayProvider @Inject constructor(
     override val id: String = "piratebay"
     override val displayName: String = "The Pirate Bay"
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val detailCache = java.util.concurrent.ConcurrentHashMap<String, ApibayDetail>()
 
     override suspend fun capabilities(): ProviderCapabilities = ProviderCapabilities(
         providerId = id,
@@ -96,11 +97,13 @@ class PirateBayProvider @Inject constructor(
     }
 
     private suspend fun fetchDetail(id: String): ApibayDetail? {
+        detailCache[id]?.let { return it }
         val body = when (val r = BoundedResponse.fetch(client, "$BASE/t.php?id=$id")) {
             is HttpResult.Failure -> throw r.error
             is HttpResult.Ok -> r.body
         }
         return runCatching { json.decodeFromString(ApibayDetail.serializer(), body) }.getOrNull()
+            ?.also { detailCache[id] = it }
     }
 
     private suspend fun fetchFiles(id: String): List<ApibayFile> {
