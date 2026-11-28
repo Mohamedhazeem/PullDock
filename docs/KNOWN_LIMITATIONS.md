@@ -48,3 +48,19 @@ Honest, user-visible constraints. Nothing here is hidden in the UI.
 - Library/player UI (T156–T158, T165) is implemented as of 2026-11-24; the remaining
   Slice 6 gaps are the streaming-bridge lifecycle owner (T160), thumbnails (T164), and
   device verification (T163). Torrent streaming is still unverified on a device.
+
+## Torrent Discovery (feature 002)
+
+- Provider field names, rate-limit headers, and the Internet Archive `.torrent` download-URL
+  construction are implemented against the documented shapes but must be confirmed against
+  live provider documentation and encoded as fixtures (research D15). Per-provider
+  anti-bot/quota failures remain possible.
+- Archive items with more than one `.torrent` file list the files in details and set
+  `requiresUserChoice`; the Add action currently uses the first file (deterministic) rather
+  than a full per-file picker.
+- Discovery is API-only (BitSearch, Internet Archive, user-configured Torznab). No scraping,
+  no backend, no second engine/queue. Torznab requires HTTPS; API keys are session-only.
+- Compose UI tests for Discover/results/details/settings are in `androidTest` and require a
+  device/emulator; provider/orchestration/domain/ViewModel tests run offline as unit tests.
+- End-to-end search-to-download and the torrent engine handoff remain subject to the same
+  on-device verification as the rest of the torrent pipeline.
