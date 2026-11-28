@@ -12,23 +12,31 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.pulldock.core.designsystem.R
 import com.pulldock.core.designsystem.theme.LocalPdTokens
 
-/** Search field with an explicit clear action. */
+/** Search field with an explicit clear action and an optional search action (closes the keyboard). */
 @Composable
 fun PdSearchField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
+    onSearch: (() -> Unit)? = null,
 ) {
     val tokens = LocalPdTokens.current
+    val focus = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -37,6 +45,16 @@ fun PdSearchField(
         textStyle = TextStyle(fontSize = MaterialTheme.typography.bodyMedium.fontSize),
         shape = RoundedCornerShape(tokens.radius.md),
         placeholder = { Text(placeholder) },
+        keyboardOptions = if (onSearch != null) KeyboardOptions(imeAction = ImeAction.Search) else KeyboardOptions.Default,
+        keyboardActions = if (onSearch != null) {
+            KeyboardActions(onSearch = {
+                onSearch()
+                focus.clearFocus()
+                keyboard?.hide()
+            })
+        } else {
+            KeyboardActions.Default
+        },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Rounded.Search,
