@@ -28,6 +28,7 @@ sealed interface PullDockDestination {
         @get:StringRes override val titleRes: Int,
     ) : PullDockDestination {
         HOME("home", R.string.destination_home),
+        DISCOVER("discover", R.string.destination_discover),
         LIBRARY("library", R.string.destination_library),
         SETTINGS("settings", R.string.destination_settings),
         ;

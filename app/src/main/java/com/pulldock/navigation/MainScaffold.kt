@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -146,6 +147,7 @@ private fun NavHostController.navigateToPrimary(destination: PullDockDestination
 private val PullDockDestination.Primary.icon: ImageVector
     get() = when (this) {
         PullDockDestination.Primary.HOME -> Icons.Rounded.Home
+        PullDockDestination.Primary.DISCOVER -> Icons.Rounded.Search
         PullDockDestination.Primary.LIBRARY -> Icons.Rounded.LibraryMusic
         PullDockDestination.Primary.SETTINGS -> Icons.Rounded.Settings
     }

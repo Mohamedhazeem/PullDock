@@ -25,6 +25,8 @@ import com.pulldock.core.designsystem.components.PdLoadingState
 import com.pulldock.domain.download.repository.ConsentState
 import com.pulldock.domain.download.usecase.ObserveConsent
 import com.pulldock.feature.add.AddDownloadScreen
+import com.pulldock.feature.discovery.DiscoverRoute
+import com.pulldock.feature.discovery.settings.DiscoverySettingsRoute
 import com.pulldock.feature.downloaddetail.DownloadDetailScreen
 import com.pulldock.feature.home.HomeScreen
 import com.pulldock.feature.legal.LegalScreen
@@ -116,6 +118,15 @@ fun RootNavHost(
             composable(PullDockDestination.Primary.SETTINGS.route) {
                 SettingsScreen(onOpenLegal = { navController.navigate(Routes.LEGAL) })
             }
+            composable(PullDockDestination.Primary.DISCOVER.route) {
+                DiscoverRoute(
+                    onAddSource = { source -> navController.navigate(Routes.addSource(source)) },
+                    onOpenSettings = { navController.navigate(Routes.DISCOVERY_SETTINGS) },
+                )
+            }
+            composable(Routes.DISCOVERY_SETTINGS) {
+                DiscoverySettingsRoute(onBack = navController::navigateUp)
+            }
             composable(Routes.ADD) {
                 AddDownloadScreen(
                     onClose = navController::navigateUp,
@@ -156,6 +167,7 @@ object Routes {
     const val ADD = "add"
     const val ADD_WITH_SOURCE = "add?source={source}"
     const val LEGAL = "legal"
+    const val DISCOVERY_SETTINGS = "discovery_settings"
     const val DOWNLOAD_DETAIL = "download/{taskId}"
     const val PLAYER = "player/{itemId}"
 
