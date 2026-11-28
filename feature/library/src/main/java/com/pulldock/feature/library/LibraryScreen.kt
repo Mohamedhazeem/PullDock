@@ -123,6 +123,7 @@ fun LibraryScreen(
                 .padding(horizontal = tokens.spacing.lg),
             verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
             horizontalArrangement = Arrangement.spacedBy(tokens.spacing.md),
+            userScrollEnabled = !state.isEmpty,
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 PdSearchField(
@@ -205,14 +206,19 @@ fun LibraryScreen(
                 items(6) { LibrarySkeletonCard() }
             } else if (state.isEmpty) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    PdEmptyState(
-                        title = stringResource(R.string.library_empty_title),
-                        message = stringResource(R.string.library_empty_body),
-                        icon = Icons.Rounded.PlayArrow,
-                        actionLabel = stringResource(R.string.library_add),
-                        onAction = onAddDownload,
+                    Box(
                         modifier = Modifier.fillMaxSize(),
-                    )
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        PdEmptyState(
+                            title = stringResource(R.string.library_empty_title),
+                            message = stringResource(R.string.library_empty_body),
+                            icon = Icons.Rounded.PlayArrow,
+                            actionLabel = stringResource(R.string.library_add),
+                            onAction = onAddDownload,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             } else {
                 items(
