@@ -29,7 +29,8 @@ class ProviderRegistryImpl @Inject constructor(
 
     override suspend fun supporting(category: SearchCategory): List<TorrentSearchProvider> =
         enabled().filter { provider ->
-            category == SearchCategory.ALL || provider.capabilities().categories.containsKey(category)
+            category == SearchCategory.ALL ||
+                runCatching { provider.capabilities().categories.containsKey(category) }.getOrDefault(true)
         }
 
     private suspend fun torznabProviders(): List<TorrentSearchProvider> =
