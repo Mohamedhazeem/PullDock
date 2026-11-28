@@ -32,7 +32,7 @@ class BitSearchProviderTest {
 
     @Test
     fun `valid search json maps results`() = runTest {
-        val body = """{"results":[{"id":"1","infoHash":"0123456789abcdef0123456789abcdef01234567","title":"Movie","size":1234,"category":"2","seeders":5,"leechers":2,"verified":true}]}"""
+        val body = """{"results":[{"id":"1","infohash":"0123456789abcdef0123456789abcdef01234567","title":"Movie","size":1234,"category":"Movies","seeders":5,"leechers":2,"verified":true,"createdAt":"2026-01-01T00:00:00Z"}]}"""
         val engine = MockEngine { json(body) }
         val result = BitSearchProvider(client(engine), credentials).search(query, ProviderPage(1, null))
         assertEquals(1, result.results.size)
@@ -75,7 +75,7 @@ class BitSearchProviderTest {
     @Test
     fun `detail with valid magnet yields MAGNET descriptor`() = runTest {
         val magnet = "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&dn=x"
-        val body = """{"id":"1","infoHash":"0123456789abcdef0123456789abcdef01234567","title":"Movie","magnetUri":"$magnet"}"""
+        val body = """{"torrent":{"id":"1","infohash":"0123456789abcdef0123456789abcdef01234567","title":"Movie","magnetUri":"$magnet"}}"""
         val engine = MockEngine { json(body) }
         val details = BitSearchProvider(client(engine), credentials).details("1")
         assertEquals("Movie", details?.title)
