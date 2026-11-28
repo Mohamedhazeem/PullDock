@@ -9,6 +9,7 @@ import com.pulldock.domain.discovery.ProviderRegistry
 import com.pulldock.domain.discovery.TorrentSearchProvider
 import com.pulldock.domain.discovery.model.ProviderConfiguration
 import com.pulldock.domain.discovery.model.SearchCategory
+import com.pulldock.domain.discovery.model.SearchType
 import io.ktor.client.HttpClient
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -40,7 +41,14 @@ class ProviderRegistryImpl @Inject constructor(
      * client-side by the repository, so categories without a provider mapping (e.g. Documentaries)
      * still query general providers instead of returning nothing.
      */
-    override suspend fun supporting(category: SearchCategory): List<TorrentSearchProvider> = enabled()
+    override suspend fun supporting(category: SearchCategory): List<TorrentSearchProvider> =
+        enabled().filter { provider ->
+            category == SearchCategory.ALL ||
+                runCatching {
+                    val caps = provider.capabilities()
+                    caps.categories.containsKey(category) || caps.searchTypes.contains(SearchType.GENERAL)
+                }.getOrDefault(true)
+        }
 
     private suspend fun torznabProviders(): List<TorrentSearchProvider> {
         val builtIn = listOf(ANIBT).map { TorznabProvider(it, httpClient, credentials) }

@@ -14,6 +14,7 @@ import com.pulldock.domain.discovery.model.ProviderState
 import com.pulldock.domain.discovery.model.ResultSourceType
 import com.pulldock.domain.discovery.model.RightsStatus
 import com.pulldock.domain.discovery.model.SearchCategory
+import com.pulldock.domain.discovery.model.SearchType
 import com.pulldock.domain.discovery.model.SearchFilters
 import com.pulldock.domain.discovery.model.TorrentSearchQuery
 import com.pulldock.domain.discovery.model.TorrentSearchResult
@@ -45,7 +46,7 @@ class DiscoveryRepositoryImplTest {
     ) : TorrentSearchProvider {
         override val displayName: String = id
         override suspend fun capabilities(): ProviderCapabilities =
-            ProviderCapabilities(id, emptySet(), emptyMap(), supportsPagination = false, requiresAuth = false)
+            ProviderCapabilities(id, setOf(SearchType.GENERAL), emptyMap(), supportsPagination = false, requiresAuth = false)
         override suspend fun search(query: TorrentSearchQuery, page: ProviderPage): ProviderPageResult = produce()
         override suspend fun details(nativeId: String) = null
         override suspend fun downloadDescriptor(nativeId: String, preferredFileName: String?) = null
@@ -89,7 +90,7 @@ class DiscoveryRepositoryImplTest {
 
     private inner class PagedProvider(override val id: String) : TorrentSearchProvider {
         override val displayName = id
-        override suspend fun capabilities() = ProviderCapabilities(id, emptySet(), emptyMap(), true, false)
+        override suspend fun capabilities() = ProviderCapabilities(id, setOf(SearchType.GENERAL), emptyMap(), true, false)
         override suspend fun search(query: TorrentSearchQuery, page: ProviderPage): ProviderPageResult =
             when (page.number) {
                 1 -> ProviderPageResult(listOf(result("1", id), result("2", id)), hasMore = true, nextPage = ProviderPage(2, null))
