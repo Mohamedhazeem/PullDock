@@ -22,6 +22,7 @@ ffmpegKit = "8.1.7"
 hlsfetch = "0.3.0"
 ktor = "3.4.0"
 kotlinxSerialization = "1.9.0"
+coil = "2.7.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
@@ -52,6 +53,7 @@ ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-conte
 ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
 libtorrent4j-core = { group = "org.libtorrent4j", name = "libtorrent4j", version.ref = "libtorrent4j" }
 libtorrent4j-arm64 = { group = "org.libtorrent4j", name = "libtorrent4j-android-arm64", version.ref = "libtorrent4j" }
