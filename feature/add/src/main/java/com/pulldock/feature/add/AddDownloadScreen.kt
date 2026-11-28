@@ -67,6 +67,8 @@ fun AddDownloadScreen(
 ) {
     val tokens = LocalPdTokens.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -146,6 +148,8 @@ fun AddDownloadScreen(
                     },
                     onClick = {
                         if (state.resolvedDescriptor != null) viewModel.reopenSheet() else viewModel.submit()
+                        focus.clearFocus()
+                        keyboard?.hide()
                     },
                     loading = state.submitting,
                     enabled = state.input.isNotBlank(),
