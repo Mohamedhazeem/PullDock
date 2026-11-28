@@ -26,7 +26,7 @@ data class ArchiveDocDto(
     val description: JsonElement? = null,
     val date: String? = null,
     val mediatype: String? = null,
-    val subject: List<String> = emptyList(),
+    val subject: JsonElement? = null,
     val licenseurl: String? = null,
     val publicdate: String? = null,
 )
