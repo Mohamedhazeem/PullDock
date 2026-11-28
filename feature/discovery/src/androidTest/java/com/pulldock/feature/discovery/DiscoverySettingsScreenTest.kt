@@ -17,7 +17,7 @@ class DiscoverySettingsScreenTest {
         rule.setContent {
             DiscoverySettingsScreen(state = DiscoverUiState(), onEvent = {}, onBack = {})
         }
-        rule.onNodeWithText("Show adult results").assertIsDisplayed()
+        rule.onNodeWithText("Save search history").assertIsDisplayed()
         rule.onNodeWithText("Clear history").assertIsDisplayed()
         rule.onNodeWithText("Clear cache").assertIsDisplayed()
     }
