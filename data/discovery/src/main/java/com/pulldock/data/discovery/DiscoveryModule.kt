@@ -2,14 +2,20 @@ package com.pulldock.data.discovery
 
 import com.pulldock.data.discovery.ApiCredentialStoreImpl
 import com.pulldock.data.discovery.cache.SearchResultCache
+import com.pulldock.data.discovery.config.ProviderToggleStore
 import com.pulldock.data.discovery.config.TorznabConfigStore
 import com.pulldock.data.discovery.history.SearchHistoryStore
 import com.pulldock.data.discovery.provider.BitSearchProvider
+import com.pulldock.data.discovery.provider.EztvProvider
 import com.pulldock.data.discovery.provider.InternetArchiveProvider
+import com.pulldock.data.discovery.provider.KnabenProvider
+import com.pulldock.data.discovery.provider.YourBittorrentProvider
+import com.pulldock.data.discovery.provider.YtsProvider
 import com.pulldock.data.discovery.registry.ProviderRegistryImpl
 import com.pulldock.domain.discovery.ApiCredentialStore
 import com.pulldock.domain.discovery.DiscoveryCache
 import com.pulldock.domain.discovery.ProviderRegistry
+import com.pulldock.domain.discovery.ProviderToggleRepository
 import com.pulldock.domain.discovery.SearchHistoryRepository
 import com.pulldock.domain.discovery.TorrentSearchProvider
 import com.pulldock.domain.discovery.TorrentSearchRepository
@@ -52,19 +58,27 @@ abstract class DiscoveryModule {
     @Singleton
     abstract fun bindCredentials(impl: ApiCredentialStoreImpl): ApiCredentialStore
 
+    @Binds
+    @Singleton
+    abstract fun bindToggles(impl: ProviderToggleStore): ProviderToggleRepository
+
     companion object {
         @Provides
         @Singleton
         fun provideHttpClient(provider: com.pulldock.data.discovery.http.HttpClientProvider): HttpClient =
             provider.create()
 
-        /** Built-in providers; adding one means adding it here (Torznab is config-driven). */
+        /** Built-in providers; adding one means adding it here (Torznab/AniBT + TPB are config-driven). */
         @Provides
         @Singleton
         @JvmSuppressWildcards
         fun provideBuiltInProviders(
             bitSearch: BitSearchProvider,
             archive: InternetArchiveProvider,
-        ): Set<TorrentSearchProvider> = setOf(bitSearch, archive)
+            yourBittorrent: YourBittorrentProvider,
+            eztv: EztvProvider,
+            yts: YtsProvider,
+            knaben: KnabenProvider,
+        ): Set<TorrentSearchProvider> = setOf(bitSearch, archive, yourBittorrent, eztv, yts, knaben)
     }
 }
