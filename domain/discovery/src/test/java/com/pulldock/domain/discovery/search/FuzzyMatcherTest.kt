@@ -73,4 +73,33 @@ class FuzzyMatcherTest {
         val second = FuzzyMatcher.score("dark knight", "The Dark Knight 2008 1080p")
         assertEquals(first, second, 0.0)
     }
+
+    @Test
+    fun `word order does not matter for token coverage`() {
+        val reordered = FuzzyMatcher.score("knight dark", "The Dark Knight")
+        val unrelated = FuzzyMatcher.score("knight dark", "Completely Unrelated Movie")
+        assertEquals(1.0, reordered, 0.0)
+        assertTrue("reordered=$reordered unrelated=$unrelated", reordered > unrelated)
+    }
+
+    @Test
+    fun `extra words in title still fully cover the query`() {
+        val withExtra = FuzzyMatcher.score("dark knight", "The Dark Knight 2008 1080p BluRay")
+        val unrelated = FuzzyMatcher.score("dark knight", "Microsoft Windows")
+        assertEquals(1.0, withExtra, 0.0)
+        assertTrue(withExtra > unrelated)
+    }
+
+    @Test
+    fun `short token only matches exactly`() {
+        assertEquals(0.0, FuzzyMatcher.score("a", "xy"), 0.0)
+        assertEquals(1.0, FuzzyMatcher.score("a", "a"), 0.0)
+        assertTrue(FuzzyMatcher.score("a", "cat") < 0.5)
+    }
+
+    @Test
+    fun `punctuation spacing and duplicate tokens are normalized`() {
+        assertEquals(1.0, FuzzyMatcher.score("  Dark   Knight ", "The Dark Knight"), 0.0)
+        assertEquals(1.0, FuzzyMatcher.score("dark dark knight", "the dark knight"), 0.0)
+    }
 }

@@ -105,6 +105,19 @@ class ResultMergerTest {
     }
 
     @Test
+    fun `relevance ignores word order in the query`() {
+        val merged = ResultMerger.combineAndRank(
+            listOf(
+                result("a", "p", "A1", title = "Completely Unrelated Movie"),
+                result("b", "p", "B2", title = "The Dark Knight"),
+            ),
+            SortOrder.RELEVANCE,
+            query = "knight dark",
+        )
+        assertEquals("b", merged.first().resultId)
+    }
+
+    @Test
     fun `relevance blank query matches null query ordering`() {
         val results = listOf(
             result("a", "p", "A1", title = "Alpha", seeders = 1),

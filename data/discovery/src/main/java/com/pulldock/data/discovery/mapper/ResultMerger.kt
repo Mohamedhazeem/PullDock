@@ -88,7 +88,8 @@ object ResultMerger {
             )
         }
 
-        val scored = results.map { result -> Scored(result, FuzzyMatcher.score(query, result.title)) }
+        val prepared = FuzzyMatcher.prepare(query)
+        val scored = results.map { result -> Scored(result, FuzzyMatcher.score(prepared, result.title)) }
         return scored.sortedWith(
             compareByDescending<Scored> { it.score }
                 .thenByDescending { completeness(it.result) }

@@ -126,4 +126,33 @@ class DiscoveryRepositoryImplTest {
         assertEquals(1, state.results.size)
         assertEquals("a", state.results[0].providerId)
     }
+
+    private fun titled(id: String, provider: String, title: String) = TorrentSearchResult(
+        resultId = id, providerId = provider, providerName = provider, title = title,
+        description = null, category = SearchCategory.MOVIES, originalProviderCategory = null,
+        infoHash = id, sizeBytes = null, seeders = 1, leechers = null, publishedAt = null,
+        providerVerificationClaim = null, sourcePageUrl = null, resultSourceType = ResultSourceType.MAGNET,
+        rightsStatus = RightsStatus.UNKNOWN, availableActions = emptySet(),
+        contributingSources = listOf(ContributingSource(provider, provider, null, id)),
+    )
+
+    @Test
+    fun `search emits ranked progressive partials`() = runTest {
+        val provider = FakeProvider("p") {
+            ProviderPageResult(
+                listOf(
+                    titled("a", "p", "Microsoft Windows 11"),
+                    titled("b", "p", "Samsung Galaxy S24"),
+                ),
+                false,
+                null,
+            )
+        }
+        val emissions = mutableListOf<List<TorrentSearchResult>>()
+        val q = TorrentSearchQuery("samsng", SearchFilters())
+        val state = repo(listOf(provider)).search(q) { _, partial -> emissions += partial }
+        assertEquals(1, emissions.size)
+        assertEquals(listOf("b", "a"), emissions.last().map { it.resultId })
+        assertEquals(emissions.last().map { it.resultId }, state.results.map { it.resultId })
+    }
 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +33,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.AssistChip
@@ -49,6 +51,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -129,31 +133,18 @@ fun DiscoverScreen(
             Box(Modifier.fillMaxWidth().weight(1f)) {
                 when (state.overall) {
                     OverallSearchState.LOADING, OverallSearchState.REFRESHING ->
-                        CenterState { CircularProgressIndicator(); Text("Searching…", style = MaterialTheme.typography.bodyMedium) }
+                        if (state.results.isEmpty()) {
+                            CenterState { CircularProgressIndicator(); Text("Searching…", style = MaterialTheme.typography.bodyMedium) }
+                        } else {
+                            ResultsList(state, listState, onEvent)
+                        }
                     OverallSearchState.EMPTY ->
                         CenterState(icon = { Icon(Icons.Rounded.Inbox, null, Modifier.size(40.dp)) }, title = "No results", body = "Try a different title or category.")
                     OverallSearchState.ALL_FAILED ->
                         CenterState(icon = { Icon(Icons.Rounded.ErrorOutline, null, Modifier.size(40.dp)) }, title = "All providers failed", body = "Check connectivity and retry.", action = { TextButton(onClick = { onEvent(DiscoverUiEvent.Refresh) }) { Text("Retry") } })
                     OverallSearchState.OFFLINE ->
                         CenterState(icon = { Icon(Icons.Rounded.CloudOff, null, Modifier.size(40.dp)) }, title = "You're offline", body = "Reconnect and retry.")
-                    else -> LazyColumn(
-                        state = listState,
-                        verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = tokens.spacing.md, top = tokens.spacing.sm, end = tokens.spacing.md, bottom = 96.dp),
-                    ) {
-                        items(state.results, key = { it.resultId }) { result ->
-                            ResultCard(
-                                result = result,
-                                onOpen = { onEvent(DiscoverUiEvent.OpenDetails(result)) },
-                                onAdd = { onEvent(DiscoverUiEvent.AddToPullDock(result)) },
-                            )
-                        }
-                        if (state.hasMore) item {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                                FilterChip(selected = false, onClick = { onEvent(DiscoverUiEvent.LoadMore) }, label = { Text("Load more") })
-                            }
-                        }
-                    }
+                    else -> ResultsList(state, listState, onEvent)
                 }
                 if (atBottom && state.results.isNotEmpty() && (state.overall == OverallSearchState.RESULTS || state.overall == OverallSearchState.PARTIAL)) {
                     FloatingActionButton(
@@ -177,6 +168,41 @@ fun DiscoverScreen(
             },
             onDismiss = { showFilters = false },
         )
+    }
+}
+
+@Composable
+private fun ResultsList(
+    state: DiscoverUiState,
+    listState: LazyListState,
+    onEvent: (DiscoverUiEvent) -> Unit,
+) {
+    val tokens = LocalPdTokens.current
+    LazyColumn(
+        state = listState,
+        verticalArrangement = Arrangement.spacedBy(tokens.spacing.sm),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = tokens.spacing.md, top = tokens.spacing.sm, end = tokens.spacing.md, bottom = 96.dp),
+    ) {
+        if (state.isSearching) {
+            item {
+                LinearProgressIndicator(
+                    Modifier.fillMaxWidth().semantics { contentDescription = "Searching" },
+                )
+            }
+        }
+        items(state.results, key = { it.resultId }) { result ->
+            ResultCard(
+                result = result,
+                onOpen = { onEvent(DiscoverUiEvent.OpenDetails(result)) },
+                onAdd = { onEvent(DiscoverUiEvent.AddToPullDock(result)) },
+                modifier = Modifier.animateItem(),
+            )
+        }
+        if (state.hasMore) item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                FilterChip(selected = false, onClick = { onEvent(DiscoverUiEvent.LoadMore) }, label = { Text("Load more") })
+            }
+        }
     }
 }
 

@@ -12,6 +12,7 @@ import com.pulldock.domain.discovery.model.DescriptorKind
 import com.pulldock.domain.discovery.model.DownloadDescriptor
 import com.pulldock.domain.discovery.model.OverallSearchState
 import com.pulldock.domain.discovery.model.ProviderStatus
+import com.pulldock.domain.discovery.model.ProviderState
 import com.pulldock.domain.discovery.model.ResultSourceType
 import com.pulldock.domain.discovery.model.RightsStatus
 import com.pulldock.domain.discovery.model.SearchCategory
@@ -38,8 +39,19 @@ class DiscoverViewModelTest {
         override val main: CoroutineDispatcher = Dispatchers.Unconfined
     }
 
-    private class FakeRepo(private val descriptor: DownloadDescriptor?) : TorrentSearchRepository {
-        override suspend fun search(query: TorrentSearchQuery, onProgress: (ProviderStatus, List<TorrentSearchResult>) -> Unit) = SearchPageState(overall = OverallSearchState.EMPTY)
+    private class FakeRepo(
+        private val descriptor: DownloadDescriptor?,
+        private val progress: List<TorrentSearchResult> = emptyList(),
+    ) : TorrentSearchRepository {
+        override suspend fun search(
+            query: TorrentSearchQuery,
+            onProgress: (ProviderStatus, List<TorrentSearchResult>) -> Unit,
+        ): SearchPageState {
+            if (progress.isNotEmpty()) {
+                onProgress(ProviderStatus("p", "P", ProviderState.SUCCESS, progress.size), progress)
+            }
+            return SearchPageState(overall = OverallSearchState.RESULTS, results = progress)
+        }
         override suspend fun loadMore(query: TorrentSearchQuery) = SearchPageState(overall = OverallSearchState.EMPTY)
         override suspend fun refresh(query: TorrentSearchQuery) = SearchPageState(overall = OverallSearchState.EMPTY)
         override suspend fun getDetails(result: TorrentSearchResult) = TorrentResultDetails(
@@ -113,5 +125,23 @@ class DiscoverViewModelTest {
         val vm = newVm(FakeRepo(null))
         vm.onEvent(DiscoverUiEvent.AddToPullDock(result(infoHash = null, sourceType = com.pulldock.domain.discovery.model.ResultSourceType.TORRENT_FILE)))
         assertEquals("No usable torrent for this result.", vm.state.value.message)
+    }
+
+    private fun titled(id: String, title: String) = TorrentSearchResult(
+        resultId = id, providerId = "p", providerName = "P", title = title, description = null,
+        category = SearchCategory.MOVIES, originalProviderCategory = null, infoHash = id, sizeBytes = null,
+        seeders = null, leechers = null, publishedAt = null, providerVerificationClaim = null, sourcePageUrl = null,
+        resultSourceType = com.pulldock.domain.discovery.model.ResultSourceType.MAGNET,
+        rightsStatus = RightsStatus.UNKNOWN, availableActions = emptySet(),
+        contributingSources = listOf(ContributingSource("p", "P", null, id)),
+    )
+
+    @Test
+    fun `progressive search updates ranked results`() = runTest {
+        val ranked = listOf(titled("b", "Samsung Galaxy"), titled("a", "Microsoft Windows"))
+        val vm = newVm(FakeRepo(null, ranked))
+        vm.onEvent(DiscoverUiEvent.QueryChanged("samsng"))
+        vm.onEvent(DiscoverUiEvent.Submit)
+        assertEquals(listOf("b", "a"), vm.state.value.results.map { it.resultId })
     }
 }

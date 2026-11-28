@@ -128,7 +128,9 @@ class DiscoveryRepositoryImpl @Inject constructor(
                 collected += outcome.results
                 hasMore[provider.id] = outcome.hasMore
                 outcome.nextPage?.let { nextPages[provider.id] = it }
-                onProgress(outcome.status, collected.toList())
+                val partial = ResultMerger.combineAndRank(collected, query.filters.sort, query.text)
+                    .filter { matchesFilters(it, query.filters) }
+                onProgress(outcome.status, partial)
             }
         }
 
